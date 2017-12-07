@@ -1,0 +1,5 @@
+specimen dialog: closed
+landskap: Lule lappmark
+socken: Jokkmokk
+cnr: 14863
+user: Nils Ericson
