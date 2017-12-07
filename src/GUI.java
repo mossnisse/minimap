@@ -49,12 +49,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 
 	private static void createAndShowGUI() {
 		// Create and set up the window.
-		/*try {
-			System.setErr(new PrintStream(new File("error.txt")));
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}*/
 		GUI gui = new GUI();
 		frame = new JFrame("Minimap");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
