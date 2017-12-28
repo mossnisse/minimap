@@ -80,7 +80,7 @@ public class MYSQLTable implements Layer {
 		try {
 			
 			//String sqlstmt = "SELECT RT90N, RT90E, locality FROM locality where RT90N > " +bounds.getY1()+" and RT90N < " + bounds.getY2()+ " and RT90E > "+bounds.getX1()+ " and RT90E < "+bounds.getX2()+";" ;
-			String sqlstmt = "SELECT RT90N, RT90E, locality FROM locality where RT90N > ? and RT90N < ? and RT90E > ? and RT90E < ?;" ;
+			String sqlstmt = "SELECT RT90N, RT90E, locality, Coordinateprecision FROM locality where RT90N > ? and RT90N < ? and RT90E > ? and RT90E < ?;" ;
 			Connection conn = MYSQLConnection.getConn();
 			
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
@@ -97,11 +97,26 @@ public class MYSQLTable implements Layer {
 				//Point p = new Point(east, north);
 				//if (bounds.isInside(new Point(east, north))) {
 					String name = result.getString(3);
+					
 					int x = (int) ((east*xScale)+xShift);
 					int y = (int) ((north*yScale)+yShift);
 					g2d.drawOval(x-3,y-3,6,6);
+					
+					try  
+					  {  
+						String sizestr = result.getString(4);
+						int size = (int) (Integer.parseInt(sizestr)*xScale);
+						g2d.drawOval(x-size,y-size,size*2,size*2);
+						System.out.println("Scale: "+xScale);
+						System.out.println("Size: "+sizestr);
+						g2d.drawString(name+"+",x,y);
+					  }  
+					  catch(NumberFormatException nfe)  
+					  {  
+						  System.out.println("No Size");
+						  g2d.drawString(name+"-",x,y);
+					  }  
 					//g2d.setColor(Color.black);
-					g2d.drawString(name,x,y);
 				//}
 			}
 			} catch (SQLException e) {
