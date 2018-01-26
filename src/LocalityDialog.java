@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
@@ -207,7 +208,12 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	}
 	
 	private void deleteLokal() {
+		int dialogResult = JOptionPane.showConfirmDialog (null, "Do you realy want to delete the local?","Warning",JOptionPane.YES_NO_OPTION);
+		if(dialogResult == JOptionPane.YES_OPTION){
+		  // Saving code here
+		
 		try {
+			
 			Connection conn = MYSQLConnection.getConn();
 			String sqlstmt = "DELETE FROM locality WHERE ID =?";
 			System.out.println(sqlstmt);
@@ -224,6 +230,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+		}
 		}
 		
 	}
