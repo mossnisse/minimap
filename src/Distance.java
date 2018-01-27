@@ -1,11 +1,9 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-
 
 public class Distance implements Layer {
 	private Color color;
@@ -123,5 +121,4 @@ public class Distance implements Layer {
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
 	}
-
 }

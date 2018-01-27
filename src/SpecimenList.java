@@ -126,7 +126,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		distance = new JTextField("test direction");
 		distance.setPreferredSize(new Dimension(200,20));
 		this.add(distance);
-		String[] dirString = { "", "N", "NNV", "NV", "VNV", "V", "VSV", "SV", "SSV", "S", "SSE", "SE", "ESE", "E", "ENE", "NE", "NNE" };
+		String[] dirString = { "", "N", "NNW", "NW", "WNW", "W", "WSW", "SW", "SSW", "S", "SSE", "SE", "ESE", "E", "ENE", "NE", "NNE" };
 		direction = new JComboBox<String>(dirString);
 		this.add(direction);
 		
@@ -860,8 +860,19 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		String lokal = (String) lokaler.getSelectedItem();
 		String landskapN = getProvinceFromUI(); // landskap.getText();
 		String sockenN = getDistrictFromUI(); //socken.getText();
+		int distanceI;
+		String directionS;
+		try {
+			distanceI = Integer.parseInt(distance.getText());
+			directionS = (String) direction.getSelectedItem();
+		} catch(Exception e) {
+			distanceI =-1;
+			directionS = "NAN";
+		}
 		System.out.println("focus Locality: "+lokal);
 		if (!lokal.equals("")) {
+			
+			
 			try {
 				String query = "SELECT RT90N, RT90E from locality where locality = ? and province = ? and district = ?";
 				System.out.println(query);
@@ -872,12 +883,23 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				statement.setString(3, sockenN);	
 				ResultSet result = statement.executeQuery();
 				if (result.next()) {
+					
 					String RTN = result.getString(1);
 					String RTE = result.getString(2);
 					System.out.println("locality coord: "+RTN + ", " +RTE);
 					Point p = new Point(Integer.parseInt(RTE), Integer.parseInt(RTN));
 					GUI.canvas.focus(p);
 					GUI.canvas.setCoordinate(p);
+					if (distanceI>0) {
+						System.out.println("lägger till sträck för distanc, direction. dir: ");
+						//Distance(String name, Point c, int dist, String direction)
+						//GUI.canvas.getLayer("distance");
+						
+						System.out.println(distanceI);
+						System.out.println(directionS);
+						GUI.canvas.delLayer("distance");
+						GUI.canvas.addLayerTop(new Distance("distance",p,distanceI,directionS));
+					}
 				}
 			} catch (SQLException e1) {
 				e1.printStackTrace();

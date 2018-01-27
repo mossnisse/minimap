@@ -35,7 +35,6 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 
 public class GUI implements ActionListener, ItemListener, MouseListener, MouseWheelListener, NActionListener {
-
 	static JFrame frame;
 	public static Canvas canvas;
 	static Point coord;

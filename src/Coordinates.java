@@ -1,6 +1,5 @@
 import geometry.Point;
 
-
 public class Coordinates {
 	private Double north, east;
 	
@@ -30,6 +29,7 @@ public class Coordinates {
 		return east;
 	}
 	
+	//konverterar koordinater till RT90 från WGS84
 	public Coordinates convertRT90() {
 		Double k0xa = 6.3674848719179137e6;
 		Double FN = -667.711;
@@ -60,6 +60,8 @@ public class Coordinates {
 		return new Coordinates(Math.round(rnorth), Math.round(reast));
 	}
 	
+	
+	//konverterar koordinater till WGS84 från RT90
 	public Coordinates convertWGS84() {
 		double x = north;
 	    double y = east;
@@ -77,6 +79,41 @@ public class Coordinates {
 	    double qs = Math.asin(Math.sin(xp)/Math.cosh(np));
 	    double rnorth = (qs + Math.sin(qs)*Math.cos(qs)*(0.00673949676 -0.00005314390556 * Math.pow(Math.sin(qs),2)) + 5.74891275E-7 * Math.pow(Math.sin(qs),4)) * 180/Math.PI;
 	    return new Coordinates(rnorth,reast);
+	}
+	
+	// flyttar koordinaten distance i riktning direction. koordinaterna ska vara typ WGS84
+	public Coordinates move(int distance, String direction) {
+		double bearing =0;
+		switch (direction) {
+            case "N": bearing = 0; break;
+            case "NNE": bearing = 22.5; break;
+            case "NE": bearing = 45; break;
+            case "ENE": bearing = 67.5; break;
+            case "E": bearing = 90; break;
+            case "ESE": bearing = 110.5; break;
+            case "SE": bearing = 135; break;
+            case "SSE": bearing = 157.5; break;
+            case "S": bearing = 180; break;
+            case "SSW": bearing = 202.5; break;
+            case "SW": bearing = 225; break;
+            case "WSW": bearing = 247.5; break;
+            case "W": bearing = 270; break;
+            case "WNW": bearing = 292.5; break;
+            case "NW": bearing = 315; break;
+            case "NNW": bearing = 337.5; break;
+		}
+			
+		 double brngRad = Math.toRadians(bearing);
+		 double latRad = Math.toRadians(north);
+		 double lonRad = Math.toRadians(east);
+		 double earthRadius = 6371000;
+		 double distFrac = distance / earthRadius;
+		    // Haversine - räknar med att gjorden är helt sfärisk men det borde duga.
+		 double latitudeResult = Math.asin(Math.sin(latRad) * Math.cos(distFrac) + Math.cos(latRad) * Math.sin(distFrac) * Math.cos(brngRad));
+		 double a = Math.atan2(Math.sin(brngRad) * Math.sin(distFrac) * Math.cos(latRad), Math.cos(distFrac) - Math.sin(latRad) * Math.sin(latitudeResult));
+		 double longitudeResult = (lonRad + a + 3 * Math.PI) % (2 * Math.PI) - Math.PI;
+		    //System.out.println("latitude: " + Math.toDegrees(latitudeResult) + ", longitude: " + Math.toDegrees(longitudeResult));
+		return new Coordinates(Math.toDegrees(latitudeResult), Math.toDegrees(longitudeResult));
 	}
 	
 	static private int alphaNum(Character a) {
@@ -153,9 +190,18 @@ public class Coordinates {
 		return es1*33+n1;
 	}
 	
+	public String toString() {
+		return "("+north+", "+east+")";
+	}
+	
 	public static void main(String[] args) {
 		Coordinates coord = new Coordinates(7030372, 1595257);
-		//Coordinates coord2 = coord.convertRT90();
+		Coordinates coord2 = coord.convertWGS84();
+		System.out.println("WGS84: " + coord2);
+		Coordinates coord3 = coord2.move(2000, "SW");
+		System.out.println("moved WGS84: " + coord3);
+		Coordinates coord4 = coord3.convertRT90();
+		System.out.println("moved RT90: " + coord4);
 		//coord.setRUBIN("27K9i");
 		//System.out.println("north: "+coord.getNorth()+", "+coord.getEast());
 		System.out.println(coord.getRUBIN());
