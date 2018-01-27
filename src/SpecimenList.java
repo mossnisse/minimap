@@ -34,6 +34,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	private static JComboBox<String> lokaler, direction;
 	private static int nr;
 	private static String specimenID, oldLocality, oldOverrideDistrict, oldOverrideProvince, lastLocality, lastDistance, lastDirection;
+	private static String latdir, latdeg, latmin, latsec, longdir, longdeg, longmin, longsec;
 	private static boolean comboenabled = false;
 	//private static SpecimenList exstatic;
 	private static String accnr, instCode, collCode; 
@@ -634,6 +635,15 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				RT90D.setText(result.getString(14)+", "+result.getString(15));
 				//41°25'01"N and 120°58'57"W
 				latlongD.setText(result.getString(17)+"°"+result.getString(18)+"'"+result.getString(19)+"''"+ result.getString(16) +" and "+result.getString(21)+"°"+result.getString(22)+"'"+result.getString(23)+"''"+result.getString(20));
+				//Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec
+				latdir = result.getString(16);
+				latdeg = result.getString(17);
+				latmin = result.getString(18);
+				latsec = result.getString(19);
+				longdir = result.getString(20);
+				longdeg = result.getString(21);
+				longmin = result.getString(22); 
+				longsec = result.getString(23);
 				specimenID = result.getString(12);
 				System.out.println("Specimen ID: "+specimenID);
 				
@@ -855,6 +865,21 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		}
 	}
 	
+	public void focuslatlong() {
+		System.out.println("Focus on lat/long");
+		try {
+			Coordinates c = new Coordinates(0,0);
+			c.latlong(Double.parseDouble(latdeg), Double.parseDouble(longdeg), Double.parseDouble(latmin), Double.parseDouble(longmin), Double.parseDouble(latsec), Double.parseDouble(longsec), latdir, longdir);
+			c.convertRT90();
+			Point p = new Point(c.toPoint());
+			GUI.canvas.focus(p);
+			GUI.canvas.setCoordinate(p);
+		}
+		catch (Exception e) {
+			System.out.println("Number format for lat/long is wrong");
+		}
+	}
+	
 	public void focusLocality() {
 		GUI.setCursorWait();
 		String lokal = (String) lokaler.getSelectedItem();
@@ -871,8 +896,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		}
 		System.out.println("focus Locality: "+lokal);
 		if (!lokal.equals("")) {
-			
-			
 			try {
 				String query = "SELECT RT90N, RT90E from locality where locality = ? and province = ? and district = ?";
 				System.out.println(query);
@@ -1165,6 +1188,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			focusRubin();
 		} else if ("latlongD".equals(ev.getActionCommand())) {
 			System.out.println("click lat/long: "+latlongD.getText());
+			focuslatlong();
 		} else if ("RT90D".equals(ev.getActionCommand())) {
 			focusRT90();
 		} else if ("focusL".equals(ev.getActionCommand())) {

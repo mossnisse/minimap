@@ -81,6 +81,29 @@ public class Coordinates {
 	    return new Coordinates(rnorth,reast);
 	}
 	
+	//function to pad nummers so RT90 coordinates have 7 digits
+	public void RT90add0(int north, int east) {
+		if (north<1000) {
+			north=north*1000;
+		}
+		if (east<1000) {
+			east=east*1000;
+		}
+	}
+	
+	//function to convert lat/long degrees, min sec to decimal degrees
+	public void latlong(double latdeg, double longdeg, double latmin, double longmin, double latsec, double longsec, String latdir, String longdir) {
+		 if (latdir == "S")
+			 this.north = -latdeg-latmin/60-latsec/3600;
+		 else
+			 this.north = latdeg+latmin/60+latsec/3600;
+		 if (longdir == "W")
+			 this.east =  -longdeg-longmin/60-longsec/3600;
+		 else
+			 this.east =  longdeg+longmin/60+longsec/3600;
+	}
+
+	
 	// flyttar koordinaten distance i riktning direction. koordinaterna ska vara typ WGS84
 	public Coordinates move(int distance, String direction) {
 		double bearing =0;
@@ -192,6 +215,10 @@ public class Coordinates {
 	
 	public String toString() {
 		return "("+north+", "+east+")";
+	}
+	
+	public Point toPoint() {
+		return new Point((int)Math.round(east), (int)Math.round(north));
 	}
 	
 	public static void main(String[] args) {
