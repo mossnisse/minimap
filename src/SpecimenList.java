@@ -33,7 +33,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	private static JTextPane collect_info;
 	private static JComboBox<String> lokaler, direction;
 	private static int nr;
-	private static String specimenID, oldLocality, oldOverrideDistrict, oldOverrideProvince, lastLocality, lastDistance, lastDirection;
+	private static String specimenID, oldLocality, oldOverrideDistrict, oldOverrideProvince, lastLocality, lastDistance, lastDirection, lastODistrict, lastOProvince;
 	private static String latdir, latdeg, latmin, latsec, longdir, longdeg, longmin, longsec;
 	private static boolean comboenabled = false;
 	//private static SpecimenList exstatic;
@@ -791,6 +791,8 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		lastLocality = (String)lokaler.getSelectedItem();
 		lastDirection = (String) direction.getSelectedItem();
 		lastDistance = distance.getText();
+		lastODistrict = oDistrict.getText();
+		lastOProvince = oProvince.getText();
 		updateSpecimenLocality();
 		nr++;
 		cnr.setText(new Integer(nr).toString());
@@ -867,17 +869,16 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	
 	public void focuslatlong() {
 		System.out.println("Focus on lat/long");
-		try {
-			Coordinates c = new Coordinates(0,0);
-			c.latlong(Double.parseDouble(latdeg), Double.parseDouble(longdeg), Double.parseDouble(latmin), Double.parseDouble(longmin), Double.parseDouble(latsec), Double.parseDouble(longsec), latdir, longdir);
-			c.convertRT90();
-			Point p = new Point(c.toPoint());
-			GUI.canvas.focus(p);
-			GUI.canvas.setCoordinate(p);
-		}
-		catch (Exception e) {
-			System.out.println("Number format for lat/long is wrong");
-		}
+		Coordinates c = new Coordinates(0,0);
+		System.out.println("lat: "+latdeg+"long: "+longdeg);
+		c.latlong(latdeg, longdeg, latmin, longmin, latsec, longsec, latdir, longdir);
+		System.out.println(c);
+		c = c.convertRT90();
+		System.out.println(c);
+		Point p = new Point(c.toPoint());
+		System.out.println(p);
+		GUI.canvas.focus(p);
+		GUI.canvas.setCoordinate(p);
 	}
 	
 	public void focusLocality() {

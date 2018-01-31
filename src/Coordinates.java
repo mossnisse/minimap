@@ -91,6 +91,19 @@ public class Coordinates {
 		}
 	}
 	
+	private double parseDouble(String str) {
+		try {
+			str = str.replace(',', '.');
+			str = str.replace(" ", "");
+			return Double.parseDouble(str);
+		} catch(Exception e) {
+			return 0;
+		}
+	}
+	public void latlong(String latdeg, String longdeg, String latmin, String longmin, String latsec, String longsec, String latdir, String longdir) {
+		latlong(parseDouble(latdeg), parseDouble(longdeg), parseDouble(latmin), parseDouble(longmin), parseDouble(latsec), parseDouble(longsec), latdir, longdir);
+	}
+	
 	//function to convert lat/long degrees, min sec to decimal degrees
 	public void latlong(double latdeg, double longdeg, double latmin, double longmin, double latsec, double longsec, String latdir, String longdir) {
 		 if (latdir == "S")
