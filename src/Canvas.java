@@ -256,14 +256,19 @@ public class Canvas extends JPanel {
 		Graphics2D g2d = (Graphics2D) g;
 		
 		//g2d.drawImage(img, 100,100,null);
-		
-		for(Layer l: layers) {
-			//System.out.println("drawing: "+l.getName());
-			//System.out.println("ZoomL: "+zoomL);
-			if (l.isInZoomLevel(zoomL)) {
-			g2d.setColor(l.getColor());
-			l.draw(g2d, xShift, xScale, yShift, yScale, bounds);
+		try {
+			for(Layer l: layers) {
+				//System.out.println("drawing: "+l.getName());
+				//System.out.println("ZoomL: "+zoomL);
+				if (l.isInZoomLevel(zoomL)) {
+					g2d.setColor(l.getColor());
+					l.draw(g2d, xShift, xScale, yShift, yScale, bounds);
+				}
 			}
+		} 
+		catch(Exception e) {
+			System.out.println("error in Layer");
+			delLayer("LokalDB");
 		}
 		
 		if (coord != null) {
