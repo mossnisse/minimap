@@ -782,7 +782,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		case "Create lokality at marker":
 			createLokalAtCoord();
 			break;
-			
 	}
 	}
 }

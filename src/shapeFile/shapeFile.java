@@ -23,6 +23,12 @@ public class shapeFile {
 	Vector<dbfRecord> data;
 	byte dbfVersion;
 
+	public shapeFile(String filename) throws IOException {
+		this.filename = filename;
+		readShapeFile();
+		readDBF();
+	}
+	
 	static private void printHex(String name, int i) {
 		System.out.print(name + ": ");
 		System.out.printf("%08X ", i);
@@ -41,11 +47,6 @@ public class shapeFile {
 		System.out.println("");
 	}
 
-	public shapeFile(String filename) throws IOException {
-		this.filename = filename;
-		readShapeFile();
-		readDBF();
-	}
 
 	public Vector<FieldDescriptor> getFieldDescriptors() {
 		return descriptors;
@@ -85,7 +86,7 @@ public class shapeFile {
 		// printShpHeader();
 
 		if (shapeType == 1.0) {
-			System.out.println("Point file");
+			//System.out.println("Point file");
 			points = new Vector<PointESRI>();
 			while (br.available() != 0) {
 				// System.out.println("Point");
@@ -337,8 +338,8 @@ public class shapeFile {
 					py[i] = in.readInt();
 				}
 
-				System.out.println(name + " (" + x1 + ", " + y1 + ") (" + x2
-						+ ", " + y2 + ") " + numPoints);
+				/*System.out.println(name + " (" + x1 + ", " + y1 + ") (" + x2
+						+ ", " + y2 + ") " + numPoints);*/
 			}
 		}
 		in.close();

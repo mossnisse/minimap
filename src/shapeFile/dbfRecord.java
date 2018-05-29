@@ -42,6 +42,16 @@ public class dbfRecord {
 		//}
 	}
 	
+	public String toString() {
+		Iterator<String> itr = fdata.iterator();
+		String sv ="";
+		for (FieldDescriptor desc : descriptors) {
+			sv += desc.name+": ";
+			sv += itr.next()+"\n";
+		}
+		return sv;
+	}
+	
 	public void print() {
 		System.out.println("");
 		Iterator<String> itr = fdata.iterator();

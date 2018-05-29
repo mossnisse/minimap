@@ -41,6 +41,9 @@ public class PointESRI extends ShapeESRI{
 		this.y=y;
 	}
 	
+	public double distance(PointESRI point) {
+		return Math.sqrt(Math.pow((x-point.x),2)+Math.pow((y-point.y),2));
+	}
 	
 	public void print() {
 		System.out.println("Point("+x+", "+y+")");
