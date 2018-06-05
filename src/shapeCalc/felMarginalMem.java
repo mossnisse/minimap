@@ -2,39 +2,71 @@ package shapeCalc;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Iterator;
-import java.util.Vector;
 import shapeFile.PointESRI;
 import shapeFile.PolygonESRI;
 import shapeFile.ReccordESRI;
 import shapeFile.dbfRecord;
-import shapeFile.shapeFile;
 import shapeFile.shapeReader;
 
 public class felMarginalMem {
 	public static void main(String[] args) {
 		try {
-			shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/Centroids/ProvinceCentroids.shp");
-			shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/gadm36_1.shp");
-			PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/ProvinsList.csv", "UTF-8");
+			
+			
+			// Provinser Sverige
+			shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/ProvinceWGS84UTF8Centroids.shp");
+			shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/ProvinceWGS84UTF8.shp");
+			PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/SwedenProvinceList.csv", "UTF-8");
+			
+			// District
+			//shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/Centroids/DistrictCentroids.shp");
+			//shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/gadm36_2.shp");
+			//PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/DistrictList.csv", "UTF-8");
+			
+			
+			// Provinser
+			//shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/Centroids/ProvinceCentroids.shp");
+			//shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/gadm36_1.shp");
+			//PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/ProvinsList.csv", "UTF-8");
+			
+			//Countries
+			//shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/Centroids/CountryCentroids.shp");
+			//shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/gadm36_0.shp");
+			//PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/CountryList.csv", "UTF-8");
+			
+			
+			Iterator<ReccordESRI> polypoly_itr = shapeReaderPolygon.iterator();
 			
 			System.out.println("Testar point filer");
-			writer.println("Country, X, Y, maxdist, maxX, maxY, minX, minY");
+			
+			
+			
+			//District
+			//writer.println("Country,Province,District,alt_names,native_name,TypeEng,TypeNative,Code,X,Y,maxdist,maxX,maxY,minX,minY");
+			
+			//Provinser
+			writer.println("\"Country\",\"Province\",\"alt_names\",\"native_name\",\"TypeEng\",\"TypeNative\",Code,X,Y,maxdist,maxX,maxY,minX,minY");
+			
+			//Countries
+			//writer.println("\"Country\",Code,X,Y,maxdist,maxX,maxY,minX,minY");
+			
 			for (ReccordESRI pointR : shapeReaderPoint) {
-				
+				ReccordESRI polygonRec = polypoly_itr.next();
 				dbfRecord pointdbf = pointR.DBF;
+				PointESRI pointRecord = pointR.point;
+				PolygonESRI polygonRecord = polygonRec.polygon;
+				System.out.println();
 				System.out.println(pointdbf);
-			    System.out.println(item.toString());
-			    PolygonESRI polygon = polypoly_itr.next();
-			    //System.out.println(polydbf_itr.next());
-			    System.out.println(polygon);
-			    PointESRI[] poly_points = polygon.getPoints();
+				System.out.println(pointRecord);
+				System.out.println(polygonRecord);
+			    PointESRI[] poly_points = polygonRecord.getPoints();
 			    double max_dist = 0;
 			    double maxy =-10000;
 			    double maxx =-10000;
 			    double miny =10000;
 			    double minx =10000;
 			    for (PointESRI poly_point: poly_points) {
-			    	double dist = wgs84_distance(poly_point, item);
+			    	double dist = wgs84_distance(poly_point, pointRecord);
 			    	if (max_dist<dist) max_dist=dist;
 			    	if (maxy<poly_point.getY()) maxy=poly_point.getY();
 			    	if (maxx<poly_point.getX()) maxx=poly_point.getX();
@@ -42,7 +74,16 @@ public class felMarginalMem {
 			    	if (minx>poly_point.getX()) minx=poly_point.getX();
 			    }
 			    System.out.println("max distance: "+max_dist);
-			    writer.println(pointdbf.getField(1)+", "+item.getX()+", "+item.getY()+", "+max_dist+", "+maxx+", "+maxy+", "+minx+", "+miny);
+			    
+			    //Provinser Sverige
+			   writer.println("\"Sweden\",\""+pointdbf.getField(0)+"\",\"\",\"\",\"\",\"\",\"\","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
+			    
+			    // Countries
+			   // writer.println("\""+pointdbf.getField(1)+"\","+pointdbf.getField(0)+","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
+			    //Provinser
+			    //writer.println("\""+pointdbf.getField(1)+"\",\""+pointdbf.getField(3)+"\",\""+pointdbf.getField(4)+"\",\""+pointdbf.getField(5)+"\",\""+pointdbf.getField(7)+"\",\""+ pointdbf.getField(6)+"\","+pointdbf.getField(9)+","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
+			   //District 
+			   // writer.println("\""+pointdbf.getField(1)+"\",\""+pointdbf.getField(3)+"\",\""+pointdbf.getField(6)+"\",\""+pointdbf.getField(7)+"\",\""+pointdbf.getField(8)+"\",\""+pointdbf.getField(10)+"\",\""+ pointdbf.getField(9)+"\","+pointdbf.getField(12)+","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
 			}
 			writer.close();
 		} catch (IOException e) {
