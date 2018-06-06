@@ -26,7 +26,7 @@ public class Geojson {
 		try {
 			
 			//BufferedReader br = new BufferedReader(new FileReader("C:/Users/nisern99/Documents/sockenkartor/Provinces.geojson"));
-			Scanner scan = new Scanner(new File("C:/Users/nisern99/Documents/sockenkartor/Provinces.geojson"), "UTF-8");
+			Scanner scan = new Scanner(new File("C:/Users/nisern99/Documents/sockenkartor/Provinces2.geojson"), "UTF-8");
 			//Scanner sc = new Scanner(new FileInputStream(file), "UTF-8");
 			String line;
 			//String jsonstart = "{\"type\":\"FeatureCollection\",\"features\":[{\"geometry\":{\"type\":\"\"MultiPolygon\",\"coordinates\":\",\"coordinates\":";
@@ -51,17 +51,23 @@ public class Geojson {
 				line = scan.next();
 				String name = line.substring(14);
 				 System.out.println("Name"+i+": "+name);
-				 scan.useDelimiter(Pattern.compile("\"MultiPolygon\""));
+				 scan.useDelimiter(Pattern.compile("\"MultiPolygon\"|} }]}")); //alt "} }]}"
+
 				 scan.next();
 				 scan.useDelimiter(Pattern.compile("\\} \\}"));
 				 line = scan.next();
 				 String data = line.substring(30);
+				 data = data.replace(" ", "");
 				 String json = jsonstart+data+jsonend;
 				// System.out.println("Data: "+json);
-				 
+				 try {
 				statement.setString(1, json);
 				statement.setString(2, name);
 				statement.execute();
+				 } catch(SQLException e) {
+					 System.out.println("lyckades inte sätta in: "+name);
+					 e.printStackTrace();
+				 }
 			    i++;
 			}
 			} catch (SQLException e) {
