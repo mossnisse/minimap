@@ -1,0 +1,81 @@
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Scanner;
+import java.util.regex.Pattern;
+
+public class Geojson {
+	
+	class JsonCoord {
+		public double latitude, longitude;
+	}
+	
+	class JsonPoly {
+		JsonCoord[] jsonCoord;
+	}
+	
+	class JsonMPoly {
+		JsonPoly[] jsonPoly;
+	}
+	
+	public static void main(String[] args) {
+		try {
+			
+			//BufferedReader br = new BufferedReader(new FileReader("C:/Users/nisern99/Documents/sockenkartor/Provinces.geojson"));
+			Scanner scan = new Scanner(new File("C:/Users/nisern99/Documents/sockenkartor/Provinces.geojson"), "UTF-8");
+			//Scanner sc = new Scanner(new FileInputStream(file), "UTF-8");
+			String line;
+			//String jsonstart = "{\"type\":\"FeatureCollection\",\"features\":[{\"geometry\":{\"type\":\"\"MultiPolygon\",\"coordinates\":\",\"coordinates\":";
+			//String jsonstart = "{\"type\": \"MultiPolygon\",\"coordinates\":";
+			String jsonstart = "{\"type\":\"FeatureCollection\",\"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":";
+			String jsonend = "}}]}";
+			//String jsonend = "}";
+			
+			try {
+				//Connection conn = MYSQLConnection.getConn();
+				String url = "jdbc:mysql://130.239.50.18:3306/samhall";
+				String user = "root";
+				Connection conn = DriverManager.getConnection(url, user, "");
+				String sqlstmt = "update provinces set geojson =? where province =?";
+				 PreparedStatement statement = conn.prepareStatement(sqlstmt);
+			 
+			int i=1;
+			while (scan.hasNext()) {
+				scan.useDelimiter(Pattern.compile("\"FlProvins\": \""));
+				scan.next();
+				scan.useDelimiter(Pattern.compile("\","));
+				line = scan.next();
+				String name = line.substring(14);
+				 System.out.println("Name"+i+": "+name);
+				 scan.useDelimiter(Pattern.compile("\"MultiPolygon\""));
+				 scan.next();
+				 scan.useDelimiter(Pattern.compile("\\} \\}"));
+				 line = scan.next();
+				 String data = line.substring(30);
+				 String json = jsonstart+data+jsonend;
+				// System.out.println("Data: "+json);
+				 
+				statement.setString(1, json);
+				statement.setString(2, name);
+				statement.execute();
+			    i++;
+			}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			scan.close();
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+}
