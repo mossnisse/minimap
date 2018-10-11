@@ -107,14 +107,16 @@ public class MYSQLTable implements Layer {
 						String sizestr = result.getString(4);
 						int size = (int) (Integer.parseInt(sizestr)*xScale);
 						g2d.drawOval(x-size,y-size,size*2,size*2);
-						System.out.println("Scale: "+xScale);
-						System.out.println("Size: "+sizestr);
-						g2d.drawString(name+"+",x,y);
+						//System.out.println("Scale: "+xScale);
+						//System.out.println("Size: "+sizestr);
+						g2d.drawString(name,x,y);
 					  }  
 					  catch(NumberFormatException nfe)  
 					  {  
-						  System.out.println("No Size");
-						  g2d.drawString(name+"-",x,y);
+						  //System.out.println("No Size");
+						  g2d.setColor(Color.green);
+						  g2d.drawString(name,x,y);
+						  g2d.setColor(color);
 					  }  
 					//g2d.setColor(Color.black);
 				//}
@@ -194,7 +196,7 @@ public class MYSQLTable implements Layer {
 					nID = ID;
 				}
 			}
-			System.out.println("nearest: "+nID + " dist: "+ndist);
+			//System.out.println("nearest: "+nID + " dist: "+ndist);
 			return nID;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block

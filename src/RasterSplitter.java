@@ -1,6 +1,5 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -10,12 +9,8 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
-
 import javax.imageio.ImageIO;
-
 import shapeFile.DataInputStreamSE;
-
-
 
 public class RasterSplitter {
 	
@@ -23,7 +18,7 @@ public class RasterSplitter {
 		//chunkifyFile("..\\Översiktskartan\\oversiktskartan_Gsr.tif", "..\\test\\");
 		//combineSq("..\\test\\");
 		
-		chunkifyAll("..\\Översiktskartan\\", "..\\test\\");
+		chunkifyAll("F:\\Kartor\\Vägkartan\\", "pyramids\\");
 		//combine("..\\test\\185(0).jpg","..\\test\\185(1).jpg");
 	}
 
@@ -139,6 +134,7 @@ public class RasterSplitter {
 				chunkifyFile(inDir+fileEntry.getName(),outDir);
 			}
 		}
+		System.out.println("done al files");
 	}
 	
 	static public void chunkifyFile(String mapFile, String outDir) throws IOException {
