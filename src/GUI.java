@@ -54,7 +54,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		frame.add(canvas);
 		canvas.addMouseListener(gui);
 		canvas.addMouseWheelListener(gui);
-		coord = new Point(0, 0);
+		//coord = new Point(0, 0);
 		// Display the window.
 		frame.setSize(1000, 1000);
 		frame.setVisible(true);

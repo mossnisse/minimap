@@ -10,6 +10,7 @@ public class Coordinates {
 	private static double sweref99TM_scale = 0.9996;
 	private static double sweref99TM_axis = 6378137.0; // GRS 80.
 	private static double sweref99TM_flattening = 1.0 / 298.257222101; // GRS 80.
+	/*
 	private static double RT90_falseNorthing;
 	private static double RT90_false_easting;
 	private static double RT90_centralMeridian;
@@ -22,6 +23,7 @@ public class Coordinates {
 	private static double RT90Bezzel_scale;
 	private static double RT90Bezzel_axis;
 	private static double RT90Bezzel_flattening;
+	*/
 	
 	private static double math_sinh(double value) {
 	     return 0.5 * (Math.exp(value) - Math.exp(-value));

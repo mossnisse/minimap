@@ -82,7 +82,7 @@ public class RasterFil implements Layer {
 		double x2 = x+width*xp;
 		double y2 = y+height*yp;
 		box = new BoundingBox(new Point((int) x,(int) y2), new Point((int) x2, (int) y) );
-		//System.out.println(box);
+		//System.out.println("raster box: "+box);
 	}
 
 	@Override
