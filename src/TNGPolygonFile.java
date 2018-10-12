@@ -247,20 +247,76 @@ public class TNGPolygonFile implements Layer{
 		}
 	}
 	
+	/*
+	public void convertCoordsysrt90toSweref99TM() {
+		for(Polygon pr:provinces) {
+			for(Point p:pr.getPoints()) {
+				Coordinates c = new Coordinates((double)p.getY(),(double)p.getX());
+				Coordinates wgs84 = c.convertWGS84();
+				Coordinates sweref99TM= Coordinates.convertToSweref99TMFromWGS84(wgs84);
+				Point p2 = new Point((int)Math.round(sweref99TM.getEast()),(int)Math.round(sweref99TM.getNorth()));
+				//System.out.println(p);
+				//System.out.println(p2);
+			}
+		}
+	}*/
+	
+	public void saveFileConvert(String filename) throws IOException {
+		DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
+		out.writeInt(5);  // shape type == Polygon
+		out.writeInt(provinces.length);  // number of Polygons
+		out.writeInt(nameLength);  // name field length
+		for (Province prov : provinces) {
+			//int padlength = 50-prov.getName().length();
+			String name = String.format("%1$-" +  50 + "s", prov.getName());
+			//System.out.println("padded name:" + "\""+name+ "\"" + " lenght =" + prov.getName().length()+ " padlenght: "+padlength+ " padded lenght: "+  name.length());
+			out.writeBytes(name);
+			// System.out.println(record.getField(nameField));
+			BoundingBox box = prov.getBoundingBox();
+			Point p1 = box.getP1();
+			Point p2 = box.getP2();
+			Coordinates c1 = new Coordinates((double)p1.getY(),(double)p1.getX());
+			Coordinates wgs84_1 = c1.convertWGS84();
+			Coordinates sweref99TM_1= Coordinates.convertToSweref99TMFromWGS84(wgs84_1);
+			Point ps1 = new Point((int)Math.round(sweref99TM_1.getEast()),(int)Math.round(sweref99TM_1.getNorth()));
+			Coordinates c2 = new Coordinates((double)p2.getY(),(double)p2.getX());
+			Coordinates wgs84_2 = c2.convertWGS84();
+			Coordinates sweref99TM_2= Coordinates.convertToSweref99TMFromWGS84(wgs84_2);
+			Point ps2 = new Point((int)Math.round(sweref99TM_2.getEast()),(int)Math.round(sweref99TM_2.getNorth()));
+			out.writeInt(ps1.getX());
+			out.writeInt(ps1.getY());
+			out.writeInt(ps2.getX());
+			out.writeInt(ps2.getY());
+			out.writeInt(prov.getNumParts());
+			out.writeInt(prov.getNumPoints());
+			for (int part : prov.getParts()) {
+				out.writeInt(part);
+			}
+			for (Point p : prov.getPoints()) {
+				Coordinates c = new Coordinates((double)p.getY(),(double)p.getX());
+				Coordinates wgs84 = c.convertWGS84();
+				Coordinates sweref99TM= Coordinates.convertToSweref99TMFromWGS84(wgs84);
+				Point ps = new Point((int)Math.round(sweref99TM.getEast()),(int)Math.round(sweref99TM.getNorth()));
+				out.writeInt((int) Math.round(ps.getX()));
+				out.writeInt((int) Math.round(ps.getY()));
+			}
+		}
+		out.close();
+	}
+	
+	
 	public static void main(String[] args) {
 		TNGPolygonFile poly;
 		try {
-			//poly = new TNGPolygonFile("socknar.tng");
-			//poly.calcSizes();
 			poly = new TNGPolygonFile("provinser.tng");
-			poly.correctProvNames();
-			poly.saveFile("provinser2.tng");
+
+			//poly = new TNGPolygonFile("socknar.tng");
+			
+			poly.saveFileConvert("provinserSWEREF99TM.tng");
+			//poly.saveFileConvert("socknarSWEREF99TM.tng");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
 	}
-	 
 }

@@ -40,15 +40,30 @@ public class Canvas extends JPanel {
 		layers = new ArrayList<Layer>();
 		try {
 			
+			TNGPolygonFile prFile2 = new TNGPolygonFile("provinserSWEREF99TM.tng");
+			prFile2.setColor(Color.black);
+			prFile2.setName("provinserSweref99TM");
+			addLayerBotom(prFile2);
+			
+			/*
 			TNGPolygonFile prFile = new TNGPolygonFile("provinser.tng");
 			prFile.setColor(Color.blue);
 			prFile.setName("provinser");
 			addLayerBotom(prFile);
+			*/
 			
+			/*
 			TNGPolygonFile socFile = new TNGPolygonFile("socknar.tng");
 			socFile.setColor(Color.red);
 			socFile.setName("socknar");
-			addLayerBotom(socFile);
+			addLayerBotom(socFile);*/
+			
+			/*
+			TNGPolygonFile socFile = new TNGPolygonFile("socknarSWEREF99TM.tng");
+			socFile.setColor(Color.red);
+			socFile.setName("socknar");
+			addLayerBotom(socFile);*/
+			
 
 			H2Table od = new H2Table("ortnamnsDB");
 			od.setColor(Color.green);
@@ -64,11 +79,11 @@ public class Canvas extends JPanel {
 			md.setMaxZoomL(40);
 			addLayerBotom(md);
 			
-			/*
+			
 			Topoweb tb = new Topoweb();
 			tb.setName("TopoWeb");
 			md.setHidden(false);
-			addLayerBotom(tb);*/
+			addLayerBotom(tb);
 			
 			/*
 			RasterFil raster5 = new RasterFil("..\\Vägkartan\\vagkartan_Gtl.tif");

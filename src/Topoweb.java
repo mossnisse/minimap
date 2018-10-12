@@ -70,7 +70,7 @@ public class Topoweb implements Layer{
 		int tileWidth = tileWidth(tilematrix); // meters
 		//System.out.println("tileWidth: "+tileWidth);
 		//System.out.println("tilecol: "+tilecol+" rilerow: "+tilerow);
-		return new BoundingBox(origoX+tileWidth*tilecol, origoY-tileWidth*tilerow,  origoX+tileWidth*(tilecol+1), origoY-tileWidth*(tilerow+1));
+		return new BoundingBox(origoX+tileWidth*tilecol, origoY-tileWidth*(tilerow+1),  origoX+tileWidth*(tilecol+1), origoY-tileWidth*(tilerow));
 	}
 	
 	@Override
@@ -84,7 +84,7 @@ public class Topoweb implements Layer{
 			int tilematrix = 1;  //zoomlevel?
 			//NW hörnet på kartan = 6734584, 616548
 			int tilerow = 2;	//South => sweref99TM 6733546  
-			int tilecol = 4;	//East  => sweref99TM 617897   
+			int tilecol = 3;	//East  => sweref99TM 617897   
 			
 			
 			

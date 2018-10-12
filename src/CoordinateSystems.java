@@ -54,8 +54,5 @@ public class CoordinateSystems {
 	static CoordinateSystem getType(CoordSystems c) {
 		return  coordsys.get(c);
 	}
-	
-	
-	
 }
 

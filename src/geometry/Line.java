@@ -79,6 +79,14 @@ public class Line {
 	public Point getPoint2() {
 		return p2;
 	}
+	
+	public void setPoint1(Point p) {
+		this.p1 = p;
+	}
+	
+	public void setPoint2(Point p) {
+		this.p2 = p;
+	}
 
 	public boolean intersects(Line n) {
 		double x1 = this.getPoint1().getX();
