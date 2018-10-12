@@ -12,11 +12,20 @@ public class felMarginalMem {
 	public static void main(String[] args) {
 		try {
 			
+			//District Sverige
+			shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/multi_centrwgs84.shp");
+			shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/Socken_multiwgs84.shp");
+			PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/sockendistances.csv", "UTF-8");
+			
+			//Provinser Finland
+			//shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/Finland/Biologicalprovinces_centroids.shp");
+			//shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/Finland/Biologicalprovinces.shp");
+			//PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/FinlandProvinceList.csv", "UTF-8");
 			
 			// Provinser Sverige
-			shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/ProvinceWGS84UTF8Centroids.shp");
-			shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/ProvinceWGS84UTF8.shp");
-			PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/SwedenProvinceList.csv", "UTF-8");
+			//shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/ProvinceWGS84UTF8Centroids.shp");
+			//shapeReader shapeReaderPolygon = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/ProvinceWGS84UTF8.shp");
+			//PrintWriter writer = new PrintWriter("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/SwedenProvinceList.csv", "UTF-8");
 			
 			// District
 			//shapeReader shapeReaderPoint = new shapeReader("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/Centroids/DistrictCentroids.shp");
@@ -41,11 +50,12 @@ public class felMarginalMem {
 			
 			
 			
+			
 			//District
-			//writer.println("Country,Province,District,alt_names,native_name,TypeEng,TypeNative,Code,X,Y,maxdist,maxX,maxY,minX,minY");
+			writer.println("Country,Län,District,X,Y,maxdist,maxX,maxY,minX,minY");
 			
 			//Provinser
-			writer.println("\"Country\",\"Province\",\"alt_names\",\"native_name\",\"TypeEng\",\"TypeNative\",Code,X,Y,maxdist,maxX,maxY,minX,minY");
+			//writer.println("\"Country\",\"Province\",\"alt_names\",\"native_name\",\"TypeEng\",\"TypeNative\",Code,X,Y,maxdist,maxX,maxY,minX,minY");
 			
 			//Countries
 			//writer.println("\"Country\",Code,X,Y,maxdist,maxX,maxY,minX,minY");
@@ -74,9 +84,17 @@ public class felMarginalMem {
 			    	if (minx>poly_point.getX()) minx=poly_point.getX();
 			    }
 			    System.out.println("max distance: "+max_dist);
+			    System.out.println("maxX: "+maxx+" maxY: "+maxy+" minx: "+minx+" miny "+miny );
+			    
+			    
+			  //District Sverige
+				  writer.println("\"Sweden\",\""+pointdbf.getField(5)+"\",\""+pointdbf.getField(4)+"\","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
+			    
+			    //Provinser Finland
+			   // writer.println("\"Finland\",\""+pointdbf.getField(0)+"\",\"\",\"\",\"\",\"\",\"\","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
 			    
 			    //Provinser Sverige
-			   writer.println("\"Sweden\",\""+pointdbf.getField(0)+"\",\"\",\"\",\"\",\"\",\"\","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
+			   //writer.println("\"Sweden\",\""+pointdbf.getField(0)+"\",\"\",\"\",\"\",\"\",\"\","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);
 			    
 			    // Countries
 			   // writer.println("\""+pointdbf.getField(1)+"\","+pointdbf.getField(0)+","+pointRecord.getX()+","+pointRecord.getY()+","+max_dist+","+maxx+","+maxy+","+minx+","+miny);

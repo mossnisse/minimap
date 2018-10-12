@@ -10,18 +10,6 @@ import java.util.regex.Pattern;
 
 public class Geojson {
 	
-	class JsonCoord {
-		public double latitude, longitude;
-	}
-	
-	class JsonPoly {
-		JsonCoord[] jsonCoord;
-	}
-	
-	class JsonMPoly {
-		JsonPoly[] jsonPoly;
-	}
-	
 	public static void main(String[] args) {
 		try {
 			
