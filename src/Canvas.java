@@ -24,16 +24,16 @@ public class Canvas extends JPanel {
 		
 		//this.conn = conn;
 		// Sverige RT90
-		int xMin = 1200000;
+		/*int xMin = 1200000;
 		int xMax = 1900000;
 		int yMin = 6100000;
-		int yMax = 7693900;
+		int yMax = 7693900;*/
 		
 		// Sverige Sweref99TM
-		//int xMin = 194181;
-		//int xMax = 812496;
-		//int yMin = 6113836;
-		//int yMax = 7700000;
+		int xMin = 194181;
+		int xMax = 812496;
+		int yMin = 6113836;
+		int yMax = 7700000;
 		bounds = new BoundingBox(xMin,yMin,xMax,yMax);
 		coord = null;
 		
@@ -297,6 +297,7 @@ public class Canvas extends JPanel {
 		} 
 		catch(Exception e) {
 			System.out.println("error in Layer");
+			e.printStackTrace();
 			delLayer("LokalDB");
 		}
 		

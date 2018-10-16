@@ -50,18 +50,35 @@ public class Topoweb implements Layer{
 		
 		
 		public TileIndex[] getTileIndexes(BoundingBox box,int tilematrix) {
-			int x1 =box.getX1();  // in meters Sweref99TM
-			int y1 =box.getY1();
-			int x2 = box.getX2(); // in meters Sweref99TM
-			int y2 = box.getY2();
-			TileIndex[] indexes = new TileIndex[2];
+			int pxmin =box.getX1();  // in meters Sweref99TM
+			int pymin =box.getY1();
+			int pxmax = box.getX2(); // in meters Sweref99TM
+			int pymax = box.getY2();
+			System.out.println("px: ("+pxmin+"-"+pxmax+")");
+			System.out.println("py: ("+pymin+"-"+pymax+")");
 			
-			TileIndex tile = new TileIndex();
-			tile.setTileIndex(x1, y1, tilematrix);
-			indexes[0]=tile;
-			TileIndex tile2 = new TileIndex();
-			tile2.setTileIndex(x2, y2, tilematrix);
-			indexes[1]=tile2;
+			
+			TileIndex tp3 = new TileIndex();
+			tp3.setTileIndex(pxmin, pymax, tilematrix);
+			TileIndex tp4 = new TileIndex();
+			tp4.setTileIndex(pxmax, pymin, tilematrix);
+			System.out.println("tp3: "+tp3);
+			System.out.println("tp4: "+tp4);
+			int rowMin= tp3.row;
+			int rowMax=	tp4.row;
+			int colMin=	tp3.col;
+			int colMax=	tp4.col;
+			
+			int numTiles = (rowMax-rowMin+1)*(colMax-colMin+1);
+			System.out.println("numTiles: "+numTiles);
+			TileIndex[] indexes = new TileIndex[numTiles];
+			int i=0;
+			for(row = rowMin; row<rowMax+1; row++) {
+				for(col = colMin; col<colMax+1; col++) {
+					indexes[i]= new TileIndex(tilematrix, col, row);
+					i++;
+				}
+			}
 			//transform sweref99TM coordinate to tileIndex
 			return indexes;
 		}
@@ -85,6 +102,7 @@ public class Topoweb implements Layer{
 				URL path = new URL(url+key
 					+"/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX="
 					+index.zoomLevel+"&TILEROW="+index.row+"&TILECOL="+index.col+"&FORMAT=image/png");
+				//System.out.println(path);
 				Image img = ImageIO.read(path);
 				tiles.put(index, img);
 				return img;
@@ -163,20 +181,17 @@ public class Topoweb implements Layer{
 		return new BoundingBox(origoX+tileWidth*ind.col, origoY-tileWidth*(ind.row+1),  origoX+tileWidth*(ind.col+1), origoY-tileWidth*(ind.row));
 	}
 	
+	private static int log(int x, int base)
+	{
+	    return (int) (Math.log(x) / Math.log(base));
+	}
 	
-	/*
-	private static TileIndex[] getTileIndexes(BoundingBox box,int tilematrix) {
-		int x1 =box.getX1();  // in meters Sweref99TM
-		int y1 =box.getY1();
-		box.getX2(); // in meters Sweref99TM
-		TileIndex[] indexes = new TileIndex[1];
-		
-		TileIndex tile = new TileIndex();
-		tile.setTileIndex(x1, y1, tilematrix);
-		indexes[0]=tile;
-		//transform sweref99TM coordinate to tileIndex
-		return indexes;
-	}*/
+	private static int tileMatrix(int tileWidth) {
+		//return 1048576/(int)(Math.pow((double)2,(double)tilematrix));
+		int m = log(1048576/tileWidth,2);
+		if (m>9) m=9;
+		return m;
+	}
 	
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) throws Exception {
@@ -186,61 +201,38 @@ public class Topoweb implements Layer{
 			int tilesize = 256; //pixlar
 			//int tilerow = 862;	//South => sweref99TM 6733546  
 			//int tilecol = 887;	//East  => sweref99TM 617897 
-			int tilematrix = 5;  //zoomlevel?
-			//NW hörnet på kartan = 6734584, 616548
-			int tilerow = 2;	//South => sweref99TM 6733546  
-			int tilecol = 3;	//East  => sweref99TM 617897   
-			
-			TileIndex test = new TileIndex(tilematrix,tilecol,tilerow);
-			
+			int tilematrix = 0;  //zoomlevel?
+			//NW hörnet på kartan = 6734584, 616548			
 			//origo 8500000; -1200000;  // övre vänstra hörnet
 			//tilematrix == 0 => 4096 m/pixel
 			//tilematrix == 1 => 2048 m/pixel
 			//tilematrix == 2 => 1024 m/pixel
 			 
 			//int resolution = 4096 /tilematrix^2; // m/pixel;
+			System.out.println("xScale: "+xScale);
+			System.out.println("1/xScale: "+1/xScale);
+			int tileWidth = tileWidth(tilematrix);
+			System.out.println("tileWidth: "+tileWidth);
+			int calcTilematrix = tileMatrix((int)Math.round (1/xScale*tilesize));
 			
-			/*
-			BoundingBox box = tileBounds(tilerow, tilecol, tilematrix);
+			System.out.println("calc tile matrix: " + calcTilematrix);
 			
-			int x1 = (int) ((box.getX1()*xScale)+xShift);
-			int y1 = (int) ((box.getY1()*yScale)+yShift);
-			int x2 = (int) ((box.getX2()*xScale)+xShift);
-			int y2 = (int) ((box.getY2()*yScale)+yShift);*/
-			
-			//System.out.println("x1:"+x1+", y1:"+(y2)+", x2:"+(x2-x1)+", y2:"+(y1-y2));
-			 ///?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX=9&TILEROW=862&TILECOL=887&FORMAT=image/png";
-			/*URL path = new URL(url+key
-					+"/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX="
-					+tilematrix+"&TILEROW="+tilerow+"&TILECOL="+tilecol+"&FORMAT=image/png");
-			System.out.println(path);*/
-			//System.out.println("BoundingBox/m: "+box);
-			//System.out.println("xScale: "+xScale+" yScale: "+yScale+ " xShift: "+ xShift+" yShift: "+ yShift);
-			//System.out.println("BoundingBox/pixel: "+x1+", "+y1+", "+x2+", "+y2);
-			//URL url = new URL("http://bks6.books.google.ca/books?id=5VTBuvfZDyoC&printsec=frontcover&img=1& zoom=5&edge=curl&source=gbs_api");
-			//Image img = ImageIO.read(path);
-			
-			//Image img = tileBuffer.getTile(new TileIndex(tilematrix,tilecol,tilerow));
-			//g2d.drawImage(img,x1,y2,x2-x1,y1-y2,null);
+			tilematrix = calcTilematrix;
 			
 			TileIndex bla = new TileIndex();
 			TileIndex[] indexes = bla.getTileIndexes(bounds,tilematrix);
-			//TileIndex[] indexes = new TileIndex[3];
-			//indexes[0] = new TileIndex(1,3,1);
-			//indexes[1] = new TileIndex(1,3,2);
-			//indexes[2] = new TileIndex(1,3,3);
 			
 			for (TileIndex ind: indexes) {
-				System.out.println("tile index: "+ind);
+				//System.out.println("tile index: "+ind);
 				if (ind.col>-1 & ind.row >-1) {
 					Image img = tileBuffer.getTile(ind);
 					BoundingBox box = getTileBounds(ind);
-					System.out.println("tile bounding box: "+box);
+					//System.out.println("tile bounding box: "+box);
 					int x1 = (int) ((box.getX1()*xScale)+xShift);
 					int y1 = (int) ((box.getY1()*yScale)+yShift);
 					int x2 = (int) ((box.getX2()*xScale)+xShift);
 					int y2 = (int) ((box.getY2()*yScale)+yShift);
-					System.out.println("BoundingBox/pixel: "+x1+", "+y1+", "+x2+", "+y2);
+					//System.out.println("BoundingBox/pixel: "+x1+", "+y1+", "+x2+", "+y2);
 					g2d.drawImage(img,x1,y2,x2-x1,y1-y2,null);
 				}
 			}
