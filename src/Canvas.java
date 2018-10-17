@@ -40,10 +40,10 @@ public class Canvas extends JPanel {
 		layers = new ArrayList<Layer>();
 		try {
 			
-			TNGPolygonFile prFile2 = new TNGPolygonFile("provinserSWEREF99TM.tng");
-			prFile2.setColor(Color.black);
-			prFile2.setName("provinserSweref99TM");
-			addLayerBotom(prFile2);
+			TNGPolygonFile prFile = new TNGPolygonFile("provinserSWEREF99TM.tng");
+			prFile.setColor(Color.black);
+			prFile.setName("provinser");
+			addLayerBotom(prFile);
 			
 			/*
 			TNGPolygonFile prFile = new TNGPolygonFile("provinser.tng");
@@ -58,11 +58,11 @@ public class Canvas extends JPanel {
 			socFile.setName("socknar");
 			addLayerBotom(socFile);*/
 			
-			/*
+			
 			TNGPolygonFile socFile = new TNGPolygonFile("socknarSWEREF99TM.tng");
 			socFile.setColor(Color.red);
 			socFile.setName("socknar");
-			addLayerBotom(socFile);*/
+			addLayerBotom(socFile);
 			
 
 			H2Table od = new H2Table("ortnamnsDB");

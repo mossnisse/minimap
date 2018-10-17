@@ -20,7 +20,7 @@ class CoordinateDialog extends JDialog
                    implements ActionListener,
                               PropertyChangeListener {
 	private static final long serialVersionUID = -4511067776450458493L;
-	private JTextField north, east, wnorth, weast, socken, provins, rubin;
+	private JTextField north, east, wnorth, weast, socken, provins, rubin, rt90North, rt90East;
     public JOptionPane optionPane;
     private TNGPolygonFile provinces, district;
     private Point p;
@@ -52,6 +52,8 @@ class CoordinateDialog extends JDialog
         provins = new JTextField(10);
         socken = new JTextField(10);
         rubin = new JTextField(10);
+        rt90North = new JTextField(10);
+        rt90East = new JTextField(10);
         
         cancel = new JButton("Cancel");
         
@@ -60,7 +62,7 @@ class CoordinateDialog extends JDialog
         }
 
         //Create an array of the text and components to be displayed.
-        Object[] array = {"RT90: North", north, "East", east, "WGS84 North", wnorth, "East", weast, "Provins", provins, "Socken", socken, "RUBIN", rubin};
+        Object[] array = {"Sweref99TM North", north, "East", east, "RT90: North", rt90North, "East", rt90East, "WGS84 North", wnorth, "East", weast, "Provins", provins, "Socken", socken, "RUBIN", rubin};
 
         //Create an array specifying the number of dialog buttons
         //and their text.
@@ -126,9 +128,16 @@ class CoordinateDialog extends JDialog
     	north.setText(String.valueOf(p.getY()));
     	east.setText(String.valueOf(p.getX()));
     	Coordinates c = new Coordinates(p.getY(),p.getX());
-    	Coordinates c2 = c.convertWGS84();
-    	wnorth.setText(String.valueOf(c2.getNorth()));
-    	weast.setText(String.valueOf(c2.getEast()));
+    	//Coordinates c2 = c.convertWGS84();
+    	Coordinates cwgs84 = Coordinates.convertToWGS84FromSweref99TM(c);
+    	wnorth.setText(String.valueOf(cwgs84.getNorth()));
+    	weast.setText(String.valueOf(cwgs84.getEast()));
+    	
+    	Coordinates cRT90 = cwgs84.convertRT90();
+ 
+    	rt90North.setText(String.valueOf(cRT90.getNorth()));
+    	rt90East.setText(String.valueOf(cRT90.getEast()));
+    	
     	TNGPolygonFile.Province pr = provinces.inPolygon(p);
     	if (pr != null) {
     		provins.setText(pr.getName());
@@ -141,7 +150,7 @@ class CoordinateDialog extends JDialog
     	} else {
     		socken.setText("utanför lager");
     	}
-    	rubin.setText(c.getRUBIN());
+    	rubin.setText(c.getRUBINfromSweref99TM());
     	
     }
     

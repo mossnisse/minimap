@@ -69,13 +69,13 @@ public class TNGPolygonFile implements Layer{
 			            new FileInputStream(fileName)));
 		in.readInt();
 		int nrRecords = in.readInt();
-		//System.out.println("nrRecords: "+nrRecords);
+		//System.out.println("Read nrRecords: "+nrRecords);
 		nameLength = in.readInt();
-		//System.out.println("nameLenght: "+nameLength);
+		//System.out.println("read nameLenght: "+nameLength);
 		provinces = new Province[nrRecords];
 		for (int i = 0; i < nrRecords; i++) {
 			String name = in.readString(nameLength).trim();
-			//System.out.println("name: "+name);
+			//System.out.println("Reads name: "+name);
 			int x1 = in.readInt();
 			int y1 = in.readInt();
 			int x2 = in.readInt();
@@ -96,6 +96,7 @@ public class TNGPolygonFile implements Layer{
 			}
 			provinces[i] = new Province(name, box, parts, points);
 		}
+		//System.out.println("Read nrRecords: "+nrRecords);
 		in.close();
 	}
 	
@@ -104,10 +105,12 @@ public class TNGPolygonFile implements Layer{
 		DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
 		out.writeInt(5);  // shape type == Polygon
 		out.writeInt(provinces.length);  // number of Polygons
+		System.out.println("Save length: "+provinces.length);
 		out.writeInt(nameLength);  // name field length
+		System.out.println("Save namelength: "+nameLength);
 		for (Province prov : provinces) {
 			//int padlength = 50-prov.getName().length();
-			String name = String.format("%1$-" +  50 + "s", prov.getName());
+			String name = String.format("%1$-" +  nameLength + "s", prov.getName());
 			//System.out.println("padded name:" + "\""+name+ "\"" + " lenght =" + prov.getName().length()+ " padlenght: "+padlength+ " padded lenght: "+  name.length());
 			out.writeBytes(name);
 			// System.out.println(record.getField(nameField));
@@ -266,10 +269,13 @@ public class TNGPolygonFile implements Layer{
 		out.writeInt(5);  // shape type == Polygon
 		out.writeInt(provinces.length);  // number of Polygons
 		out.writeInt(nameLength);  // name field length
+		System.out.println("Save length: "+provinces.length);
+		System.out.println("Save namelength: "+provinces.length);
 		for (Province prov : provinces) {
 			//int padlength = 50-prov.getName().length();
-			String name = String.format("%1$-" +  50 + "s", prov.getName());
+			String name = String.format("%1$-" +  nameLength + "s", prov.getName());
 			//System.out.println("padded name:" + "\""+name+ "\"" + " lenght =" + prov.getName().length()+ " padlenght: "+padlength+ " padded lenght: "+  name.length());
+			//System.out.println(name);
 			out.writeBytes(name);
 			// System.out.println(record.getField(nameField));
 			BoundingBox box = prov.getBoundingBox();
@@ -301,22 +307,23 @@ public class TNGPolygonFile implements Layer{
 				out.writeInt((int) Math.round(ps.getY()));
 			}
 		}
+		System.out.println("Save length: "+provinces.length);
 		out.close();
 	}
 	
 	
 	public static void main(String[] args) {
-		TNGPolygonFile poly;
+		/*TNGPolygonFile poly;
 		try {
-			poly = new TNGPolygonFile("provinser.tng");
+			//poly = new TNGPolygonFile("provinser.tng");
 
 			//poly = new TNGPolygonFile("socknar.tng");
 			
-			poly.saveFileConvert("provinserSWEREF99TM.tng");
+			//poly.saveFileConvert("provinserSWEREF99TM.tng");
 			//poly.saveFileConvert("socknarSWEREF99TM.tng");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}*/
 	}
 }

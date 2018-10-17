@@ -309,9 +309,22 @@ public class Coordinates {
 		east = 1202500+b*50000+d*5000.0;
 	}
 	
-	public String getRUBIN() {
+	public String getRUBINfromRT90() {
 		int n = (int)Math.round(north)-6050000;
 		int e = (int)Math.round(east)-1200000;
+		int n1 = n/50000;
+		int n2 = (n%50000)/5000;
+		String es1 = numAlphaU(e/50000);
+		String es2= numAlphaL((e%50000)/5000);
+		return n1+es1+n2+es2;
+	}
+	
+	public String getRUBINfromSweref99TM() {
+		Coordinates wgs84 = convertToWGS84FromSweref99TM(this);
+		Coordinates rt90 = wgs84.convertRT90();
+		
+		int n = (int)Math.round(rt90.north)-6050000;
+		int e = (int)Math.round(rt90.east)-1200000;
 		int n1 = n/50000;
 		int n2 = (n%50000)/5000;
 		String es1 = numAlphaU(e/50000);
