@@ -264,6 +264,8 @@ public class TNGPolygonFile implements Layer{
 		}
 	}*/
 	
+	
+// saves an .tng file with RT90 coordinates in Sweref99TM coordinates
 	public void saveFileConvert(String filename) throws IOException {
 		DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
 		out.writeInt(5);  // shape type == Polygon
@@ -282,12 +284,10 @@ public class TNGPolygonFile implements Layer{
 			Point p1 = box.getP1();
 			Point p2 = box.getP2();
 			Coordinates c1 = new Coordinates((double)p1.getY(),(double)p1.getX());
-			Coordinates wgs84_1 = c1.convertWGS84();
-			Coordinates sweref99TM_1= Coordinates.convertToSweref99TMFromWGS84(wgs84_1);
+			Coordinates sweref99TM_1= c1.convertToSweref99TMFromRT90();
 			Point ps1 = new Point((int)Math.round(sweref99TM_1.getEast()),(int)Math.round(sweref99TM_1.getNorth()));
 			Coordinates c2 = new Coordinates((double)p2.getY(),(double)p2.getX());
-			Coordinates wgs84_2 = c2.convertWGS84();
-			Coordinates sweref99TM_2= Coordinates.convertToSweref99TMFromWGS84(wgs84_2);
+			Coordinates sweref99TM_2 = c2.convertToSweref99TMFromRT90();
 			Point ps2 = new Point((int)Math.round(sweref99TM_2.getEast()),(int)Math.round(sweref99TM_2.getNorth()));
 			out.writeInt(ps1.getX());
 			out.writeInt(ps1.getY());
@@ -300,8 +300,7 @@ public class TNGPolygonFile implements Layer{
 			}
 			for (Point p : prov.getPoints()) {
 				Coordinates c = new Coordinates((double)p.getY(),(double)p.getX());
-				Coordinates wgs84 = c.convertWGS84();
-				Coordinates sweref99TM= Coordinates.convertToSweref99TMFromWGS84(wgs84);
+				Coordinates sweref99TM= c.convertToSweref99TMFromRT90();
 				Point ps = new Point((int)Math.round(sweref99TM.getEast()),(int)Math.round(sweref99TM.getNorth()));
 				out.writeInt((int) Math.round(ps.getX()));
 				out.writeInt((int) Math.round(ps.getY()));

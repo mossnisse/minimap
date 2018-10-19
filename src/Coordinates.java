@@ -25,31 +25,32 @@ public class Coordinates {
 	private static double RT90Bezzel_flattening;
 	*/
 	
-	private static double math_sinh(double value) {
+	private static double sinh(double value) {
 	     return 0.5 * (Math.exp(value) - Math.exp(-value));
 	}
 
-	private static double math_cosh(double value) {
+	private static double cosh(double value) {
 	     return 0.5 * (Math.exp(value) + Math.exp(-value));
 	}
 
-	private static double math_atanh(double value) {
+	private static double atanh(double value) {
 	     return 0.5 * Math.log((1.0 + value) / (1.0 - value));
 	}
-	
 	
 	public Coordinates(double north, double east) {
 		this.north = north;
 		this.east = east;
 	}
 	
-	public Coordinates(String rubin) {
-		setRUBIN(rubin);
+	public Coordinates(Point p) {
+		this.north = (double)p.getY();
+		this.east = (double)p.getX();
 	}
 	
-	private Double atanh(Double z) {
-		return Math.log((1+z)/(1-z))/2;
-	}
+	/*
+	public Coordinates(String rubin) {
+		setRUBIN(rubin);
+	}*/
 	
 	public void setCoordinate(double north, double east) {
 		this.north = north;
@@ -64,8 +65,12 @@ public class Coordinates {
 		return east;
 	}
 	
+	public Point getPoint() {
+		return new Point((int)Math.round(north),(int)Math.round(east));
+	}
+	
 	//konverterar koordinater till RT90 från WGS84
-	public Coordinates convertRT90() {
+	public Coordinates convertToRT90FromWGS84() {
 		Double k0xa = 6.3674848719179137e6;
 		Double FN = -667.711;			//false northing 
 		Double FE = 1.500064274e6;		//false easting 
@@ -97,7 +102,7 @@ public class Coordinates {
 	
 	
 	//konverterar koordinater till sweref99TM från wgs84 Sweref99 är så likt wgs84 så ingen konvertering mellan ellipsoider behövs
-	public static Coordinates convertToSweref99TMFromWGS84(Coordinates c) {
+	public Coordinates convertToSweref99TMFromWGS84() {
 		double e2 = sweref99TM_flattening * (2.0 - sweref99TM_flattening);
 	    double n = sweref99TM_flattening / (2.0 - sweref99TM_flattening);
 	    double a_roof = sweref99TM_axis / (1.0 + n) * (1.0 + n * n / 4.0 + n * n * n * n / 64.0);
@@ -110,8 +115,8 @@ public class Coordinates {
 	    double beta3 = 61.0 * n * n * n / 240.0 - 103.0 * n * n * n * n / 140.0;
 	    double beta4 = 49561.0 * n * n * n * n / 161280.0;
 			
-	    double phi = c.north * degToRad;
-        double lambda = c.east * degToRad;
+	    double phi = north * degToRad;
+        double lambda = east * degToRad;
         double lambda_zero = sweref99TM_centralMeridian;
 
         double phi_star = phi - Math.sin(phi) * Math.cos(phi) * (e2 +
@@ -120,24 +125,24 @@ public class Coordinates {
                 D * Math.pow(Math.sin(phi), 6));
         double delta_lambda = lambda - lambda_zero;
         double xi_prim = Math.atan(Math.tan(phi_star) / Math.cos(delta_lambda));
-        double eta_prim = math_atanh(Math.cos(phi_star) * Math.sin(delta_lambda));
+        double eta_prim = atanh(Math.cos(phi_star) * Math.sin(delta_lambda));
         double x = sweref99TM_scale * a_roof * (xi_prim +
-                beta1 * Math.sin(2.0 * xi_prim) * math_cosh(2.0 * eta_prim) +
-                beta2 * Math.sin(4.0 * xi_prim) * math_cosh(4.0 * eta_prim) +
-                beta3 * Math.sin(6.0 * xi_prim) * math_cosh(6.0 * eta_prim) +
-                beta4 * Math.sin(8.0 * xi_prim) * math_cosh(8.0 * eta_prim)) +
+                beta1 * Math.sin(2.0 * xi_prim) * cosh(2.0 * eta_prim) +
+                beta2 * Math.sin(4.0 * xi_prim) * cosh(4.0 * eta_prim) +
+                beta3 * Math.sin(6.0 * xi_prim) * cosh(6.0 * eta_prim) +
+                beta4 * Math.sin(8.0 * xi_prim) * cosh(8.0 * eta_prim)) +
         		sweref99TM_false_northing;
         double y = sweref99TM_scale * a_roof * (eta_prim +
-                beta1 * Math.cos(2.0 * xi_prim) * math_sinh(2.0 * eta_prim) +
-                beta2 * Math.cos(4.0 * xi_prim) * math_sinh(4.0 * eta_prim) +
-                beta3 * Math.cos(6.0 * xi_prim) * math_sinh(6.0 * eta_prim) +
-                beta4 * Math.cos(8.0 * xi_prim) * math_sinh(8.0 * eta_prim)) +
+                beta1 * Math.cos(2.0 * xi_prim) * sinh(2.0 * eta_prim) +
+                beta2 * Math.cos(4.0 * xi_prim) * sinh(4.0 * eta_prim) +
+                beta3 * Math.cos(6.0 * xi_prim) * sinh(6.0 * eta_prim) +
+                beta4 * Math.cos(8.0 * xi_prim) * sinh(8.0 * eta_prim)) +
         		sweref99TM_false_easting;
 		return new Coordinates(x, y);
 	}
 	
 	//konverterar koordinater till WGS84 från RT90
-	public Coordinates convertWGS84() {
+	public Coordinates convertToWGS84FromRT90() {
 		//double x = north;
 	    //double y = east;
 	    
@@ -158,7 +163,7 @@ public class Coordinates {
 	
 	
 	//konverterar koordinater till Sweref99  från sweref99TM Sweref99 är så likt wgs84 så ingen konvertering mellan ellipsoider behövs
-	public static Coordinates convertToWGS84FromSweref99TM(Coordinates c) {
+	public Coordinates convertToWGS84FromSweref99TM() {
 		  	double e2 = sweref99TM_flattening * (2.0 - sweref99TM_flattening);
 	        double n = sweref99TM_flattening / (2.0 - sweref99TM_flattening);
 	        double a_roof = sweref99TM_axis / (1.0 + n) * (1.0 + n * n / 4.0 + n * n * n * n / 64.0);
@@ -173,20 +178,20 @@ public class Coordinates {
 
 	        // Convert.
 	        double lambda_zero = sweref99TM_centralMeridian;
-	        double xi = (c.north - sweref99TM_false_northing) / (sweref99TM_scale * a_roof);
-	        double eta = (c.east - sweref99TM_false_easting) / (sweref99TM_scale * a_roof);
+	        double xi = (north - sweref99TM_false_northing) / (sweref99TM_scale * a_roof);
+	        double eta = (east - sweref99TM_false_easting) / (sweref99TM_scale * a_roof);
 	        double xi_prim = xi -
-	                delta1 * Math.sin(2.0 * xi) * math_cosh(2.0 * eta) -
-	                delta2 * Math.sin(4.0 * xi) * math_cosh(4.0 * eta) -
-	                delta3 * Math.sin(6.0 * xi) * math_cosh(6.0 * eta) -
-	                delta4 * Math.sin(8.0 * xi) * math_cosh(8.0 * eta);
+	                delta1 * Math.sin(2.0 * xi) * cosh(2.0 * eta) -
+	                delta2 * Math.sin(4.0 * xi) * cosh(4.0 * eta) -
+	                delta3 * Math.sin(6.0 * xi) * cosh(6.0 * eta) -
+	                delta4 * Math.sin(8.0 * xi) * cosh(8.0 * eta);
 	        double eta_prim = eta -
-	                delta1 * Math.cos(2.0 * xi) * math_sinh(2.0 * eta) -
-	                delta2 * Math.cos(4.0 * xi) * math_sinh(4.0 * eta) -
-	                delta3 * Math.cos(6.0 * xi) * math_sinh(6.0 * eta) -
-	                delta4 * Math.cos(8.0 * xi) * math_sinh(8.0 * eta);
-	        double phi_star = Math.asin(Math.sin(xi_prim) / math_cosh(eta_prim));
-	        double delta_lambda = Math.atan(math_sinh(eta_prim) / Math.cos(xi_prim));
+	                delta1 * Math.cos(2.0 * xi) * sinh(2.0 * eta) -
+	                delta2 * Math.cos(4.0 * xi) * sinh(4.0 * eta) -
+	                delta3 * Math.cos(6.0 * xi) * sinh(6.0 * eta) -
+	                delta4 * Math.cos(8.0 * xi) * sinh(8.0 * eta);
+	        double phi_star = Math.asin(Math.sin(xi_prim) / cosh(eta_prim));
+	        double delta_lambda = Math.atan(sinh(eta_prim) / Math.cos(xi_prim));
 	        double lon_radian = lambda_zero + delta_lambda;
 	        double lat_radian = phi_star + Math.sin(phi_star) * Math.cos(phi_star) *
 	                (Astar +
@@ -194,6 +199,20 @@ public class Coordinates {
 	                Cstar * Math.pow(Math.sin(phi_star), 4) +
 	                Dstar * Math.pow(Math.sin(phi_star), 6));
 	        return new Coordinates(lat_radian*radToDeg, lon_radian*radToDeg);
+	}
+	
+	
+	public Coordinates convertToRT90FromSweref99TM() {
+		Coordinates wgs84 = convertToWGS84FromSweref99TM();
+		//System.out.println("wgs84: "+wgs84);
+		return wgs84.convertToRT90FromWGS84();
+	}
+	
+	
+	public Coordinates convertToSweref99TMFromRT90() {
+		Coordinates wgs84 = convertToWGS84FromRT90();
+		return wgs84.convertToSweref99TMFromWGS84();
+		
 	}
 	
 	//function to pad nummers so RT90 coordinates have 7 digits
@@ -290,7 +309,7 @@ public class Coordinates {
 		return Character.toString ((char) i);
 	}
 	
-	public void setRUBIN(String rubin) {
+	public void setRUBINRT90(String rubin) {
 		//System.out.println("Rubin before remove \""+rubin+" \"");
 		rubin = rubin.replaceAll("\\s|\u00A0","");
 		if(!Character.isDigit(rubin.charAt(1))) {
@@ -309,6 +328,13 @@ public class Coordinates {
 		east = 1202500+b*50000+d*5000.0;
 	}
 	
+	public void setRUBINSweref99TM(String rubin) {
+		setRUBINRT90(rubin);
+		Coordinates sweref99tm = convertToSweref99TMFromRT90();
+		this.north = sweref99tm.north;
+		this.east = sweref99tm.east;
+	}
+	
 	public String getRUBINfromRT90() {
 		int n = (int)Math.round(north)-6050000;
 		int e = (int)Math.round(east)-1200000;
@@ -320,19 +346,12 @@ public class Coordinates {
 	}
 	
 	public String getRUBINfromSweref99TM() {
-		Coordinates wgs84 = convertToWGS84FromSweref99TM(this);
-		Coordinates rt90 = wgs84.convertRT90();
-		
-		int n = (int)Math.round(rt90.north)-6050000;
-		int e = (int)Math.round(rt90.east)-1200000;
-		int n1 = n/50000;
-		int n2 = (n%50000)/5000;
-		String es1 = numAlphaU(e/50000);
-		String es2= numAlphaL((e%50000)/5000);
-		return n1+es1+n2+es2;
+		Coordinates rt90 = convertToRT90FromSweref99TM();
+		//System.out.println("rt90: "+rt90);
+		return rt90.getRUBINfromRT90();
 	}
 	
-	public static String getRUBIN(Point p) {
+	public static String getRUBINfromRT90(Point p) {
 		int n = (int)Math.round(p.getY())-6050000;
 		int e = (int)Math.round(p.getX())-1200000;
 		int n1 = n/50000;
@@ -340,6 +359,12 @@ public class Coordinates {
 		String es1 = numAlphaU(e/50000);
 		String es2= numAlphaL((e%50000)/5000);
 		return n1+es1+n2+es2;
+	}
+	
+	public static String getRUBINfromSweref99TM(Point p) {
+		Coordinates sweref99TM = new Coordinates(p);
+		//System.out.println("Sweref99TM: "+sweref99TM);
+		return sweref99TM.getRUBINfromSweref99TM();
 	}
 	
 	static public String getRUBIN50(int east, int north) {
@@ -364,16 +389,16 @@ public class Coordinates {
 	
 	public static void main(String[] args) {
 		Coordinates coord = new Coordinates(60.96440289167661, 14.77666054636711);
-		Coordinates coord2 = convertToSweref99TMFromWGS84(coord);
+		//Coordinates coord2 = convertToSweref99TMFromWGS84(coord);
 		
 		System.out.println("WGS84: " + coord);
-		System.out.println("Sweref99TM: " + coord2);
+		//System.out.println("Sweref99TM: " + coord2);
 		
 		Coordinates coord3 = new Coordinates(6758843, 487907);
-		Coordinates coord4 = convertToWGS84FromSweref99TM(coord3);
+		//Coordinates coord4 = convertToWGS84FromSweref99TM(coord3);
 		
 		System.out.println("WGS84: " + coord3);
-		System.out.println("Sweref99TM: " + coord4);
+		//System.out.println("Sweref99TM: " + coord4);
 	}
 	
 }

@@ -39,8 +39,6 @@ class CoordinateDialog extends JDialog
         super(aFrame, true);
         setTitle("Coordinate");
         this.aFrame = aFrame;
-        
-     
         this.provinces = provinces;
         this.district = district;
         this.p = p;
@@ -127,16 +125,13 @@ class CoordinateDialog extends JDialog
     private void update() {
     	north.setText(String.valueOf(p.getY()));
     	east.setText(String.valueOf(p.getX()));
-    	Coordinates c = new Coordinates(p.getY(),p.getX());
-    	//Coordinates c2 = c.convertWGS84();
-    	Coordinates cwgs84 = Coordinates.convertToWGS84FromSweref99TM(c);
-    	wnorth.setText(String.valueOf(cwgs84.getNorth()));
-    	weast.setText(String.valueOf(cwgs84.getEast()));
-    	
-    	Coordinates cRT90 = cwgs84.convertRT90();
- 
-    	rt90North.setText(String.valueOf(cRT90.getNorth()));
-    	rt90East.setText(String.valueOf(cRT90.getEast()));
+    	Coordinates sweref99TM = new Coordinates(p.getY(),p.getX());
+    	Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
+    	Coordinates RT90 = wgs84.convertToRT90FromWGS84();
+    	wnorth.setText(String.valueOf(wgs84.getNorth()));
+    	weast.setText(String.valueOf(wgs84.getEast()));
+    	rt90North.setText(String.valueOf(RT90.getNorth()));
+    	rt90East.setText(String.valueOf(RT90.getEast()));
     	
     	TNGPolygonFile.Province pr = provinces.inPolygon(p);
     	if (pr != null) {
@@ -150,8 +145,7 @@ class CoordinateDialog extends JDialog
     	} else {
     		socken.setText("utanför lager");
     	}
-    	rubin.setText(c.getRUBINfromSweref99TM());
-    	
+    	rubin.setText(RT90.getRUBINfromRT90());
     }
     
     private void updateFromRubin() {
@@ -160,7 +154,7 @@ class CoordinateDialog extends JDialog
     	} else {
     		System.out.println("full gubbe");
     		Coordinates c = new Coordinates(0,0);
-    		c.setRUBIN(rubin.getText());
+    		c.setRUBINSweref99TM(rubin.getText());
     		p.setX((int) c.getEast());
     		p.setY((int) c.getNorth());
     		update();
@@ -192,7 +186,6 @@ class CoordinateDialog extends JDialog
     			setVisible(false);
             	dispose();
     		}
-        	
     	}
     }
 

@@ -164,7 +164,7 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 		String RT90Et = RT90E.getText();
 	
 		Coordinates c = new Coordinates(Double.parseDouble(RT90Nt), Double.parseDouble(RT90Et));
-		c = c.convertWGS84();
+		c = c.convertToWGS84FromSweref();
 		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
 		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
 		

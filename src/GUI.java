@@ -520,8 +520,11 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	public void showRubin(MouseEvent arg0) {
 		System.out.print("show RUBIN: ");
 		Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
-		String s =  Coordinates.getRUBIN(p);
-		System.out.print(s);
+		 String s = Coordinates.getRUBINfromSweref99TM(p);
+		//Coordinates sweref99TM = new Coordinates(p);
+		//System.out.print(" sweref99tm "+sweref99TM+" ");
+		//String s =  sweref99TM.getRUBINfromSweref99TM();
+		System.out.println(s);
 		Rubin r = new Rubin(s, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
 		canvas.addLayerTop(r);

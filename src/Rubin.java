@@ -1,11 +1,9 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
-
 
 public class Rubin implements Layer {
 	private String name, rubin;
@@ -23,8 +21,9 @@ public class Rubin implements Layer {
 	}
 	
 	public Point getMiddle() {
-		Coordinates c = new Coordinates(rubin);
-		return new Point((int)c.getEast(),(int)c.getNorth());
+		Coordinates c = new Coordinates(0,0);
+		c.setRUBINSweref99TM(rubin);
+		return c.getPoint();
 	}
 	
 	@Override
@@ -70,18 +69,19 @@ public class Rubin implements Layer {
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
 		//System.out.println("Drawing rubin");
 		if (!hidden) {
-		g2d.setColor(color);
-		Stroke s = g2d.getStroke();
-		g2d.setStroke(new BasicStroke(2));
-		Coordinates c = new Coordinates(rubin);
-		//System.out.println("x:"+c.getEast()+" Y:"+c.getNorth());
-		int x1 = (int) (((c.getEast()-2500)*xScale)+xShift);
-		int y1 = (int) (((c.getNorth()+2500)*yScale)+yShift);
-		int xWidth = (int) (5000 * xScale);
-		int yWidth = -(int) (5000 * yScale);
-		//System.out.println("x1:"+x1+" y1:"+y1+" xWidth:"+xWidth+" yWidth:"+yWidth);
-		g2d.drawRect(x1,y1,xWidth,yWidth);
-		g2d.setStroke(s);
+			g2d.setColor(color);
+			Stroke s = g2d.getStroke();
+			g2d.setStroke(new BasicStroke(2));
+			Coordinates c = new Coordinates(0,0);
+			c.setRUBINSweref99TM(rubin);
+			System.out.println("rubin midle: "+c);
+			int x1 = (int) (((c.getEast()-2500)*xScale)+xShift);
+			int y1 = (int) (((c.getNorth()+2500)*yScale)+yShift);
+			int xWidth = (int) (5000 * xScale);
+			int yWidth = -(int) (5000 * yScale);
+			//System.out.println("x1:"+x1+" y1:"+y1+" xWidth:"+xWidth+" yWidth:"+yWidth);
+			g2d.drawRect(x1,y1,xWidth,yWidth);
+			g2d.setStroke(s);
 		}
 		
 	}
@@ -95,7 +95,4 @@ public class Rubin implements Layer {
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
 	}
-	
-	
-
 }
