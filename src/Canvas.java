@@ -79,31 +79,10 @@ public class Canvas extends JPanel {
 			md.setMaxZoomL(40);
 			addLayerBotom(md);
 			
-			
 			Topoweb tb = new Topoweb();
 			tb.setName("TopoWeb");
 			md.setHidden(false);
 			addLayerBotom(tb);
-			
-			/*
-			RasterFil raster5 = new RasterFil("..\\Vägkartan\\vagkartan_Gtl.tif");
-			raster5.setColor(Color.black);
-			raster5.setName("Terängkartan2");
-			raster5.setMaxZoomL(1000);
-			addLayerBotom(raster5);*/
-
-			/*
-			RasterFil raster3 = new RasterFil("..\\Terängkartan\\terrangkartan_Gtl.tif");
-			raster3.setColor(Color.black);
-			raster3.setName("Terrängkartan");
-			raster3.setMaxZoomL(100);
-			addLayer(raster3);*/
-			
-			/*
-			TNGRaster vagkartan = new TNGRaster("..\\test\\");
-			vagkartan.setName("Vägkartan");
-			vagkartan.setMaxZoomL(100);
-			addLayer(vagkartan);*/
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

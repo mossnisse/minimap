@@ -74,7 +74,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	public JMenuBar createMenuBar() {
 		JMenuBar menuBar;
 		JMenu menu, menu2, menu3;
-		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11;
+		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12;
 		menuBar = new JMenuBar();
 
 		// Build the first menu.
@@ -142,6 +142,14 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		menuItem5.addActionListener(this);
 		menu2.add(menuItem5);
 
+		
+		menuItem12 = new JMenuItem("Mark/Find Coordinate", KeyEvent.VK_U);
+		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
+		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U,
+				ActionEvent.CTRL_MASK));
+		menuItem12.addActionListener(this);
+		menu2.add(menuItem12);
+		
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K,
@@ -469,6 +477,9 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 						+ "Press c and click on the map to show info about the coordinate\nPress r and click on the map to show the 5x5 km RUBIN ruta";
 				 JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
 				break;
+			case "Mark/Find Coordinate":
+				 MarkCoordDialog();
+				break;
 		}
 	}
 
@@ -720,6 +731,21 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		else if (rot < 0)
 			step = 0.8;
 		canvas.zoom(step);
+	}
+	
+	public void MarkCoordDialog() {
+		//coord = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
+		//canvas.setCoordinate(coord);
+		System.out.println("MarkDialog");
+		MarkDialog d = new MarkDialog(frame, canvas, coord,
+				(TNGPolygonFile) canvas.getLayer("provinser"),
+				(TNGPolygonFile) canvas.getLayer("socknar"));
+		//d.cancel.requestFocusInWindow();
+		d.setVisible(true);
+		//d.cancel.requestFocusInWindow();
+		//coord = d.getCoordinate();
+		//canvas.focus(coord);
+		//canvas.setCoordinate(coord);
 	}
 
 	public static void main(String[] args) {

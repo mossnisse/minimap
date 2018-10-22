@@ -66,7 +66,7 @@ public class Coordinates {
 	}
 	
 	public Point getPoint() {
-		return new Point((int)Math.round(north),(int)Math.round(east));
+		return new Point((int)Math.round(east),(int)Math.round(north));
 	}
 	
 	//konverterar koordinater till RT90 från WGS84
