@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 
 public class Canvas extends JPanel {
 	private static final long serialVersionUID = 1L;
+	private CoordSystem cs;
 	BoundingBox bounds;
 	Point coord;
 	private ArrayList<Layer> layers;
@@ -21,7 +22,7 @@ public class Canvas extends JPanel {
 	//Connection conn;
 	
 	public Canvas() {
-		
+		cs = CoordSystem.Sweref99TM;
 		//this.conn = conn;
 		// Sverige RT90
 		/*int xMin = 1200000;

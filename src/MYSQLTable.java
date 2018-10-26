@@ -15,8 +15,8 @@ public class MYSQLTable implements Layer {
 	private String name, tableName;
 	private Color color;
 	private boolean hidden;
-
 	private int maxZoom, minZoom;
+	private CoordSystem cs = CoordSystem.RT90;
 	
 	MYSQLTable() {
 		//this.tableName = tableName;
@@ -198,6 +198,19 @@ public class MYSQLTable implements Layer {
 			e.printStackTrace();
 		}
 		return -1;
+	}
+
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 	
 	/*

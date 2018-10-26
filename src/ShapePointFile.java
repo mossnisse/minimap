@@ -28,12 +28,14 @@ public class ShapePointFile implements Layer{
 	double minX, minY, maxX, maxY, minZ, maxZ, minM, maxM;
 	// Vector<ShapeESRI> records;
 	Vector<PointESRI> points;
+	private CoordSystem cs;
 	
 	public ShapePointFile(String fileName) throws IOException {
 		this.fileName = fileName;
 		this.name = fileName;
 		readShapeFile();
 		readDBF();
+		cs = CoordSystem.Sweref99TM;
 		//printDBFFeidlDescriptors();
 	}
 	
@@ -212,6 +214,17 @@ public class ShapePointFile implements Layer{
 	
 	public Vector<dbfRecord> getRecords() {
 		return data;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 
 }

@@ -23,6 +23,7 @@ public class TNGPolygonFile implements Layer{
 	private Color color;
 	private Province[] provinces;
 	private boolean hidden;
+	private CoordSystem cs;
 	
 	public class Province extends Polygon{
 		private String name;
@@ -60,6 +61,7 @@ public class TNGPolygonFile implements Layer{
 		this.fileName=fileName;
 		this.name = fileName;
 		readFile();
+		cs = CoordSystem.Sweref99TM;
 	}
 	
 	private void readFile() throws IOException {
@@ -324,5 +326,17 @@ public class TNGPolygonFile implements Layer{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}*/
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		// TODO Auto-generated method stub
+		return cs;
 	}
 }

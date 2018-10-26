@@ -189,8 +189,8 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		String provinceName = provinceT.getText();
 		String RT90Nt = RT90NT.getText();
 		String RT90Et = RT90ET.getText();
-		Coordinates c = new Coordinates(Double.parseDouble(RT90Nt), Double.parseDouble(RT90Et));
-		c = c.convertWGS84();
+		Coordinates rt90c = new Coordinates(Double.parseDouble(RT90Nt), Double.parseDouble(RT90Et));
+		Coordinates wgs84c = rt90c.convertToWGS84FromRT90();
 		
 		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
 		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
@@ -206,8 +206,8 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		    preparedStmt.setString (3, provinceName);
 		    preparedStmt.setString (4, "Sweden");
 		    preparedStmt.setString (5, "Europe");
-		    preparedStmt.setDouble(6, c.getNorth());
-		    preparedStmt.setDouble(7, c.getEast());
+		    preparedStmt.setDouble(6, wgs84c.getNorth());
+		    preparedStmt.setDouble(7, wgs84c.getEast());
 		    preparedStmt.setString (8, RT90Nt);
 		    preparedStmt.setString (9, RT90Et);
 		    preparedStmt.setString (10, Settings.getValue("user"));

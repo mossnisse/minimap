@@ -23,36 +23,37 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 
 	private static final long serialVersionUID = 7103631385545360092L;
 	
-	private JTextField locality, district, province, country, continent, RT90N, RT90E, comments, alternative, coordsource;
+	private JTextField localityf, districtf, provincef, countryf, continentf, Nf, Ef, coordSysf, commentsf, alternativef, coordsourcef;
 	
 	private JOptionPane optionPane;
 	
 	//private Connection conn;
 	
-	public CreateLocalityD(Frame aFrame, String RT90N, String RT90E, String province, String district) {
+	public CreateLocalityD(Frame aFrame, String N, String E, String province, String district, CoordSystem coordSys) {
 		super(aFrame, true);
 		setTitle("Create new Locality");
 		
 		//this.conn = conn;
-		this.locality = new JTextField();
-		this.district = new JTextField();
-		this.province = new JTextField();
-		this.country = new JTextField();
-		this.continent = new JTextField();
-		this.RT90N = new JTextField();
-		this.RT90E = new JTextField();
-		this.comments = new JTextField();
-		this.alternative = new JTextField();
-		this.coordsource = new JTextField();
+		this.localityf = new JTextField();
+		this.districtf = new JTextField();
+		this.provincef = new JTextField();
+		this.countryf = new JTextField();
+		this.continentf = new JTextField();
+		this.Nf = new JTextField();
+		this.Ef = new JTextField();
+		this.coordSysf = new JTextField();
+		this.commentsf = new JTextField();
+		this.alternativef = new JTextField();
+		this.coordsourcef = new JTextField();
 		
 		H2Table odb = (H2Table) GUI.canvas.getLayer("Ortnamnsdb");
-		Point p = new Point(Integer.parseInt(RT90N),Integer.parseInt(RT90E));
+		Point p = new Point(Integer.parseInt(N),Integer.parseInt(E));
 		if (odb== null) {
 			System.out.println("hittar inte ortnamnslagret");
 		}
 		String sugestName = odb.findNearest(p,1000);
 		
-		Object[] array = {"Locality", locality, "Alternative names", alternative, "coordinate source", coordsource, "comments", comments,  "RT90: North", RT90N, "East", RT90E, "Provins", province, "District", district};
+		Object[] array = {"Locality", localityf, "Alternative names", alternativef, "coordinate source", coordsourcef, "comments", commentsf,  "North", Nf, "East", Ef, "Provins", provincef, "District", districtf};
 
 	        //Create an array specifying the number of dialog buttons
 	        //and their text.
@@ -71,13 +72,14 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 	    pack();
 	    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
 	    
-	    this.locality.setText(sugestName);
-	    this.district.setText(district);
-	    this.province.setText(province);
-	    this.country.setText("Sweden");
-	    this.continent.setText("Europe");
-	    this.RT90N.setText(RT90N);
-	    this.RT90E.setText(RT90E);
+	    this.localityf.setText(sugestName);
+	    this.districtf.setText(district);
+	    this.provincef.setText(province);
+	    this.countryf.setText("Sweden");
+	    this.continentf.setText("Europe");
+	    this.Nf.setText(N);
+	    this.Ef.setText(E);
+	    this.coordSysf.setText(coordSys.getName());
 	    addWindowListener(new WindowAdapter() {
 	    	public void windowClosing(WindowEvent we) {
 	    		/*
@@ -101,15 +103,16 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 		super(aFrame, true);
 		setTitle("Create new Locality");
 		
-		locality = new JTextField();
-		district = new JTextField();
-		province = new JTextField();
-		country = new JTextField();
-		continent = new JTextField();
-		RT90N = new JTextField();
-		RT90E = new JTextField();
+		localityf = new JTextField();
+		districtf = new JTextField();
+		provincef = new JTextField();
+		countryf = new JTextField();
+		continentf = new JTextField();
+		Nf = new JTextField();
+		Ef = new JTextField();
+		coordSysf = new JTextField();
 		
-		Object[] array = {"Locality", locality, "RT90: North", RT90N, "East", RT90E, "Provins", province, "District", district};
+		Object[] array = {"Locality", localityf, "North", Nf, "East", Ef, "Coordinate System", coordSysf, "Provins", provincef, "District", districtf};
 
 	        //Create an array specifying the number of dialog buttons
 	        //and their text.
@@ -157,14 +160,16 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 	
 	public void CreateLocality() {
 		System.out.println("Skapar lokalD");
-		String localityName = locality.getText();
-		String districtName = district.getText();
-		String provinceName = province.getText();
-		String RT90Nt = RT90N.getText();
-		String RT90Et = RT90E.getText();
+		String localityName = localityf.getText();
+		String districtName = districtf.getText();
+		String provinceName = provincef.getText();
+		String Nt = Nf.getText();
+		String Et = Ef.getText();
 	
-		Coordinates c = new Coordinates(Double.parseDouble(RT90Nt), Double.parseDouble(RT90Et));
-		c = c.convertToWGS84FromSweref();
+		Coordinates sweref99TM = new Coordinates(Double.parseDouble(Nt), Double.parseDouble(Et));
+		Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
+		Coordinates rt90 = wgs84.convertToRT90FromSweref99TM();
+		Point rt90p = rt90.getPoint();
 		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
 		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
 		
@@ -179,14 +184,14 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 		    preparedStmt.setString (3, provinceName);
 		    preparedStmt.setString (4, "Sweden");
 		    preparedStmt.setString (5, "Europe");
-		    preparedStmt.setDouble(6, c.getNorth());
-		    preparedStmt.setDouble(7, c.getEast());
-		    preparedStmt.setString (8, RT90Nt);
-		    preparedStmt.setString (9, RT90Et);
+		    preparedStmt.setDouble(6, wgs84.getNorth());
+		    preparedStmt.setDouble(7, wgs84.getEast());
+		    preparedStmt.setString (8, Integer.toString(rt90p.getY()));
+		    preparedStmt.setString (9, Integer.toString(rt90p.getX()));
 		    preparedStmt.setString (10, Settings.getValue("user"));
-		    preparedStmt.setString (11, alternative.getText() );
-		    preparedStmt.setString (12, coordsource.getText());
-		    preparedStmt.setString (13, comments.getText());
+		    preparedStmt.setString (11, alternativef.getText() );
+		    preparedStmt.setString (12, coordsourcef.getText());
+		    preparedStmt.setString (13, commentsf.getText());
 		    preparedStmt.execute();
 			SpecimenList.updateLocalityList();
 			SpecimenList.updateSpecimenList();		

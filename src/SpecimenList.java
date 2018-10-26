@@ -1,6 +1,5 @@
 import geometry.Point;
 import javafx.scene.input.KeyCode;
-
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -17,7 +16,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
@@ -903,7 +901,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		System.out.println("lat: "+latdeg+"long: "+longdeg);
 		c.latlong(latdeg, longdeg, latmin, longmin, latsec, longsec, latdir, longdir);
 		System.out.println(c);
-		c = c.convertRT90();
+		c = c.convertToSweref99TMFromWGS84();
 		System.out.println(c);
 		Point p = new Point(c.toPoint());
 		System.out.println(p);
@@ -952,7 +950,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 						System.out.println(distanceI);
 						System.out.println(directionS);
 						GUI.canvas.delLayer("distance");
-						GUI.canvas.addLayerTop(new Distance("distance",p,distanceI,directionS));
+						GUI.canvas.addLayerTop(new Distance("distance",p,distanceI,directionS,CoordSystem.Sweref99TM));
 					}
 				}
 			} catch (SQLException e1) {

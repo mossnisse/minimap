@@ -384,7 +384,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 				(TNGPolygonFile) canvas.getLayer("provinser"),
 				(TNGPolygonFile) canvas.getLayer("socknar"));
 		d.setVisible(true);
-		coord = d.getCoordinate();
+		coord = d.getCoordinateSweref99TM();
 		canvas.focus(coord);
 		canvas.setCoordinate(coord);
 	}
@@ -407,7 +407,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		String distance = d.getDistance();
 		String direction = d.getDirection();
 		System.out.println("Distance: "+distance+" Direction: "+direction);
-		Distance dist = new Distance("dist", canvas.getCoordinate(), Integer.parseInt(distance), direction);
+		Distance dist = new Distance("dist", canvas.getCoordinate(), Integer.parseInt(distance), direction,CoordSystem.Sweref99TM);
 		dist.setColor(Color.red);
 		dist.setHidden(false);
 		canvas.delLayer("dist");
@@ -523,7 +523,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		d.cancel.requestFocusInWindow();
 		d.setVisible(true);
 		d.cancel.requestFocusInWindow();
-		coord = d.getCoordinate();
+		coord = d.getCoordinateSweref99TM();
 		canvas.focus(coord);
 		canvas.setCoordinate(coord);
 	}

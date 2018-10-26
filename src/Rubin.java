@@ -9,11 +9,13 @@ public class Rubin implements Layer {
 	private String name, rubin;
 	private Color color;
 	private boolean hidden;
+	private CoordSystem cs;
 	
 	public Rubin(String rubin, String name, Color c) {
 		this.rubin = rubin;
 		this.name = name;
 		this.color = c;
+		this.cs = CoordSystem.RT90;
 	}
 	
 	public void setRubin(String rubin) {
@@ -94,5 +96,16 @@ public class Rubin implements Layer {
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 }

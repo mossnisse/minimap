@@ -18,6 +18,7 @@ public class H2Table implements Layer {
 	private boolean hidden;
 	private Connection conn;
 	private int maxZoom, minZoom;
+	private CoordSystem cs = CoordSystem.RT90;
 	
 	H2Table(String tableName) {
 		this.tableName = tableName;
@@ -175,5 +176,16 @@ public class H2Table implements Layer {
 			e.printStackTrace();
 		}
 		return "";
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 }

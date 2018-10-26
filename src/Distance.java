@@ -11,15 +11,17 @@ public class Distance implements Layer {
 	private boolean hidden;
 	private Point c;
 	private int dist;
+	private CoordSystem cs;
 	
 
-	Distance(String name, Point c, int dist, String direction) {
+	Distance(String name, Point c, int dist, String direction, CoordSystem cs) {
 		this.name = name;
 		this.c=c;
 		this.dist = dist;
 		this.direction = direction;
 		this.color = Color.orange;
 		hidden = false;
+		this.cs = cs;
 	}
 	
 	@Override
@@ -120,5 +122,16 @@ public class Distance implements Layer {
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		this.cs = cs;
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 }

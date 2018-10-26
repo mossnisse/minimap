@@ -19,6 +19,7 @@ public class Topoweb implements Layer{
 	private int minZoomL;
 	private int maxZoomL;
 	private TileBuffer tileBuffer; 
+	private CoordSystem cs;
 	
 	public class TileIndex {
 		public int zoomLevel;  // == tilematrix;
@@ -127,6 +128,7 @@ public class Topoweb implements Layer{
 	
 	public Topoweb() {
 		tileBuffer = new TileBuffer();
+		cs = CoordSystem.Sweref99TM;
 	}
 	
 	@Override
@@ -237,6 +239,17 @@ public class Topoweb implements Layer{
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 
 }

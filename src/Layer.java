@@ -14,4 +14,6 @@ public interface Layer {
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) throws Exception;
 	public boolean isHidden();
 	public void setHidden(boolean hidden);
+	public void setCRS(CoordSystem cs);
+	public CoordSystem getCRS();
 }

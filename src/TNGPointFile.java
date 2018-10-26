@@ -17,6 +17,7 @@ public class TNGPointFile implements Layer{
 	private Color color;
 	private Locality[] localities;
 	private boolean hidden;
+	private CoordSystem cs;
 	
 	public class Locality extends Point{
 		public String name;
@@ -71,6 +72,7 @@ public class TNGPointFile implements Layer{
 	public TNGPointFile(String fileName) throws IOException {
 		this.fileName = fileName;
 		this.name = fileName;
+		this.cs = CoordSystem.Sweref99TM;
 		readFile();
 	}
 	
@@ -197,5 +199,16 @@ public class TNGPointFile implements Layer{
 	
 	public int size() {
 		return localities.length;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 }

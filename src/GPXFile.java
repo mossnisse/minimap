@@ -18,11 +18,11 @@ import org.xml.sax.SAXException;
 
 
 public class GPXFile implements Layer{
+	private CoordSystem cs = CoordSystem.RT90;
 	
 	public class GPXKoordinat {
 		double latitude, longitude, elevation;
 		String dateTime, name;
-		
 		private Double atanh(Double z) {
 			return Math.log((1+z)/(1-z))/2;
 		}
@@ -172,5 +172,16 @@ public class GPXFile implements Layer{
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 }
