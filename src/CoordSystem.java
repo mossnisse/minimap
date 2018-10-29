@@ -1,12 +1,20 @@
 public enum CoordSystem {
-	RT90("RT 90 2.5 gon V 0:-15.","Sweden",CoordType.TransverseMercator,-667.711,1500064.274,15.0 + 48.0 / 60.0 + 22.624306 / 3600.0,1.00000561024,6378137.0,1.0 / 298.257222101), 
-	Sweref99TM("Sweref99TM", "Sweden",CoordType.TransverseMercator,0.0,500000.0,15.00,0.9996,6378137.0,1.0 / 298.257222101), 
-	WGS84("WGS84","Global",CoordType.Sphaerical2D), 
-	bessel("Bessel 1841","Global",CoordType.Sphaerical2D), 
-	Sweref99("Sweref99","Global",CoordType.Sphaerical2D);
+	
+	//parameters to compensate for the bessel elipsoid, to convert direct to the "wgs84" elipsoid
+	RT90("RT 90 2.5 gon V 0:-15.","Sweden",CoordType.TransverseMercator
+			,-667.711,1500064.274,15.0 + 48.0 / 60.0 + 22.624306 / 3600.0,1.00000561024,6378137.0,1.0 / 298.257222101
+			,6100000,7700000,1200000,1900000
+		), 
+	Sweref99TM("Sweref99TM", "Sweden",CoordType.TransverseMercator,
+			0.0,500000.0,15.00,0.9996,6378137.0,1.0 / 298.257222101
+			,6000000,7700000,200000,960000
+		), 
+	WGS84("WGS84","Global",CoordType.Ellipsoid2D), 
+	bessel("Bessel 1841","Global",CoordType.Ellipsoid2D), 
+	Sweref99("Sweref99","Global",CoordType.Ellipsoid2D);
 		
 	static public enum CoordType {
-		TransverseMercator, Sphaerical2D
+		TransverseMercator, Ellipsoid2D
 	}
 		
 	public String name;
@@ -18,18 +26,15 @@ public enum CoordSystem {
 	public double scale;
 	public double axis;
 	public double flattening;
-	
 	//limits what is valid values; 
 	public double Nmin;
 	public double Nmax;
 	public double Emin;
 	public double Emax;
 	
-	//rt90
-	//sweref99TM 
 	//wgs84 // -90 <= N <= 90, -180 <= E <= 180
 	
-	// Gaus Kryger formula stuff
+	// Gaus Kryger formula stuff, constants for a particular transverse mercator system and can thus need only be calculated once for each CS
 	public double e2;
 	public double n ;
 	public double a_roof;
@@ -44,13 +49,15 @@ public enum CoordSystem {
 	public double phi;
     public double lambda;
     public double lambda_zero;
-    double Astar;
-    double Bstar;
-    double Cstar;
-    double Dstar;
+    public double Astar;
+    public double Bstar;
+    public double Cstar;
+    public double Dstar;
+    public double delta1;
+    public double delta2;
+    public double delta3;
+    public double delta4;
     
-	CoordSystem() {	
-	}
 	
 	CoordSystem(String name, String country, CoordType type) {
 		this.name = name;
@@ -86,6 +93,18 @@ public enum CoordSystem {
 		beta3 = 61.0 * n * n * n / 240.0 - 103.0 * n * n * n * n / 140.0;
 		beta4 = 49561.0 * n * n * n * n / 161280.0;
 		lambda_zero = centralMeridian;
+		delta1 = n / 2.0 - 2.0 * n * n / 3.0 + 37.0 * n * n * n / 96.0 - n * n * n * n / 360.0;
+		delta2 = n * n / 48.0 + n * n * n / 15.0 - 437.0 * n * n * n * n / 1440.0;
+		delta3 = 17.0 * n * n * n / 480.0 - 37 * n * n * n * n / 840.0;
+		delta4 = 4397.0 * n * n * n * n / 161280.0;
+	}
+
+	CoordSystem(String name, String country, CoordType type, double falseNorthing, double falseEasting, double centralMeridian, double scale, double axis, double flattening, double Nmin, double Nmax, double Emin, double Emax) {
+		this(name, country, type, falseNorthing, falseEasting, centralMeridian, scale, axis, flattening);
+		this.Nmin = Nmin;
+		this.Nmax = Nmax;
+		this.Emin = Emin;
+		this.Emax = Emax;
 	}
 	
 	public String getName() {

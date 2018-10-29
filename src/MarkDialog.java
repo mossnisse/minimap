@@ -113,7 +113,7 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 				coordinateSys.setText("WGS84");
 				wgs84 = new Coordinates(northI,eastI);
 				rt90 = wgs84.convertToRT90FromWGS84();
-				sweref = wgs84.convertToRT90FromSweref99TM();
+				sweref = wgs84.convertToSweref99TMFromWGS84();
 				rubin = rt90.getRUBINfromRT90();
 			} else {
 				System.out.println("Unkown");

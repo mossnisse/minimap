@@ -69,6 +69,62 @@ public class Coordinates {
 		return new Point((int)Math.round(east),(int)Math.round(north));
 	}
 	
+	
+	// Gauss–Krüger Formula to covert to Transverse mercator system from elipsodial system
+	public Coordinates convertTo(CoordSystem CS) {
+	    double phi = north * degToRad;
+        double lambda = east * degToRad;
+        double phi_star = phi - Math.sin(phi) * Math.cos(phi) * (CS.e2 +
+        		CS.B * Math.pow(Math.sin(phi), 2) +
+        		CS. C * Math.pow(Math.sin(phi), 4) +
+        		CS.D * Math.pow(Math.sin(phi), 6));
+        double delta_lambda = lambda - CS.lambda_zero;
+        double xi_prim = Math.atan(Math.tan(phi_star) / Math.cos(delta_lambda));
+        double eta_prim = atanh(Math.cos(phi_star) * Math.sin(delta_lambda));
+        double x = CS.scale * CS.a_roof * (xi_prim +
+        		CS.beta1 * Math.sin(2.0 * xi_prim) * cosh(2.0 * eta_prim) +
+        		CS.beta2 * Math.sin(4.0 * xi_prim) * cosh(4.0 * eta_prim) +
+        		CS.beta3 * Math.sin(6.0 * xi_prim) * cosh(6.0 * eta_prim) +
+        		CS.beta4 * Math.sin(8.0 * xi_prim) * cosh(8.0 * eta_prim)) +
+        		CS.falseNorthing;
+        double y = CS.scale * CS.a_roof * (eta_prim +
+        		CS.beta1 * Math.cos(2.0 * xi_prim) * sinh(2.0 * eta_prim) +
+        		CS.beta2 * Math.cos(4.0 * xi_prim) * sinh(4.0 * eta_prim) +
+        		CS.beta3 * Math.cos(6.0 * xi_prim) * sinh(6.0 * eta_prim) +
+        		CS.beta4 * Math.cos(8.0 * xi_prim) * sinh(8.0 * eta_prim)) +
+        		CS.falseEasting;
+		return new Coordinates(x, y);
+	}
+	
+	// Gauss–Krüger Formula to covert to elipsodial system from an Transverse mercator system
+	public Coordinates convertFrom(CoordSystem CS) {
+        double xi = (north - CS.falseNorthing) / (CS.scale * CS.a_roof);
+        double eta = (east - CS.falseEasting) / (CS.scale * CS.a_roof);
+        double xi_prim = xi -
+        		CS.delta1 * Math.sin(2.0 * xi) * cosh(2.0 * eta) -
+        		CS.delta2 * Math.sin(4.0 * xi) * cosh(4.0 * eta) -
+        		CS.delta3 * Math.sin(6.0 * xi) * cosh(6.0 * eta) -
+        		CS.delta4 * Math.sin(8.0 * xi) * cosh(8.0 * eta);
+        double eta_prim = eta -
+        		CS.delta1 * Math.cos(2.0 * xi) * sinh(2.0 * eta) -
+        		CS.delta2 * Math.cos(4.0 * xi) * sinh(4.0 * eta) -
+        		CS.delta3 * Math.cos(6.0 * xi) * sinh(6.0 * eta) -
+        		CS.delta4 * Math.cos(8.0 * xi) * sinh(8.0 * eta);
+        double phi_star = Math.asin(Math.sin(xi_prim) / cosh(eta_prim));
+        double delta_lambda = Math.atan(sinh(eta_prim) / Math.cos(xi_prim));
+        double lon_radian = CS.lambda_zero + delta_lambda;
+        double lat_radian = phi_star + Math.sin(phi_star) * Math.cos(phi_star) *
+                (CS.Astar +
+                CS.Bstar * Math.pow(Math.sin(phi_star), 2) +
+                CS.Cstar * Math.pow(Math.sin(phi_star), 4) +
+                CS.Dstar * Math.pow(Math.sin(phi_star), 6));
+        return new Coordinates(lat_radian*radToDeg, lon_radian*radToDeg);
+	}
+	
+	public boolean isValid(CoordSystem CS) {
+		return CS.Nmax >= north && CS.Nmin <= north && CS.Emax >= east && CS.Emin <= east;
+	}
+	
 	//konverterar koordinater till RT90 från WGS84
 	public Coordinates convertToRT90FromWGS84() {
 		Double k0xa = 6.3674848719179137e6;
