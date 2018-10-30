@@ -78,7 +78,7 @@ public class MYSQLTable implements Layer {
 
 			
 			//String sqlstmt = "SELECT RT90N, RT90E, locality FROM locality where RT90N > " +bounds.getY1()+" and RT90N < " + bounds.getY2()+ " and RT90E > "+bounds.getX1()+ " and RT90E < "+bounds.getX2()+";" ;
-			String sqlstmt = "SELECT RT90N, RT90E, locality, Coordinateprecision FROM locality where RT90N > ? and RT90N < ? and RT90E > ? and RT90E < ?;" ;
+			String sqlstmt = "SELECT SWTMN, SWTME, locality, Coordinateprecision FROM locality where SWTMN > ? and SWTMN < ? and SWTME > ? and SWTME < ?;" ;
 			Connection conn = MYSQLConnection.getConn();
 			
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
@@ -137,7 +137,7 @@ public class MYSQLTable implements Layer {
 	}
 	
 	public int findNearest(Point p) {
-		String sqlstmt = "SELECT RT90N, RT90E, ID FROM locality where Country = \"Sweden\"";
+		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where Country = \"Sweden\"";
 		Connection conn;
 		try {
 			conn = MYSQLConnection.getConn();
@@ -167,7 +167,7 @@ public class MYSQLTable implements Layer {
 	}
 	
 	public int findNearest(Point p, int limit) {
-		String sqlstmt = "SELECT RT90N, RT90E, ID FROM locality where RT90N > ? and RT90N < ? and RT90E > ? and RT90E < ?;";
+		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN > ? and SWTMN < ? and SWTME > ? and SWTME < ?;";
 		Connection conn;
 		try {
 			conn = MYSQLConnection.getConn();
@@ -213,6 +213,45 @@ public class MYSQLTable implements Layer {
 		return cs;
 	}
 	
+	
+	private void convCoord() {
+		String sql1 = "SELECT lat, `long`, id FROM locality where country = 'Sweden' limit ?,1";
+		String sql2 = "update locality set SWTMN = ?, SWTME = ? where id =?";
+		try {
+			Connection conn = MYSQLConnection.getConn();
+			PreparedStatement statmt1= conn.prepareStatement(sql1);
+			PreparedStatement statmt2= conn.prepareStatement(sql2);
+		
+			for (int i=1; i< 46028; i++) {
+				System.out.println("i: "+i);
+				statmt1.setInt(1, i);
+				ResultSet result = statmt1.executeQuery();
+				result.next();
+				double lat = result.getDouble(1);
+				double longi = result.getDouble(2);
+				int id = result.getInt(3);
+				System.out.println("id: "+id);
+				Coordinates c = new Coordinates(lat,longi);
+				Coordinates swtm = c.convertToSweref99TMFromWGS84();
+				int swtmN = (int)Math.round(swtm.getNorth());
+				int swtmE = (int)Math.round(swtm.getEast());
+				statmt2.setInt(1,swtmN);
+				statmt2.setInt(2,swtmE);
+			
+				statmt2.setInt(3,id);
+				statmt2.execute();
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+			
+	}
+	
+	public static void main(String[] args) {
+		MYSQLTable MT = new MYSQLTable();
+		MT.convCoord();
+	}
 	/*
 	public TNGPointFile find(int provinsNr, String value) {
 		value = value.trim();

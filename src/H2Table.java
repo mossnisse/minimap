@@ -188,4 +188,46 @@ public class H2Table implements Layer {
 	public CoordSystem getCRS() {
 		return cs;
 	}
+	
+	public void saveConvert() {
+
+		/*String sqlstm ="Create table ortnamnSWTM as select * FROM ortnamnsDB";
+		
+		Statement select;
+		try {
+			select = conn.createStatement();
+			select.execute(sqlstm);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		
+		
+		String sqlstm ="SELECT NORTH, EAST, ID from ortnamnSWTM LIMIT";
+		int north =0;
+		int east =0;
+		int id=0;
+		String sqlstm2 ="Update ortnamnSWTM set NORTH ="+north+" , EAST = "+east+" where ID="+id;
+		
+		/*
+		UPDATE tableName [ [ AS ] newTableAlias ] SET 
+		{ { columnName = { DEFAULT | expression } } [,...] } | 
+		{ ( columnName [,...] ) = ( select ) } 
+		[ WHERE expression ] [ ORDER BY order [,...] ] [ LIMIT expression ]*/
+		Statement select;
+		try {
+			select = conn.createStatement();
+			select.execute(sqlstm);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+	}
+	
+	public static void main(String[] args) {
+		H2Table h2 = new H2Table("ortnamnsDB");
+		h2.saveConvert();
+	}
 }

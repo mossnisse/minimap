@@ -182,12 +182,12 @@ public class SearchDialog extends JDialog implements ActionListener, ItemListene
 				//String query = "";
 				PreparedStatement statement;
 				if (getProvins().equals("*")) {
-					String query = "SELECT RT90N, RT90E, locality, district FROM Locality where locality = ? or MATCH (alternative_names) against (?)";
+					String query = "SELECT lat, `long`, locality, district FROM Locality where locality = ? or MATCH (alternative_names) against (?)";
 					statement = conn.prepareStatement(query);
 					statement.setString(1, getLokal());
 					statement.setString(2, getLokal());
 				} else {
-					String query = "SELECT RT90N, RT90E, locality, district FROM Locality where province = ? and (locality = ? or MATCH (alternative_names) against (?))";
+					String query = "SELECT lat, `long`, locality, district FROM Locality where province = ? and (locality = ? or MATCH (alternative_names) against (?))";
 					statement = conn.prepareStatement(query);
 					statement.setString(1, getProvins());
 					statement.setString(2, getLokal());
@@ -203,7 +203,13 @@ public class SearchDialog extends JDialog implements ActionListener, ItemListene
 				
 				while (result.next()) { 
 					System.out.println("träff i lokalDB: "+result.getString(3));
-					Point p = new Point(Integer.parseInt(result.getString(1)), Integer.parseInt(result.getString(2)));
+					Coordinates c = new Coordinates(Double.parseDouble(result.getString(1)),Double.parseDouble(result.getString(2)));
+					//public Coordinates(double north, double east)
+					System.out.println(c);
+					Coordinates swtm = c.convertToSweref99TMFromWGS84();
+					System.out.println(swtm);
+					Point p = swtm.getPoint();
+					//Point p = new Point(Integer.parseInt(result.getString(1)), Integer.parseInt(result.getString(2)));
 					NButton r1 = new NButton(result.getString(3)+ " - " + result.getString(4), p);
 					r1.setName("ans");
 					r1.addActionListener(new ActionListener() {
@@ -213,7 +219,7 @@ public class SearchDialog extends JDialog implements ActionListener, ItemListene
 							NButton source = (NButton) e.getSource();
 							System.out.println("You clicked the button "+source.getPoint());
 							// GUI.canvas.focus(new Point(, ));
-							BoundingBox box = new BoundingBox(source.getPoint().getY()-5000,source.getPoint().getX()-5000,source.getPoint().getY()+5000,source.getPoint().getX()+5000);
+							BoundingBox box = new BoundingBox(source.getPoint().getX()-5000,source.getPoint().getY()-5000,source.getPoint().getX()+5000,source.getPoint().getY()+5000);
 							GUI.canvas.setBounds(box);
 							System.out.println(GUI.canvas.getBoundingBox());
 						}
