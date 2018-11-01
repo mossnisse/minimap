@@ -880,6 +880,9 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			GUI.canvas.delLayer("Rubin");
 			GUI.canvas.addLayerTop(r);
 			Point p = r.getMiddle();
+			Coordinates rt90 = new Coordinates(p);
+			Coordinates swtm = rt90.convertToSweref99TMFromRT90();
+			p = swtm.getPoint();
 			GUI.canvas.focus(p);
 		}
 	}
@@ -890,6 +893,9 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		if (!coord.equals(", ")) {
 			Point p = new Point(RT90D.getText());
 			System.out.println("point: "+p);
+			Coordinates rt90 = new Coordinates(p);
+			Coordinates swtm = rt90.convertToSweref99TMFromRT90();
+			p = swtm.getPoint();
 			GUI.canvas.focus(p);
 			GUI.canvas.setCoordinate(p);
 		}
@@ -926,7 +932,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		System.out.println("focus Locality: "+lokal);
 		if (!lokal.equals("")) {
 			try {
-				String query = "SELECT RT90N, RT90E from locality where locality = ? and province = ? and district = ?";
+				String query = "SELECT SWTMN, SWTME from locality where locality = ? and province = ? and district = ?";
 				System.out.println(query);
 				Connection conn = MYSQLConnection.getConn();
 				PreparedStatement statement = conn.prepareStatement(query);
@@ -936,10 +942,10 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				ResultSet result = statement.executeQuery();
 				if (result.next()) {
 					
-					String RTN = result.getString(1);
-					String RTE = result.getString(2);
-					System.out.println("locality coord: "+RTN + ", " +RTE);
-					Point p = new Point(Integer.parseInt(RTE), Integer.parseInt(RTN));
+					String SWTMN = result.getString(1);
+					String SWTME = result.getString(2);
+					System.out.println("locality coord: "+SWTMN + ", " +SWTME);
+					Point p = new Point(Integer.parseInt(SWTME), Integer.parseInt(SWTMN));
 					GUI.canvas.focus(p);
 					GUI.canvas.setCoordinate(p);
 					if (distanceI>0) {
@@ -970,7 +976,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			String district = socken.getText();
 			if (!locality.equals("")) {
 				try {
-				String query = "SELECT RT90N, RT90E from locality where locality = ? and province = ? and district = ?";
+				String query = "SELECT SWTMN, SWTME from locality where locality = ? and province = ? and district = ?";
 				System.out.println(query);
 				Connection conn = MYSQLConnection.getConn();
 				PreparedStatement statement = conn.prepareStatement(query);
@@ -980,10 +986,10 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				ResultSet result = statement.executeQuery();
 				if (result.next()) {
 					
-					String RTN = result.getString(1);
-					String RTE = result.getString(2);
-					System.out.println("locality coord: "+RTN + ", " +RTE);
-					Point p = new Point(Integer.parseInt(RTE), Integer.parseInt(RTN));
+					String SWTMN = result.getString(1);
+					String SWTME = result.getString(2);
+					System.out.println("locality coord: "+SWTMN + ", " +SWTME);
+					Point p = new Point(Integer.parseInt(SWTME), Integer.parseInt(SWTMN));
 					GUI.canvas.focus(p);
 					GUI.canvas.setCoordinate(p);
 				}

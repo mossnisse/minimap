@@ -92,7 +92,7 @@ public enum CoordSystem {
 		beta2 = 13.0 * n * n / 48.0 - 3.0 * n * n * n / 5.0 + 557.0 * n * n * n * n / 1440.0;
 		beta3 = 61.0 * n * n * n / 240.0 - 103.0 * n * n * n * n / 140.0;
 		beta4 = 49561.0 * n * n * n * n / 161280.0;
-		lambda_zero = centralMeridian;
+		lambda_zero = centralMeridian*Math.PI/180;
 		delta1 = n / 2.0 - 2.0 * n * n / 3.0 + 37.0 * n * n * n / 96.0 - n * n * n * n / 360.0;
 		delta2 = n * n / 48.0 + n * n * n / 15.0 - 437.0 * n * n * n * n / 1440.0;
 		delta3 = 17.0 * n * n * n / 480.0 - 37 * n * n * n * n / 840.0;

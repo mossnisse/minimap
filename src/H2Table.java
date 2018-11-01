@@ -4,12 +4,15 @@ import geometry.Point;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
 import org.h2.jdbcx.JdbcDataSource;
+
 
 
 public class H2Table implements Layer {
@@ -190,44 +193,79 @@ public class H2Table implements Layer {
 	}
 	
 	public void saveConvert() {
-
-		/*String sqlstm ="Create table ortnamnSWTM as select * FROM ortnamnsDB";
-		
-		Statement select;
+		createConnection();
+		String drop = "DROP table if exists ortnamnSWTM";
+		String sql0 ="Create table ortnamnSWTM as select * FROM ortnamnsDB";
+		String sql1 ="SELECT NORTH, EAST, ORT_ID from ortnamnSWTM LIMIT ?,?";
+		String sql2 ="Update ortnamnSWTM set NORTH = ?, EAST = ? where ORT_ID = ?";
+		int batchsize=1000;
 		try {
-			select = conn.createStatement();
-			select.execute(sqlstm);
+			PreparedStatement drops= conn.prepareStatement(drop);
+			PreparedStatement statmt0= conn.prepareStatement(sql0);
+			PreparedStatement statmt1= conn.prepareStatement(sql1);
+			PreparedStatement statmt2= conn.prepareStatement(sql2);
+			drops.execute();
+			statmt0.execute();
+			statmt1.setInt(2, batchsize);
+			//statmt0.execute();
+			for (int i=1; i< 1000000; i++) {
+				statmt1.setInt(1, i);
+				ResultSet result = statmt1.executeQuery();
+				while (result.next()) {
+					//double north = result.getDouble(1);
+					//double east = result.getDouble(2);
+					//int id = result.getInt(3);
+					Coordinates rt90 = new Coordinates(result.getDouble(1), result.getDouble(2));
+					//System.out.println("rt90: "+rt90);
+					Coordinates wgs84 = rt90.convertToWGS84FromRT90();
+					//System.out.println("wgs84: "+wgs84);
+					Coordinates swtm = wgs84.convertTo(CoordSystem.Sweref99TM);
+					//System.out.println("swtm: "+swtm);
+					//Coordinates swtm = new Coordinates(result.getDouble(1), result.getDouble(2)).convertToRT90FromSweref99TM();
+					//Coordinates swtm =rt90.convertToRT90FromSweref99TM();
+					//System.out.println("i "+i+", ID "+result.getInt(3));
+					statmt2.setDouble(1, swtm.getNorth());
+					statmt2.setDouble(2, swtm.getEast());
+					statmt2.setInt(3, result.getInt(3));
+					statmt2.execute();
+				}
+				System.out.println("i "+i);
+			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}*/
-		
-		
-		String sqlstm ="SELECT NORTH, EAST, ID from ortnamnSWTM LIMIT";
-		int north =0;
-		int east =0;
-		int id=0;
-		String sqlstm2 ="Update ortnamnSWTM set NORTH ="+north+" , EAST = "+east+" where ID="+id;
-		
-		/*
-		UPDATE tableName [ [ AS ] newTableAlias ] SET 
-		{ { columnName = { DEFAULT | expression } } [,...] } | 
-		{ ( columnName [,...] ) = ( select ) } 
-		[ WHERE expression ] [ ORDER BY order [,...] ] [ LIMIT expression ]*/
-		Statement select;
+		}	
+	}
+	
+	public void showC() {
 		try {
-			select = conn.createStatement();
-			select.execute(sqlstm);
+			String sql = "select * from ortnamnsDB where North = 123544";
+			Statement select = conn.createStatement();
+		
+			ResultSet result = select.executeQuery(sql);
+			ResultSetMetaData rsmd = result.getMetaData();
+			System.out.println(result);
+			System.out.println(rsmd);
+			System.out.println(rsmd.getColumnName(1));
+			System.out.println(rsmd.getColumnName(2));
+			System.out.println(rsmd.getColumnName(3));
+			System.out.println(rsmd.getColumnName(4));
+			System.out.println(rsmd.getColumnName(5));
+			System.out.println(rsmd.getColumnName(6));
+			System.out.println(rsmd.getColumnName(7));
+			while (result.next()) {
+				System.out.println(result.getString(1));
+				System.out.println();
+			}
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 		
 	}
 	
 	public static void main(String[] args) {
 		H2Table h2 = new H2Table("ortnamnsDB");
 		h2.saveConvert();
+		//h2.showC();
 	}
 }

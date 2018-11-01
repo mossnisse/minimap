@@ -100,6 +100,7 @@ public class Coordinates {
 	public Coordinates convertFrom(CoordSystem CS) {
         double xi = (north - CS.falseNorthing) / (CS.scale * CS.a_roof);
         double eta = (east - CS.falseEasting) / (CS.scale * CS.a_roof);
+        //System.out.println("new xi: "+xi+" eta: "+eta);
         double xi_prim = xi -
         		CS.delta1 * Math.sin(2.0 * xi) * cosh(2.0 * eta) -
         		CS.delta2 * Math.sin(4.0 * xi) * cosh(4.0 * eta) -
@@ -110,7 +111,11 @@ public class Coordinates {
         		CS.delta2 * Math.cos(4.0 * xi) * sinh(4.0 * eta) -
         		CS.delta3 * Math.cos(6.0 * xi) * sinh(6.0 * eta) -
         		CS.delta4 * Math.cos(8.0 * xi) * sinh(8.0 * eta);
+        
+        //System.out.println("xi_prim: "+xi_prim + " eta_prim: "+eta_prim);
         double phi_star = Math.asin(Math.sin(xi_prim) / cosh(eta_prim));
+        
+        //System.out.println("phi_star: "+phi_star);
         double delta_lambda = Math.atan(sinh(eta_prim) / Math.cos(xi_prim));
         double lon_radian = CS.lambda_zero + delta_lambda;
         double lat_radian = phi_star + Math.sin(phi_star) * Math.cos(phi_star) *
@@ -120,6 +125,9 @@ public class Coordinates {
                 CS.Dstar * Math.pow(Math.sin(phi_star), 6));
         return new Coordinates(lat_radian*radToDeg, lon_radian*radToDeg);
 	}
+	
+	
+	//double reast = (0.2758717076 + Math.atan(Math.sinh(np)/Math.cos(xp)))* radToDeg;
 	
 	public boolean isValid(CoordSystem CS) {
 		return CS.Nmax >= north && CS.Nmin <= north && CS.Emax >= east && CS.Emin <= east;
@@ -204,15 +212,18 @@ public class Coordinates {
 	    
 	    double xi = (north  + 667.711) / 6367484.87;
 	    double ny = (east - 1500064.274) / 6367484.87;
+	    //System.out.println("xi: "+xi +" ny: "+ny);
 	    
 	    double s1 = 0.0008377321684;
 	    double s2 = 5.905869628E-8;
 	    double xp = xi - s1 * Math.sin(2*xi) * Math.cosh(2*ny) - s2 * Math.sin(4*xi) * Math.cosh(4*ny);
 	    double np = ny - s1 * Math.cos(2*xi) * Math.sinh(2*ny) - s2 * Math.cos(4*xi) * Math.sinh(4*ny);
+	    //System.out.println("xp: "+xp+" np: "+np);
 	    
-	    double reast = (0.2758717076 + Math.atan(Math.sinh(np)/Math.cos(xp)))*180/Math.PI;
+	    double reast = (0.2758717076 + Math.atan(Math.sinh(np)/Math.cos(xp)))* radToDeg;
 	    
 	    double qs = Math.asin(Math.sin(xp)/Math.cosh(np));
+	    //System.out.println("qs: "+qs);
 	    double rnorth = (qs + Math.sin(qs)*Math.cos(qs)*(0.00673949676 -0.00005314390556 * Math.pow(Math.sin(qs),2)) + 5.74891275E-7 * Math.pow(Math.sin(qs),4)) * radToDeg;
 	    return new Coordinates(rnorth,reast);
 	}
@@ -444,16 +455,17 @@ public class Coordinates {
 	}
 	
 	public static void main(String[] args) {
-		Coordinates coord = new Coordinates(60.96440289167661, 14.77666054636711);
-		//Coordinates coord2 = convertToSweref99TMFromWGS84(coord);
-		
-		System.out.println("WGS84: " + coord);
+		Coordinates rt90 = new Coordinates(6543540, 1457933);
+		Coordinates wgs84old = rt90.convertToWGS84FromRT90();
+		Coordinates wgs84 = rt90.convertFrom(CoordSystem.RT90);
+		System.out.println("WGS84 old: " + wgs84old);
+		System.out.println("wgs84: "+wgs84);
 		//System.out.println("Sweref99TM: " + coord2);
 		
-		Coordinates coord3 = new Coordinates(6758843, 487907);
+		//Coordinates coord3 = new Coordinates(6758843, 487907);
 		//Coordinates coord4 = convertToWGS84FromSweref99TM(coord3);
 		
-		System.out.println("WGS84: " + coord3);
+		//System.out.println("WGS84: " + coord3);
 		//System.out.println("Sweref99TM: " + coord4);
 	}
 	
