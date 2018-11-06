@@ -66,7 +66,7 @@ public class Canvas extends JPanel {
 			addLayerBotom(socFile);
 			
 
-			H2Table od = new H2Table("ortnamnsDB");
+			H2Table od = new H2Table("ortnamnSWTM");
 			od.setColor(Color.green);
 			od.setName("Ortnamnsdb");
 			od.setHidden(false);
