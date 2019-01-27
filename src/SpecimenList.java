@@ -1,4 +1,5 @@
 import geometry.Point;
+import javafx.scene.input.KeyCode;
 
 import java.awt.Color;
 import java.awt.Component;
@@ -29,23 +30,19 @@ import javax.swing.SpringLayout;
 public class SpecimenList extends JPanel implements ActionListener, ItemListener, FocusListener, NActionListener  {
 	private static final long serialVersionUID = 7300006405490558336L;
 	private static JTextField landskap, socken, cnr, yearS, collectorS, originalS, distance, oProvince, oDistrict, coordinateprecision;
-	private static JButton next, prev, rubinD, RT90D, latlongD, focusL, searchspecimens, copyLastB;
+	private static JButton next, prev, rubinD, RT90D, latlongD, focusL, searchspecimens, copyLastB, localityD;
 	private static JTextPane collect_info;
 	private static JComboBox<String> lokaler, direction;
 	private static int nr;
-	private static String specimenID, oldLocality, oldOverrideDistrict, oldOverrideProvince, lastLocality, lastDistance, lastDirection;
+	private static String specimenID, oldLocality, oldOverrideDistrict, oldOverrideProvince, lastLocality, lastDistance, lastDirection, lastODistrict, lastOProvince, dbLocality;
+	private static String latdir, latdeg, latmin, latsec, longdir, longdeg, longmin, longsec;
 	private static boolean comboenabled = false;
-	//private static SpecimenList exstatic;
 	private static String accnr, instCode, collCode; 
 	private String oldLokalNamn;
-	//private static SpecimenList sp;
 
 	public SpecimenList() {
-		//exstatic = this;
-		//sp = this;
 		specimenID = "-1";
 		comboenabled = false;
-		//isOpen = true;
 		oldLocality = "";
 		SpringLayout layout = new SpringLayout();
 		setLayout(layout);
@@ -126,7 +123,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		distance = new JTextField("test direction");
 		distance.setPreferredSize(new Dimension(200,20));
 		this.add(distance);
-		String[] dirString = { "", "N", "NNV", "NV", "VNV", "V", "VSV", "SV", "SSV", "S", "SSE", "SE", "ESE", "E", "ENE", "NE", "NNE" };
+		String[] dirString = { "", "N", "NNW", "NW", "WNW", "W", "WSW", "SW", "SSW", "S", "SSE", "SE", "ESE", "E", "ENE", "NE", "NNE" };
 		direction = new JComboBox<String>(dirString);
 		this.add(direction);
 		
@@ -148,6 +145,13 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		oProvince.setPreferredSize(new Dimension(200,20));
 		this.add(oProvince);
 
+		JLabel localityL = new JLabel("Locality:");
+		this.add(localityL);
+		localityD = new JButton("test Locality");
+		localityD.setActionCommand("localityD");
+		this.add(localityD);
+
+		
 		JLabel rubinL = new JLabel("RUBIN:");
 		this.add(rubinL);
 		rubinD = new JButton("test RUBIN");
@@ -365,9 +369,21 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				0,
 				SpringLayout.NORTH, distDir);
 
-		layout.putConstraint(SpringLayout.NORTH, rubinL,
+		layout.putConstraint(SpringLayout.NORTH, localityL,
 				10,
 				SpringLayout.SOUTH, distDir);
+		
+		layout.putConstraint(SpringLayout.NORTH, localityD,
+				0,
+				SpringLayout.NORTH, localityL);
+
+		layout.putConstraint(SpringLayout.WEST, localityD,
+				5,
+				SpringLayout.EAST, localityL);
+		
+		layout.putConstraint(SpringLayout.NORTH, rubinL,
+				10,
+				SpringLayout.SOUTH, localityL);
 
 		/*layout.putConstraint(SpringLayout.WEST, rubinL,
 		10,
@@ -418,6 +434,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 
 		prev.addActionListener(this);
 		next.addActionListener(this);
+		localityD.addActionListener(this);
 		rubinD.addActionListener(this);
 		latlongD.addActionListener(this);
 		RT90D.addActionListener(this);
@@ -457,7 +474,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			
 			Connection conn = MYSQLConnection.getConn();
 			// get data from MYSQL
-			String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, Collector, specimens.InstitutionCode, locality.ID, locality.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
+			String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, Collector, specimens.InstitutionCode, locality.ID, specimens.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
 					//+ " FROM specimens left join specimen_locality on specimens.InstitutionCode = specimen_locality.InstitutionCode and specimens.AccessionNo = specimen_locality.AccessionNo left join locality on specimen_locality.locality_ID = locality.ID WHERE "
 					+ " FROM specimens left join specimen_locality on specimens.ID = specimen_locality.specimen_ID  left join locality on specimen_locality.locality_ID = locality.ID WHERE "
 					+ "Specimens.Province = ? and specimens.district = ?";
@@ -469,8 +486,10 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			ResultSet result = statement.executeQuery();
 			
 			Connection h2Conn = MYSQLConnection.getH2Conn();
-			//Create table tempspecimens if not exists
-			String sqlstmt2 = "CREATE TABLE IF NOT EXISTS tempspecimens (AccessionNo VARCHAR(16), Year CHAR(4), Month CHAR(2), Day CHAR(2), original_text TEXT, Genus VARCHAR(32), Species VARCHAR(32), Collector VARCHAR(64), InstitutionCode VARCHAR(3), locality_ID INT(11), locality VARCHAR(90), specimens_ID INT(10), RUBIN VARCHAR(16), RiketsN VARCHAR(16), RiketsO VARCHAR(16), Lat_dir VARCHAR(1), Lat_deg VARCHAR(32), Lat_min VARCHAR(16), Lat_sec VARCHAR(16), Long_dir VARCHAR(1), Long_deg VARCHAR(32), Long_min VARCHAR(16), Long_sec VARCHAR(16), CollectionCode VARCHAR(10), distance INT(11), direction VARCHAR(4), oDistrict VARCHAR(32), oProvince VARCHAR(40));";
+			
+			
+			//Create table tempspecimens if not exists  /// 
+			String sqlstmt2 = "CREATE TABLE IF NOT EXISTS tempspecimens (AccessionNo VARCHAR(16), Year CHAR(4), Month CHAR(2), Day CHAR(2), original_text TEXT, Genus VARCHAR(32), Species VARCHAR(32), Collector VARCHAR(64), InstitutionCode VARCHAR(3), locality_ID INT(11), locality TEXT, specimens_ID INT(10), RUBIN VARCHAR(16), RiketsN VARCHAR(16), RiketsO VARCHAR(16), Lat_dir VARCHAR(1), Lat_deg VARCHAR(32), Lat_min VARCHAR(16), Lat_sec VARCHAR(16), Long_dir VARCHAR(1), Long_deg VARCHAR(32), Long_min VARCHAR(16), Long_sec VARCHAR(16), CollectionCode VARCHAR(10), distance INT(11), direction VARCHAR(4), oDistrict VARCHAR(32), oProvince VARCHAR(40));";
 			PreparedStatement statement2 = h2Conn.prepareStatement(sqlstmt2);
 			statement2.executeUpdate();
 			
@@ -630,10 +649,21 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				collect_info.setText(text);
 				//collect_info.repaint();
 				//collect_info.validate();
+				dbLocality = result.getString(11);
+				localityD.setText(dbLocality);
 				rubinD.setText(result.getString(13));
 				RT90D.setText(result.getString(14)+", "+result.getString(15));
 				//41°25'01"N and 120°58'57"W
 				latlongD.setText(result.getString(17)+"°"+result.getString(18)+"'"+result.getString(19)+"''"+ result.getString(16) +" and "+result.getString(21)+"°"+result.getString(22)+"'"+result.getString(23)+"''"+result.getString(20));
+				//Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec
+				latdir = result.getString(16);
+				latdeg = result.getString(17);
+				latmin = result.getString(18);
+				latsec = result.getString(19);
+				longdir = result.getString(20);
+				longdeg = result.getString(21);
+				longmin = result.getString(22); 
+				longsec = result.getString(23);
 				specimenID = result.getString(12);
 				System.out.println("Specimen ID: "+specimenID);
 				
@@ -701,6 +731,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 					updateLocalityList();
 				}
 
+				lokaler.setSelectedItem("");
 				lokaler.setSelectedItem(lokalNamn);
 				comboenabled = true;
 				//sp.revalidate();
@@ -781,6 +812,8 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		lastLocality = (String)lokaler.getSelectedItem();
 		lastDirection = (String) direction.getSelectedItem();
 		lastDistance = distance.getText();
+		lastODistrict = oDistrict.getText();
+		lastOProvince = oProvince.getText();
 		updateSpecimenLocality();
 		nr++;
 		cnr.setText(new Integer(nr).toString());
@@ -814,8 +847,17 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		String lokalNamn = (String)lokaler.getSelectedItem();
 		if (lastLocality == null) lastLocality ="";
 		if (lokalNamn == null) lokalNamn ="";
-		System.out.println("Copy Last: "+ lastLocality + "Last dist: "+lastDistance);
+		if (lastOProvince == null) lastODistrict ="";
+		if (lastODistrict == null) lastODistrict ="";
+		System.out.println("Copy Last: "+ lastLocality + "Last dist: "+lastDistance + "oProvince: " + lastOProvince  + "oDistrict: "+ lastODistrict );
 		boolean fl = false;
+		if (!lastOProvince.equals(oProvince) || !lastODistrict.equals(oDistrict)) {
+			oProvince.setText(lastOProvince);
+			oDistrict.setText(lastODistrict);
+			updateLocalityList();
+			fl = true;
+		}
+		
 		if (!lastLocality.equals(lokalNamn)) {
 			lokaler.setSelectedItem(lastLocality);
 			fl = true;
@@ -855,11 +897,34 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		}
 	}
 	
+	public void focuslatlong() {
+		System.out.println("Focus on lat/long");
+		Coordinates c = new Coordinates(0,0);
+		System.out.println("lat: "+latdeg+"long: "+longdeg);
+		c.latlong(latdeg, longdeg, latmin, longmin, latsec, longsec, latdir, longdir);
+		System.out.println(c);
+		c = c.convertRT90();
+		System.out.println(c);
+		Point p = new Point(c.toPoint());
+		System.out.println(p);
+		GUI.canvas.focus(p);
+		GUI.canvas.setCoordinate(p);
+	}
+	
 	public void focusLocality() {
 		GUI.setCursorWait();
 		String lokal = (String) lokaler.getSelectedItem();
 		String landskapN = getProvinceFromUI(); // landskap.getText();
 		String sockenN = getDistrictFromUI(); //socken.getText();
+		int distanceI;
+		String directionS;
+		try {
+			distanceI = Integer.parseInt(distance.getText());
+			directionS = (String) direction.getSelectedItem();
+		} catch(Exception e) {
+			distanceI =-1;
+			directionS = "NAN";
+		}
 		System.out.println("focus Locality: "+lokal);
 		if (!lokal.equals("")) {
 			try {
@@ -872,6 +937,51 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				statement.setString(3, sockenN);	
 				ResultSet result = statement.executeQuery();
 				if (result.next()) {
+					
+					String RTN = result.getString(1);
+					String RTE = result.getString(2);
+					System.out.println("locality coord: "+RTN + ", " +RTE);
+					Point p = new Point(Integer.parseInt(RTE), Integer.parseInt(RTN));
+					GUI.canvas.focus(p);
+					GUI.canvas.setCoordinate(p);
+					if (distanceI>0) {
+						System.out.println("lägger till sträck för distanc, direction. dir: ");
+						//Distance(String name, Point c, int dist, String direction)
+						//GUI.canvas.getLayer("distance");
+						
+						System.out.println(distanceI);
+						System.out.println(directionS);
+						GUI.canvas.delLayer("distance");
+						GUI.canvas.addLayerTop(new Distance("distance",p,distanceI,directionS));
+					}
+				}
+			} catch (SQLException e1) {
+				e1.printStackTrace();
+			}
+		}
+		GUI.setCursorDefault();
+	}
+	
+	public void focusLocalityD() {
+		if (Keyboard.isKeyDown(KeyEvent.VK_SHIFT )) {
+			System.out.println("add Locality");
+		} else {
+			System.out.println("focus LocalityD: ");
+			String locality = dbLocality;
+			String province = landskap.getText();
+			String district = socken.getText();
+			if (!locality.equals("")) {
+				try {
+				String query = "SELECT RT90N, RT90E from locality where locality = ? and province = ? and district = ?";
+				System.out.println(query);
+				Connection conn = MYSQLConnection.getConn();
+				PreparedStatement statement = conn.prepareStatement(query);
+				statement.setString(1, locality);
+				statement.setString(2, province);	
+				statement.setString(3, district);	
+				ResultSet result = statement.executeQuery();
+				if (result.next()) {
+					
 					String RTN = result.getString(1);
 					String RTE = result.getString(2);
 					System.out.println("locality coord: "+RTN + ", " +RTE);
@@ -883,7 +993,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				e1.printStackTrace();
 			}
 		}
-		GUI.setCursorDefault();
+		}
 	}
 	
 	private void createSLDB(String localityID, String specimen_ID) {
@@ -1139,10 +1249,13 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			next();
 		} else if ("prev".equals(ev.getActionCommand())) {
 			prev();
+		} else if ("localityD".equals(ev.getActionCommand())) {
+			focusLocalityD();
 		} else if ("rubinD".equals(ev.getActionCommand())) {
 			focusRubin();
 		} else if ("latlongD".equals(ev.getActionCommand())) {
 			System.out.println("click lat/long: "+latlongD.getText());
+			focuslatlong();
 		} else if ("RT90D".equals(ev.getActionCommand())) {
 			focusRT90();
 		} else if ("focusL".equals(ev.getActionCommand())) {
@@ -1159,9 +1272,20 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	public static boolean isOpen() {
 		return comboenabled;
 	}
-	/*
+
 	public static void main(String[] args) {
-		createSpecimenList();
-	}*/
+		//createSpecimenList();
+	/*	Connection h2Conn;
+		try {
+			h2Conn = MYSQLConnection.getH2Conn();
+			String delstr = "Drop table tempspecimens";
+			PreparedStatement statement9 = h2Conn.prepareStatement(delstr);
+			statement9.executeUpdate();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+		
+	}
 
 }

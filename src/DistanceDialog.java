@@ -7,7 +7,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
@@ -27,7 +26,7 @@ import javax.swing.JTextField;
 			//System.out.println("Open search dialog");
 			super(aFrame, true);
 			setTitle("Distance and Direction");
-			String[] dirStrings = { "N", "E", "S", "W", "NE" , "SE", "NW" , "SW" };
+			String[] dirStrings = { "N", "E", "S", "W", "NE" , "SE", "NW" , "SW", "NNE", "ENE", "ESE", "SSE", "SSW", "WSW", "WNW", "NNW"  };
 		    direction = new JComboBox<String>(dirStrings);
 		    distance = new JTextField(10);
 		    

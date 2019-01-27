@@ -56,11 +56,25 @@ public class Canvas extends JPanel {
 			md.setMaxZoomL(40);
 			addLayerBotom(md);
 			
+			/*
+			RasterFil raster5 = new RasterFil("..\\Vägkartan\\vagkartan_Gtl.tif");
+			raster5.setColor(Color.black);
+			raster5.setName("Terängkartan2");
+			raster5.setMaxZoomL(1000);
+			addLayerBotom(raster5);*/
+
+			/*
+			RasterFil raster3 = new RasterFil("..\\Terängkartan\\terrangkartan_Gtl.tif");
+			raster3.setColor(Color.black);
+			raster3.setName("Terrängkartan");
+			raster3.setMaxZoomL(100);
+			addLayer(raster3);*/
 			
-			TNGRaster vagkartan = new TNGRaster("pyramids\\");
+			/*
+			TNGRaster vagkartan = new TNGRaster("..\\test\\");
 			vagkartan.setName("Vägkartan");
 			vagkartan.setMaxZoomL(100);
-			addLayerBotom(vagkartan);
+			addLayer(vagkartan);*/
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -242,14 +256,19 @@ public class Canvas extends JPanel {
 		Graphics2D g2d = (Graphics2D) g;
 		
 		//g2d.drawImage(img, 100,100,null);
-		
-		for(Layer l: layers) {
-			//System.out.println("drawing: "+l.getName());
-			//System.out.println("ZoomL: "+zoomL);
-			if (l.isInZoomLevel(zoomL)) {
-			g2d.setColor(l.getColor());
-			l.draw(g2d, xShift, xScale, yShift, yScale, bounds);
+		try {
+			for(Layer l: layers) {
+				//System.out.println("drawing: "+l.getName());
+				//System.out.println("ZoomL: "+zoomL);
+				if (l.isInZoomLevel(zoomL)) {
+					g2d.setColor(l.getColor());
+					l.draw(g2d, xShift, xScale, yShift, yScale, bounds);
+				}
 			}
+		} 
+		catch(Exception e) {
+			System.out.println("error in Layer");
+			delLayer("LokalDB");
 		}
 		
 		if (coord != null) {

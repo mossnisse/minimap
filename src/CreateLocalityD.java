@@ -156,17 +156,19 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 	}
 	
 	public void CreateLocality() {
-		System.out.println("Skapar lokal");
+		System.out.println("Skapar lokalD");
 		String localityName = locality.getText();
 		String districtName = district.getText();
 		String provinceName = province.getText();
 		String RT90Nt = RT90N.getText();
 		String RT90Et = RT90E.getText();
-		
+	
+		Coordinates c = new Coordinates(Double.parseDouble(RT90Nt), Double.parseDouble(RT90Et));
+		c = c.convertWGS84();
 		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
 		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
 		
-		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, createdby, alternative_names, coordinate_source, lcomments) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, createdby, alternative_names, coordinate_source, lcomments) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 		
 	    System.out.println(sqlstmt + " - " + localityName);
 		try {
@@ -177,21 +179,17 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 		    preparedStmt.setString (3, provinceName);
 		    preparedStmt.setString (4, "Sweden");
 		    preparedStmt.setString (5, "Europe");
-		    preparedStmt.setString (6, RT90Nt);
-		    preparedStmt.setString (7, RT90Et);
-		    preparedStmt.setString (8, Settings.getValue("user"));
-		    preparedStmt.setString (9, alternative.getText() );
-		    preparedStmt.setString (10, coordsource.getText());
-		    preparedStmt.setString (11, comments.getText());
-		   // preparedStmt.setString (8, "");
-		   // preparedStmt.setString (9, "");
+		    preparedStmt.setDouble(6, c.getNorth());
+		    preparedStmt.setDouble(7, c.getEast());
+		    preparedStmt.setString (8, RT90Nt);
+		    preparedStmt.setString (9, RT90Et);
+		    preparedStmt.setString (10, Settings.getValue("user"));
+		    preparedStmt.setString (11, alternative.getText() );
+		    preparedStmt.setString (12, coordsource.getText());
+		    preparedStmt.setString (13, comments.getText());
 		    preparedStmt.execute();
 			SpecimenList.updateLocalityList();
-			SpecimenList.updateSpecimenList();
-		    //Statement select = conn.createStatement();
-				//ResultSet result = select.executeQuery(sqlstmt);
-     
-				
+			SpecimenList.updateSpecimenList();		
 		} catch (SQLException | IOException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();

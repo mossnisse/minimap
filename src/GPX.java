@@ -20,7 +20,7 @@ public class GPX {
 	static TNGPointFile.Locality[] localities;
 	static TNGPolygonFile.Province[] provinces;
 	static TNGPolygonFile.Province[] district;
-	private static boolean wPressed = false;
+	 private static boolean wPressed = false;
 	
 	
 	public static TNGPointFile.Locality NearestLoc(int x, int y) {

@@ -42,4 +42,10 @@ public class DataInputStreamSE extends DataInputStream {
 		read(n, 0, i);
 		return new String(n, "latin1");
 	}
+	
+	public String readStringUTF8(int i) throws IOException {
+		byte[] n = new byte[i];
+		read(n, 0, i);
+		return new String(n, "UTF8");
+	}
 }

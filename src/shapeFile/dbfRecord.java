@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.Vector;
 
 
-
 public class dbfRecord {
 	Vector<String> fdata = new Vector<String>();
 	Vector<FieldDescriptor> descriptors;
@@ -35,11 +34,21 @@ public class dbfRecord {
 		br.readByte(); //byte fl = 
 		//if (fl == 32) {
 			for (FieldDescriptor desc : descriptors) {
-				String data = br.readString(desc.length);
+				String data = br.readStringUTF8(desc.length);
 				//System.out.println(desc.name+": "+data);
 				fdata.add(data.trim());
 			}
 		//}
+	}
+	
+	public String toString() {
+		Iterator<String> itr = fdata.iterator();
+		String sv ="";
+		for (FieldDescriptor desc : descriptors) {
+			sv += desc.name+": ";
+			sv += itr.next()+"\n";
+		}
+		return sv;
 	}
 	
 	public void print() {

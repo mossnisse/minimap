@@ -44,7 +44,7 @@ public class PolygonESRI extends ShapeESRI{
 		parts = new int[numParts];
 		for (int i=0;i<numParts;i++) {
 			parts[i] = bs.readIntSE();
-			System.out.println("Part"+i+": "+parts[i]);
+			//System.out.println("Part"+i+": "+parts[i]);
 		}
 		
 		points = new PointESRI[numPoints];

@@ -5,7 +5,7 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 
-public class Distance implements Layer {
+public class DistanceWGS implements Layer {
 	private Color color;
 	private String name, direction;
 	private boolean hidden;
@@ -13,7 +13,7 @@ public class Distance implements Layer {
 	private int dist;
 	
 
-	Distance(String name, Point c, int dist, String direction) {
+	DistanceWGS(String name, Point c, int dist, String direction) {
 		this.name = name;
 		this.c=c;
 		this.dist = dist;
@@ -66,6 +66,9 @@ public class Distance implements Layer {
 			g2d.setColor(color);
 			Stroke s = g2d.getStroke();
 			g2d.setStroke(new BasicStroke(2));
+			
+			
+			
 			int x1 = (int) (((c.getX())*xScale)+xShift);
 			int y1 = (int) (((c.getY())*yScale)+yShift);
 			int ds = (int) (dist * xScale);
@@ -121,4 +124,5 @@ public class Distance implements Layer {
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
 	}
+
 }

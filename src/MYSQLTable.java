@@ -1,6 +1,5 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
@@ -9,14 +8,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+import javax.swing.JOptionPane;
 
 
 public class MYSQLTable implements Layer {
 	private String name, tableName;
 	private Color color;
 	private boolean hidden;
-	//Connection conn;
-	
+
 	private int maxZoom, minZoom;
 	
 	MYSQLTable() {
@@ -24,7 +23,6 @@ public class MYSQLTable implements Layer {
 		//createConnection();
 		//this.conn = conn;
 	}
-	
 	
 
 	@Override
@@ -66,7 +64,7 @@ public class MYSQLTable implements Layer {
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
-			double yShift, double yScale, BoundingBox bounds) {
+			double yShift, double yScale, BoundingBox bounds) throws SQLException {
 		if (!hidden) {
 		g2d.setColor(color);
 		Font old = g2d.getFont();
@@ -77,7 +75,7 @@ public class MYSQLTable implements Layer {
 		
 		
 		//System.out.println(sqlstmt);
-		try {
+
 			
 			//String sqlstmt = "SELECT RT90N, RT90E, locality FROM locality where RT90N > " +bounds.getY1()+" and RT90N < " + bounds.getY2()+ " and RT90E > "+bounds.getX1()+ " and RT90E < "+bounds.getX2()+";" ;
 			String sqlstmt = "SELECT RT90N, RT90E, locality, Coordinateprecision FROM locality where RT90N > ? and RT90N < ? and RT90E > ? and RT90E < ?;" ;
@@ -113,18 +111,15 @@ public class MYSQLTable implements Layer {
 					  }  
 					  catch(NumberFormatException nfe)  
 					  {  
-						  //System.out.println("No Size");
 						  g2d.setColor(Color.green);
+						  //System.out.println("No Size");
 						  g2d.drawString(name,x,y);
 						  g2d.setColor(color);
 					  }  
 					//g2d.setColor(Color.black);
 				//}
 			}
-			} catch (SQLException e) {
-			// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+			
 		g2d.setFont(old);
 		}
 		
@@ -196,7 +191,7 @@ public class MYSQLTable implements Layer {
 					nID = ID;
 				}
 			}
-			//System.out.println("nearest: "+nID + " dist: "+ndist);
+			System.out.println("nearest: "+nID + " dist: "+ndist);
 			return nID;
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
