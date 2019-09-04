@@ -1,5 +1,5 @@
 import geometry.Point;
-import javafx.scene.input.KeyCode;
+//import javafx.scene.input.KeyCode;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -893,6 +893,18 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		if (!coord.equals(", ")) {
 			Point p = new Point(RT90D.getText());
 			System.out.println("point: "+p);
+			boolean fl = true;
+			do {
+				if (p.getX()<1000000) {
+					p.setX(p.getX()*10);
+				} else {
+					fl = false;
+				}
+				if (p.getY()<1000000) {
+					p.setY(p.getY()*10);
+				}
+			} while(fl);
+			
 			Coordinates rt90 = new Coordinates(p);
 			Coordinates swtm = rt90.convertToSweref99TMFromRT90();
 			p = swtm.getPoint();
