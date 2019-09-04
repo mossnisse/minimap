@@ -115,13 +115,18 @@ public class Topoweb implements Layer{
 			if (tiles.containsKey(index)) {
 				return tiles.get(index);
 			} else {
+				try {
 				URL path = new URL(url+key
 					+"/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX="
 					+index.zoomLevel+"&TILEROW="+index.row+"&TILECOL="+index.col+"&FORMAT=image/png");
-				System.out.println(path);
-				Image img = ImageIO.read(path);
-				tiles.put(index, img);
-				return img;
+					System.out.println(path);
+					Image img = ImageIO.read(path);
+					tiles.put(index, img);
+					return img;
+				} catch (Exception e) {
+					tiles.put(index, null);
+					return null;
+				}
 			}
 		}
 	}
