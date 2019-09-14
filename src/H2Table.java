@@ -35,10 +35,14 @@ public class H2Table implements Layer {
         ds.setPassword("sa");
         try {
             conn = ds.getConnection();
-        } catch (Exception e) {
-            System.err.println("Caught IOException: " + e.getMessage());
-        } finally {
-        }
+            /*String sql = "set collation en strength primary";
+          
+    			Statement select = conn.createStatement();
+    			select.execute(sql);*/
+            }  catch (Exception e) {
+            	System.err.println("Caught IOException: " + e.getMessage());
+            } 
+
     }
 
 	@Override
@@ -127,9 +131,9 @@ public class H2Table implements Layer {
 		ArrayList<String> names = new ArrayList<String>();
 		String sqlstmt = "";
 		if(provinsNr == -1) {
-			sqlstmt = "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM "+tableName+" where Ortnamn = '"+value+"' Order by SOCKEN";
+			sqlstmt = "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM "+tableName+" where Ortnamn Like '"+value+"' Order by SOCKEN";
 		} else {
-			sqlstmt = "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM "+tableName+" where Ortnamn = '"+value+"' and FPNUMMER = "+provinsNr+" Order by SOCKEN";
+			sqlstmt = "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM "+tableName+" where Ortnamn Like '"+value+"' and FPNUMMER = "+provinsNr+" Order by SOCKEN";
 		}
 		try {
 			Statement select = conn.createStatement();
@@ -194,18 +198,20 @@ public class H2Table implements Layer {
 	
 	public void saveConvert() {
 		createConnection();
-		String drop = "DROP table if exists ortnamnSWTM";
-		String sql0 ="Create table ortnamnSWTM as select * FROM ortnamnsDB";
+		//String drop = "DROP table if exists ortnamnSWTM";
+		//String sql0 ="Create table ortnamnSWTM as select * FROM ortnamnsDB";
 		String sql1 ="SELECT NORTH, EAST, ORT_ID from ortnamnSWTM LIMIT ?,?";
 		String sql2 ="Update ortnamnSWTM set NORTH = ?, EAST = ? where ORT_ID = ?";
-		int batchsize=1000;
+		int batchsize=5000;
 		try {
 			PreparedStatement drops= conn.prepareStatement(drop);
+			drops.execute();
 			PreparedStatement statmt0= conn.prepareStatement(sql0);
+			statmt0.execute();
 			PreparedStatement statmt1= conn.prepareStatement(sql1);
 			PreparedStatement statmt2= conn.prepareStatement(sql2);
-			drops.execute();
-			statmt0.execute();
+			
+			
 			statmt1.setInt(2, batchsize);
 			//statmt0.execute();
 			for (int i=1; i< 1000000; i++) {
@@ -216,18 +222,27 @@ public class H2Table implements Layer {
 					//double east = result.getDouble(2);
 					//int id = result.getInt(3);
 					Coordinates rt90 = new Coordinates(result.getDouble(1), result.getDouble(2));
-					//System.out.println("rt90: "+rt90);
-					Coordinates wgs84 = rt90.convertToWGS84FromRT90();
-					//System.out.println("wgs84: "+wgs84);
-					Coordinates swtm = wgs84.convertTo(CoordSystem.Sweref99TM);
-					//System.out.println("swtm: "+swtm);
-					//Coordinates swtm = new Coordinates(result.getDouble(1), result.getDouble(2)).convertToRT90FromSweref99TM();
-					//Coordinates swtm =rt90.convertToRT90FromSweref99TM();
-					//System.out.println("i "+i+", ID "+result.getInt(3));
-					statmt2.setDouble(1, swtm.getNorth());
-					statmt2.setDouble(2, swtm.getEast());
-					statmt2.setInt(3, result.getInt(3));
-					statmt2.execute();
+					if (rt90.isValid(CoordSystem.RT90)) {
+						Coordinates wgs84 = rt90.convertToWGS84FromRT90();
+						Coordinates swtm = wgs84.convertTo(CoordSystem.Sweref99TM);
+						statmt2.setDouble(1, swtm.getNorth());
+						statmt2.setDouble(2, swtm.getEast());
+						statmt2.setInt(3, result.getInt(3));
+						statmt2.execute();
+						//System.out.println("rt90: "+rt90 +" swtm: "+swtm );
+						
+						//System.out.println("wgs84: "+wgs84);
+						//Coordinates 
+						//System.out.println("swtm: "+swtm);
+						//Coordinates swtm = new Coordinates(result.getDouble(1), result.getDouble(2)).convertToRT90FromSweref99TM();
+						//Coordinates swtm =rt90.convertToRT90FromSweref99TM();
+						//System.out.println("i "+i+", ID "+result.getInt(3));
+					} else {
+						//swtm = rt90;
+						System.out.println("not valid rt90: "+rt90);
+					}
+					
+					
 				}
 				System.out.println("i "+i);
 			}
@@ -263,9 +278,26 @@ public class H2Table implements Layer {
 		
 	}
 	
+	
 	public static void main(String[] args) {
 		H2Table h2 = new H2Table("ortnamnsDB");
+		//String sql = "select * from ortnamnsDB where North = 123544";
+		/*try {
+			String sql = "Alter table ortnamnsDB ALTER COLUMN ORTNAMN varchar_ignorecase(255)";
+			Statement select;
+		
+			select = h2.conn.createStatement();
+			select.execute(sql);
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
+	
+		
+		//ResultSetMetaData rsmd = result.getMetaData();*/
 		h2.saveConvert();
+		
+		
 		//h2.showC();
 	}
 }
