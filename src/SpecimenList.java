@@ -71,19 +71,19 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		
 		JLabel label3 = new JLabel("Year: ");
 		this.add(label3);
-		yearS = new JTextField();
+		yearS = new JTextField("%");
 		yearS.setPreferredSize(new Dimension(320,20));
 		this.add(yearS);
 
 		JLabel label4 = new JLabel("Collector: ");
 		this.add(label4);
-		collectorS = new JTextField();
+		collectorS = new JTextField("%");
 		collectorS.setPreferredSize(new Dimension(320,20));
 		this.add(collectorS);
 
 		JLabel label5 = new JLabel("Original Text: ");
 		this.add(label5);
-		originalS = new JTextField();
+		originalS = new JTextField("%");
 		originalS.setPreferredSize(new Dimension(320,20));
 		this.add(originalS);
 		
@@ -462,25 +462,46 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	public static void createSpecimenList() {
 		GUI.setCursorWait();
 		
-		String province = landskap.getText();
-		String district = socken.getText();
+		String province = landskap.getText().replace('*','%');
+		String district = socken.getText().replace('*','%');
+		String year_search = yearS.getText().replace('*','%');
+		String collector_search = collectorS.getText().replace('*','%');
+		String orgtext_search = originalS.getText().replace('*','%');
 		//String province = "Lycksele Lappmark";
 		//String district = "Malå";
-		
+		nr =0;
 		System.out.println("\ncreate SpecimenList: "+province+": "+district);  // TODO: print trace
 		try {
 			
 			Connection conn = MYSQLConnection.getConn();
 			// get data from MYSQL
+			/*
 			String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, LEFT(Collector,64), specimens.InstitutionCode, locality.ID, specimens.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
 					//+ " FROM specimens left join specimen_locality on specimens.InstitutionCode = specimen_locality.InstitutionCode and specimens.AccessionNo = specimen_locality.AccessionNo left join locality on specimen_locality.locality_ID = locality.ID WHERE "
 					+ " FROM specimens left join specimen_locality on specimens.ID = specimen_locality.specimen_ID  left join locality on specimen_locality.locality_ID = locality.ID WHERE "
 					+ "Specimens.Province = ? and specimens.district = ?";
+					*/
+			
+			String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, LEFT(Collector,64), specimens.InstitutionCode, locality.ID, specimens.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
+					+ " FROM specimens left join specimen_locality on specimens.ID = specimen_locality.specimen_ID  left join locality on specimen_locality.locality_ID = locality.ID WHERE "
+					+ "Specimens.Province LIKE ? and specimens.district LIKE ? and specimens.year LIKE ? and specimens.collector LIKE ? and specimens.original_text LIKE ?";
+					
+			
+			/*String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, LEFT(Collector,64), specimens.InstitutionCode, locality.ID, specimens.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince "
+					+ "			FROM FROM specimens left join specimen_locality on";
+			if (province != "") sqlstmt = sqlstmt + "Specimens.Province = ?"; 
+			if (district!= "") sqlstmt = sqlstmt + "Specimens.Province = ?"; 
+			if (year_search!= "") sqlstmt = sqlstmt + "Specimens.year_search = ?"; 
+			if (collector_search != "" collectorS.getText();*/
+			
 			System.out.println(sqlstmt);  // TODO: print trace
 			
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			statement.setString(1, province);
 			statement.setString(2, district);
+			statement.setString(3, year_search);
+			statement.setString(4, collector_search);
+			statement.setString(5, orgtext_search);
 			ResultSet result = statement.executeQuery();
 			
 			Connection h2Conn = MYSQLConnection.getH2Conn();
@@ -535,6 +556,8 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			e.printStackTrace(); // TODO Auto-generated catch block
 		}
 		GUI.setCursorDefault();
+		updateSpecimenList();
+		//updateLocalityList();
 	}
 	
 	/*
@@ -1015,7 +1038,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	private void createSLDB(String localityID, String specimen_ID) {
 		GUI.setCursorWait();
 		String sqlstmt = "INSERT INTO Specimen_Locality (locality_ID, specimen_ID, InstitutionCode, CollectionCode, AccessionNo, createdby, distance, direction, oDistrict, oProvince) VALUES (?,?,?,?,?,?,?,?,?,?)";
-		System.out.println(sqlstmt + " - " + localityID + " - "+specimen_ID); //TODO print trace
+		System.out.println(sqlstmt + "n localityID=" + localityID + " specimenID="+specimen_ID+ "AccessionNo=" +accnr); //TODO print trace
 		
 		String distN = null;
 		try {
@@ -1155,9 +1178,10 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 						statement2.setString(7, specimenID);
 						int r = statement2.executeUpdate();
 						if(r !=0) {
-							System.out.println("success: "+r);  // TODO: print trace
+							System.out.println("success: Updated specimen locality"+r);  // TODO: print trace
 						} else {
-							System.out.println("fail");  // TODO: print trace
+							System.out.println("fail: Didn't update, try create SLDB. localityID="+localityID+" user="+Settings.getValue("user")+" directN="+directN+
+									" distN="+distN+" oDistrict="+oDistrict.getText()+" oProvince=" + oProvince.getText()+"specimenID="+specimenID);  // TODO: print trace
 							System.out.println(sqlstmt2);
 							createSLDB(localityID, specimenID);
 						}
