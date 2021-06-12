@@ -59,14 +59,14 @@ public class GPX {
 		Boolean writeheader;
 
 		try {
-			TNGPointFile or = new TNGPointFile("..\\orter.tng");
+			TNGPointFile or = new TNGPointFile("orter.tng");
 			localities = or.getLocalities();
 			System.out.println("Loaded provinces..");
-			TNGPolygonFile pr = new TNGPolygonFile("..\\provinser.tng");
+			TNGPolygonFile pr = new TNGPolygonFile("provinser.tng");
 			provinces = pr.getProvinces();
 			System.out.println("done");
 			System.out.println("Loading district..");
-			TNGPolygonFile so = new TNGPolygonFile("..\\socknar.tng");
+			TNGPolygonFile so = new TNGPolygonFile("socknar.tng");
 			district = so.getProvinces();
 			System.out.println("done");
 		} catch (IOException e1) {
@@ -116,13 +116,11 @@ public class GPX {
 
 			bufferedWriter = new BufferedWriter(new FileWriter(CSVfile));
 			if (writeheader) {
-				String line = "name" + separator + "north" + separator + "east"
-						+ separator + "dateSE" + separator + "elevation"
-						+ separator + "timeSE" + separator + "latitude"
+				String line = "Nr" + separator + "N" + separator + "E"
+						+ separator + "Datum" + separator + "elevation"
+						+ separator + "time" + separator + "latitude"
 						+ separator + "longitude" + separator + "DateTimeUTC"
-						+ separator + "närmaste ort" + separator
-						+ "avstånd till närmaste ort (km)" + separator
-						+ "riktning"+separator+"provins"+separator+"socken";
+						+ separator + "auto-beskrivning";
 				bufferedWriter.write(line);
 				bufferedWriter.newLine();
 			}
@@ -171,8 +169,7 @@ public class GPX {
 							+ separator + swDate + separator + elevation
 							+ separator + swTime + separator + lat + separator
 							+ lon + separator + datetime + separator
-							+ nearest.name + separator + dist + separator
-							+ riktning+separator+province+separator+district;
+							+ province+ " " +district+" socken "+ dist + "km "+  riktning+" "+ nearest.name;
 					bufferedWriter.write(line);
 					bufferedWriter.newLine();
 					
