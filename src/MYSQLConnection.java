@@ -19,7 +19,8 @@ public class MYSQLConnection {
 
 	
 	private static void openConn(String pass) throws SQLException {
-		String url = "jdbc:mysql://130.239.50.18:3306/samhall";
+		//String url = "jdbc:mysql://130.239.50.18:3306/samhall";
+		String url = "jdbc:mysql://172.18.144.38:3306/samhall?connectionCollation=utf8_general_ci";
 		String user = "MiniMap";
 		conn = DriverManager.getConnection(url, user, password);
 	}
@@ -71,7 +72,7 @@ public class MYSQLConnection {
 	
 	private static void createH2Conn() throws SQLException {
         JdbcDataSource ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:˜/test");
+        ds.setURL("jdbc:h2:Ëœ/test");
         ds.setUser("sa");
         ds.setPassword("sa");
         h2Conn = ds.getConnection();
