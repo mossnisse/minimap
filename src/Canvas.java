@@ -59,11 +59,13 @@ public class Canvas extends JPanel {
 			socFile.setName("socknar");
 			addLayerBotom(socFile);*/
 			
-			
+
 			TNGPolygonFile socFile = new TNGPolygonFile("socknarSWEREF99TM.tng");
 			socFile.setColor(Color.red);
 			socFile.setName("socknar");
+			socFile.setHidden(true);
 			addLayerBotom(socFile);
+			
 			
 
 			H2Table od = new H2Table("ortnamnSWTM");
@@ -73,11 +75,20 @@ public class Canvas extends JPanel {
 			od.setMaxZoomL(5);
 			addLayerBotom(od);
 			
+			/*
 			MYSQLTable md = new MYSQLTable();
 			md.setColor(Color.red);
 			md.setName("LokalDB");
 			md.setHidden(false);
 			md.setMaxZoomL(40);
+			addLayerBotom(md);
+			*/
+			
+			Locality md = new Locality();
+			md.setColor(Color.red);
+			md.setName("LokalDB");
+			md.setHidden(false);
+			md.setMaxZoomL(230);
 			addLayerBotom(md);
 			
 			Topoweb tb = new Topoweb();

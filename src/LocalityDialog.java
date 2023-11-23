@@ -20,7 +20,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	private static final long serialVersionUID = -6495783408904343790L;
 	public JButton cancel, delete, ok;
 	private int localityID;
-	JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, comments, localitySize;
+	JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, comments, localitySize, zoomLevel, category;
 	JFrame localFrame;
 	 
 	
@@ -32,7 +32,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 		SpringLayout layout = new SpringLayout();
 		setLayout(layout);
 		
-		JLabel label1, label2, label3, label4, label5, label6, label7, label8, label9, label10, label11;
+		JLabel label1, label2, label3, label4, label5, label6, label7, label8, label9, label10, label11, label12, label13;
 		
 		cancel = new JButton("Cancel");
 		add(cancel);
@@ -41,7 +41,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 		
 		try {
 			Connection conn = MYSQLConnection.getConn();
-			String sqlstmt = "SELECT locality, alternative_names, RT90N, RT90E, province, district, coordinate_source, lcomments, created, createdBy, modified, modifiedBy, Coordinateprecision FROM locality WHERE ID =?";
+			String sqlstmt = "SELECT locality, alternative_names, RT90N, RT90E, province, district, coordinate_source, lcomments, created, createdBy, modified, modifiedBy, Coordinateprecision, category, zoomLevel FROM locality WHERE ID =?";
 			System.out.println(sqlstmt);
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			statement.setInt(1, localityID);
@@ -97,14 +97,27 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 				label9 = new JLabel("Created:" +result.getString(9) + " " + result.getString(10));
 				add(label9);
 				
+				
 				label10 = new JLabel("Modified: "+result.getString(11) + " " +result.getString(12));
 				add(label10);
 				
-				label11 = new JLabel("Size");
+				label11 = new JLabel("Size:");
 				add(label11);
 				localitySize = new JTextField(result.getString(13));
 				localitySize.setPreferredSize(new Dimension(200,20));
 				add(localitySize);
+				
+				label12 = new JLabel("Category:");
+				add(label12);
+				category = new JTextField(result.getString(14));
+				category.setPreferredSize(new Dimension(200,20));
+				add(category);
+				
+				label13 = new JLabel("Zoom Level:");
+				add(label13);
+				zoomLevel = new JTextField(String.valueOf(result.getInt(15)));
+				zoomLevel.setPreferredSize(new Dimension(200,20));
+				add(zoomLevel);
 				
 				delete = new JButton("Delete");
 				add(delete);
@@ -158,6 +171,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 				layout.putConstraint(SpringLayout.NORTH, localitySize, 0, SpringLayout.NORTH, label11);
 				
 				
+				
 				layout.putConstraint(SpringLayout.WEST, label6, 10, SpringLayout.WEST, this);
 				layout.putConstraint(SpringLayout.NORTH, label6, 10, SpringLayout.SOUTH, label11);
 				
@@ -176,8 +190,20 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 				layout.putConstraint(SpringLayout.WEST, comments, 10, SpringLayout.EAST, label8);
 				layout.putConstraint(SpringLayout.NORTH, comments, 0, SpringLayout.NORTH, label8);
 				
+				layout.putConstraint(SpringLayout.WEST, label12, 10, SpringLayout.WEST, this);
+				layout.putConstraint(SpringLayout.NORTH, label12, 10, SpringLayout.SOUTH, label8);
+				
+				layout.putConstraint(SpringLayout.WEST, category, 10, SpringLayout.EAST, label12);
+				layout.putConstraint(SpringLayout.NORTH, category, 0, SpringLayout.NORTH, label12);
+				
+				layout.putConstraint(SpringLayout.WEST, label13, 10, SpringLayout.WEST, this);
+				layout.putConstraint(SpringLayout.NORTH, label13, 10, SpringLayout.SOUTH, label12);
+				
+				layout.putConstraint(SpringLayout.WEST, zoomLevel, 10, SpringLayout.EAST, label13);
+				layout.putConstraint(SpringLayout.NORTH, zoomLevel, 0, SpringLayout.NORTH, label13);
+				
 				layout.putConstraint(SpringLayout.WEST, label9, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label9, 10, SpringLayout.SOUTH, label8);
+				layout.putConstraint(SpringLayout.NORTH, label9, 10, SpringLayout.SOUTH, label13);
 				
 				layout.putConstraint(SpringLayout.WEST, label10, 10, SpringLayout.WEST, this);
 				layout.putConstraint(SpringLayout.NORTH, label10, 10, SpringLayout.SOUTH, label9);
@@ -200,7 +226,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 			e.printStackTrace();
 		}
 		
-		localFrame.setSize(400, 400);
+		localFrame.setSize(400, 600);
 		localFrame.setVisible(true);
 		
 		cancel.requestFocusInWindow();
@@ -238,7 +264,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	private void updateLokal() {
 		try {
 			Connection conn = MYSQLConnection.getConn();
-			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, RT90N = ?, RT90E = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?  WHERE ID =?";
+			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, RT90N = ?, RT90E = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?, category = ?, zoomLevel =?  WHERE ID =?";
 			System.out.println(sqlstmt);
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			statement.setString(1, name.getText());
@@ -251,7 +277,17 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 			statement.setString(8, comments.getText());
 			statement.setString(9,Settings.getValue("user"));
 			statement.setString(10,localitySize.getText());
-			statement.setInt(11, localityID);
+			statement.setString(11, category.getText());
+			int zl;
+			try {
+				zl = Integer.parseInt(zoomLevel.getText());
+			} catch (NumberFormatException e) {
+				zl = -1;
+			}
+			statement.setInt(12, zl);
+			statement.setInt(13, localityID);
+			
+			
 			statement.execute();
 			 if (SpecimenList.isOpen()) {
 			    	SpecimenList.updateLocalityList();

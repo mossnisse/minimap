@@ -34,7 +34,7 @@ public class SearchDialog extends JDialog implements ActionListener, ItemListene
 	private Container contentPane;
 	private String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark", 
 			"Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland", 
-			"Uppland", "Värmland", "Västermanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän", 
+			"Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän", 
 			"Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
 	private int[] provnr = {-1, 27, 25,26,28,24,29,22,23,19,20,21,18,17,16,13,12,14,10,9,11,15,6,8,5,3,2,1,4,7};
 	//JPanel aPanel = new JPanel();

@@ -773,7 +773,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 
 		try {
 			Connection conn = MYSQLConnection.getConn();
-			String sqlstmt2 = "SELECT locality FROM locality WHERE Province = ? Collate utf8_swedish_ci and district = ? Collate utf8_swedish_ci order by locality Collate utf8_swedish_ci;";
+			String sqlstmt2 = "SELECT locality FROM locality WHERE Province = ? and district = ? order by locality;";
 			System.out.println(sqlstmt2 + " Province: " +province + " district: "+district);
 			PreparedStatement statement2 = conn.prepareStatement(sqlstmt2);
 			statement2.setString(1, province);

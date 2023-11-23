@@ -543,11 +543,29 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		//canvas.focus(p2);
 	}
 
+	/*
 	public void showLokal(MouseEvent arg0) {
 		System.out.println("show Locality");
 		Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
 
 		MYSQLTable ldb = (MYSQLTable) canvas.getLayer("LokalDB");
+		int localityID = ldb.findNearest(p,1000);
+		if (localityID != -1) {
+
+			JFrame lframe = new JFrame("Locality");
+			LocalityDialog diag = new LocalityDialog(localityID,lframe);
+			//lframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			lframe.add(diag);
+			diag.cancel.requestFocusInWindow();
+		}
+		//canvas.repaint();
+	}*/
+	
+	public void showLokal(MouseEvent arg0) {
+		System.out.println("show Locality");
+		Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
+
+		Locality ldb = (Locality) canvas.getLayer("LokalDB");
 		int localityID = ldb.findNearest(p,1000);
 		if (localityID != -1) {
 

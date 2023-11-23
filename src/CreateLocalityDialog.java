@@ -6,6 +6,7 @@ import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import javax.swing.JButton;
@@ -19,7 +20,7 @@ import javax.swing.SpringLayout;
 public class CreateLocalityDialog extends JPanel implements ActionListener{
 	private static final long serialVersionUID = 5999128550024317489L;
 	private JFrame localFrame;
-	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, commentsT, alternativeT, coordsourceT, locSizeT;
+	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, commentsT, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	JButton cancel, ok;
 
 	public CreateLocalityDialog(JFrame localFrame, String SWTMN, String SWTME, String province, String district) {
@@ -79,6 +80,14 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		locSizeT.setPreferredSize(new Dimension(200,20));
 		add(locSizeT);
 		
+		categoryT = new JTextField();
+		categoryT.setPreferredSize(new Dimension(200,20));
+		add(categoryT);
+		
+		zoomLevelT = new JTextField();
+		zoomLevelT.setPreferredSize(new Dimension(200,20));
+		add(zoomLevelT);
+		
 		JLabel label1 = new JLabel("Locality");
 		add(label1);
 		layout.putConstraint(SpringLayout.WEST, label1, 10, SpringLayout.WEST, this);
@@ -136,10 +145,27 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		layout.putConstraint(SpringLayout.WEST, locSizeT, 10, SpringLayout.EAST, label11);
 		layout.putConstraint(SpringLayout.NORTH, locSizeT, 0, SpringLayout.NORTH, label11);
 		
+		JLabel label11a = new JLabel("Category");
+		add(label11a);
+		layout.putConstraint(SpringLayout.WEST, label11a, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, label11a, 10, SpringLayout.SOUTH, label11);
+		
+		layout.putConstraint(SpringLayout.WEST, categoryT, 10, SpringLayout.EAST, label11a);
+		layout.putConstraint(SpringLayout.NORTH, categoryT, 0, SpringLayout.NORTH, label11a);
+		
+		
+		JLabel label11b = new JLabel("Zoom level");
+		add(label11b);
+		layout.putConstraint(SpringLayout.WEST, label11b, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, label11b, 10, SpringLayout.SOUTH, label11a);
+		
+		layout.putConstraint(SpringLayout.WEST, zoomLevelT, 10, SpringLayout.EAST, label11b);
+		layout.putConstraint(SpringLayout.NORTH, zoomLevelT, 0, SpringLayout.NORTH, label11b);
+		
 		JLabel label10 = new JLabel("Continent");
 		add(label10);
 		layout.putConstraint(SpringLayout.WEST, label10, 10, SpringLayout.WEST, this);
-		layout.putConstraint(SpringLayout.NORTH, label10, 10, SpringLayout.SOUTH, label11);
+		layout.putConstraint(SpringLayout.NORTH, label10, 10, SpringLayout.SOUTH, label11b);
 		
 		layout.putConstraint(SpringLayout.WEST, continentT, 10, SpringLayout.EAST, label10);
 		layout.putConstraint(SpringLayout.NORTH, continentT, 0, SpringLayout.NORTH, label10);
@@ -189,16 +215,58 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		String provinceName = provinceT.getText();
 		String SWTMNt = SWTMNT.getText();
 		String SWTMEt = SWTMET.getText();
+		String zl = zoomLevelT.getText();
+		try {
+		        Integer.parseInt(zl);
+		} catch (NumberFormatException nfe) {
+			zl = "0";
+		}
 		Coordinates SWTMc = new Coordinates(Double.parseDouble(SWTMNt), Double.parseDouble(SWTMEt));
 		Coordinates wgs84c = SWTMc.convertToWGS84FromSweref99TM();
 		Coordinates rt90c = wgs84c.convertToRT90FromWGS84();
 		String RT90Nt = Long.toString(Math.round(rt90c.getNorth()));
 		String RT90Et = Long.toString(Math.round(rt90c.getEast()));
 		
+		//check if locality already exists and show message if do
+		String sqltestifU = "SELECT COUNT(1) FROM locality WHERE locality = ? AND district = ? AND province = ? AND country = 'Sweden';";
+		try {
+			Connection conn = MYSQLConnection.getConn();
+			PreparedStatement preparedStmt = conn.prepareStatement(sqltestifU);
+			preparedStmt.setString (1, localityName);
+		    preparedStmt.setString (2, districtName);
+		    preparedStmt.setString (3, provinceName);
+		    ResultSet result = preparedStmt.executeQuery();
+		    result.next();
+		    int i = result.getInt(1);
+		    System.out.println("result"+i);
+		    if (i ==1) {
+		    	JOptionPane.showMessageDialog(null, "There is already a locality with the same name in the district", "InfoBox: "+"Error", JOptionPane.INFORMATION_MESSAGE);
+		    	GUI.setCursorDefault();
+				return false;
+		    }
+		} catch (SQLException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			JOptionPane.showMessageDialog(null, "couldnt check if locality already exists", "InfoBox: " + "SQL Error", JOptionPane.INFORMATION_MESSAGE);
+			GUI.setCursorDefault();
+			return false;
+		}
+		
+		int j = -1;
+		// check if size is possitive integer
+		try {
+	        j = Integer.parseInt(locSizeT.getText());
+		} catch (NumberFormatException nfe) {
+			
+			JOptionPane.showMessageDialog(null, "Size is not an possitive integer", "InfoBox: " + "Error", JOptionPane.INFORMATION_MESSAGE);
+			GUI.setCursorDefault();
+			return false;
+		}
+		
 		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
 		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
 		
-		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision, category, zoomLevel) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		
 	    System.out.println(sqlstmt + " - " + localityName + "loc size: "+ locSizeT.getText()); // TODO trace print
 		try {
@@ -220,6 +288,8 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		    preparedStmt.setString (14, coordsourceT.getText());
 		    preparedStmt.setString (15, commentsT.getText());
 		    preparedStmt.setString (16, locSizeT.getText());
+		    preparedStmt.setString (17, categoryT.getText());
+		    preparedStmt.setString (18, zl);
 		    preparedStmt.execute();
 		    if (SpecimenList.isOpen()) {
 		    	SpecimenList.updateLocalityList();

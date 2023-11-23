@@ -19,7 +19,8 @@ public class MYSQLConnection {
 
 	
 	private static void openConn(String pass) throws SQLException {
-		String url = "jdbc:mysql://130.239.50.18:3306/samhall";
+		//String url = "jdbc:mysql://130.239.50.18:3306/samhall";
+		String url = "jdbc:mysql://172.18.144.38:3306/samhall?connectionCollation=utf8_general_ci";
 		String user = "MiniMap";
 		conn = DriverManager.getConnection(url, user, password);
 	}
