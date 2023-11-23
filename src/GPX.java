@@ -140,7 +140,7 @@ public class GPX {
 					String lat = waypointElement.getAttribute("lat");
 					String lon = waypointElement.getAttribute("lon");
 					Coordinates c = new Coordinates(Double.valueOf(lat),
-							Double.valueOf(lon)).convertRT90();
+							Double.valueOf(lon)).convertToRT90FromWGS84();
 					String north = String.valueOf((int) c.getNorth());
 					String east = String.valueOf((int) c.getEast());
 					String elevation = waypointElement

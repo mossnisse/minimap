@@ -16,6 +16,7 @@ public class TNGRaster implements Layer {
 	private int maxZoom, minZoom;
 	Image[] chunks;
 	int[] chunknr;
+	private CoordSystem cs;
 	
 	public TNGRaster(String fileName) throws IOException {
 		this.fileName=fileName;
@@ -24,6 +25,7 @@ public class TNGRaster implements Layer {
 		chunknr = new int[2000];
 		maxZoom = 0;
 		minZoom = 0;
+		cs = CoordSystem.Sweref99TM;
 	}
 
 	@Override
@@ -112,6 +114,17 @@ public class TNGRaster implements Layer {
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 
 }

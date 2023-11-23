@@ -1,22 +1,27 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Stroke;
 import java.io.BufferedInputStream;
+import java.io.DataOutputStream;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import shapeFile.DataInputStreamSE;
+import shapeFile.PointESRI;
 
 public class TNGPointFile implements Layer{
 	private String fileName, name;
 	private Color color;
 	private Locality[] localities;
 	private boolean hidden;
+	private CoordSystem cs;
+	private int nameLength;
 	
 	public class Locality extends Point{
 		public String name;
@@ -71,6 +76,7 @@ public class TNGPointFile implements Layer{
 	public TNGPointFile(String fileName) throws IOException {
 		this.fileName = fileName;
 		this.name = fileName;
+		this.cs = CoordSystem.Sweref99TM;
 		readFile();
 	}
 	
@@ -92,7 +98,7 @@ public class TNGPointFile implements Layer{
 		in.readInt();
 		int nrRecords = in.readInt();
 
-		int nameLength = in.readInt();
+		nameLength = in.readInt();
 		localities = new Locality[nrRecords];
 		for (int i = 0; i < nrRecords; i++) {
 			String name = in.readString(nameLength).trim();
@@ -197,5 +203,48 @@ public class TNGPointFile implements Layer{
 	
 	public int size() {
 		return localities.length;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
+	}
+	
+	public void saveFileConvert(String filename) {
+		DataOutputStream out;
+		try {
+			out = new DataOutputStream(new FileOutputStream(filename));
+			out.writeInt(1);  // shape type == Polygon
+			out.writeInt(localities.length); // nr reccords
+			out.writeInt(nameLength);
+			for(Locality koord:localities) {
+				out.writeBytes(koord.name);
+				// System.out.println(record.getField(nameField));
+				out.writeInt(koord.getX());
+				out.writeInt(koord.getY());
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public static void main(String[] args) {
+		TNGPointFile pf;
+		try {
+			pf = new TNGPointFile("orter.tng");
+
+			pf.saveFileConvert("orterSWEREF99TM.tng");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

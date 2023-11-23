@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 
 public class Canvas extends JPanel {
 	private static final long serialVersionUID = 1L;
+	private CoordSystem cs;
 	BoundingBox bounds;
 	Point coord;
 	private ArrayList<Layer> layers;
@@ -21,10 +22,18 @@ public class Canvas extends JPanel {
 	//Connection conn;
 	
 	public Canvas() {
+		cs = CoordSystem.Sweref99TM;
 		//this.conn = conn;
-		int xMin = 1200000;
+		// Sverige RT90
+		/*int xMin = 1200000;
 		int xMax = 1900000;
 		int yMin = 6100000;
+		int yMax = 7693900;*/
+		
+		// Sverige Sweref99TM
+		int xMin = 194181;
+		int xMax = 812496;
+		int yMin = 6113836;
 		int yMax = 7700000;
 		bounds = new BoundingBox(xMin,yMin,xMax,yMax);
 		coord = null;
@@ -32,17 +41,32 @@ public class Canvas extends JPanel {
 		layers = new ArrayList<Layer>();
 		try {
 			
+			TNGPolygonFile prFile = new TNGPolygonFile("provinserSWEREF99TM.tng");
+			prFile.setColor(Color.black);
+			prFile.setName("provinser");
+			addLayerBotom(prFile);
+			
+			/*
 			TNGPolygonFile prFile = new TNGPolygonFile("provinser.tng");
 			prFile.setColor(Color.blue);
 			prFile.setName("provinser");
 			addLayerBotom(prFile);
+			*/
 			
+			/*
 			TNGPolygonFile socFile = new TNGPolygonFile("socknar.tng");
 			socFile.setColor(Color.red);
 			socFile.setName("socknar");
+			addLayerBotom(socFile);*/
+			
+			
+			TNGPolygonFile socFile = new TNGPolygonFile("socknarSWEREF99TM.tng");
+			socFile.setColor(Color.red);
+			socFile.setName("socknar");
 			addLayerBotom(socFile);
+			
 
-			H2Table od = new H2Table("ortnamnsDB");
+			H2Table od = new H2Table("ortnamnSWTM");
 			od.setColor(Color.green);
 			od.setName("Ortnamnsdb");
 			od.setHidden(false);
@@ -56,25 +80,10 @@ public class Canvas extends JPanel {
 			md.setMaxZoomL(40);
 			addLayerBotom(md);
 			
-			/*
-			RasterFil raster5 = new RasterFil("..\\Vägkartan\\vagkartan_Gtl.tif");
-			raster5.setColor(Color.black);
-			raster5.setName("Terängkartan2");
-			raster5.setMaxZoomL(1000);
-			addLayerBotom(raster5);*/
-
-			/*
-			RasterFil raster3 = new RasterFil("..\\Terängkartan\\terrangkartan_Gtl.tif");
-			raster3.setColor(Color.black);
-			raster3.setName("Terrängkartan");
-			raster3.setMaxZoomL(100);
-			addLayer(raster3);*/
-			
-			/*
-			TNGRaster vagkartan = new TNGRaster("..\\test\\");
-			vagkartan.setName("Vägkartan");
-			vagkartan.setMaxZoomL(100);
-			addLayer(vagkartan);*/
+			Topoweb tb = new Topoweb();
+			tb.setName("TopoWeb");
+			md.setHidden(false);
+			addLayerBotom(tb);
 			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -268,6 +277,7 @@ public class Canvas extends JPanel {
 		} 
 		catch(Exception e) {
 			System.out.println("error in Layer");
+			e.printStackTrace();
 			delLayer("LokalDB");
 		}
 		

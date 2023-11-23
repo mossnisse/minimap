@@ -19,10 +19,10 @@ import javax.swing.SpringLayout;
 public class CreateLocalityDialog extends JPanel implements ActionListener{
 	private static final long serialVersionUID = 5999128550024317489L;
 	private JFrame localFrame;
-	private JTextField localityT, districtT, provinceT, countryT, continentT, RT90NT, RT90ET, commentsT, alternativeT, coordsourceT, locSizeT;
+	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, commentsT, alternativeT, coordsourceT, locSizeT;
 	JButton cancel, ok;
 
-	public CreateLocalityDialog(JFrame localFrame, String RT90N, String RT90E, String province, String district) {
+	public CreateLocalityDialog(JFrame localFrame, String SWTMN, String SWTME, String province, String district) {
 		this.localFrame = localFrame;
 		localFrame.setTitle("Create new Locality");
 		SpringLayout layout = new SpringLayout();
@@ -39,7 +39,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		ok.setActionCommand("ok");
 
 		H2Table odb = (H2Table) GUI.canvas.getLayer("Ortnamnsdb");
-		Point p = new Point(Integer.parseInt(RT90N),Integer.parseInt(RT90E));
+		Point p = new Point(Integer.parseInt(SWTMN),Integer.parseInt(SWTME));
 		if (odb== null) {
 			System.out.println("hittar inte ortnamnslagret");
 		}
@@ -61,11 +61,11 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		continentT = new JTextField("Europe");
 		add(continentT);
 		continentT.setPreferredSize(new Dimension(200,20));
-		RT90NT = new JTextField(RT90N);
-		add(RT90NT);
-		RT90NT.setPreferredSize(new Dimension(200,20));
-		RT90ET = new JTextField(RT90E);
-		add(RT90ET);
+		SWTMNT = new JTextField(SWTMN);
+		add(SWTMNT);
+		SWTMNT.setPreferredSize(new Dimension(200,20));
+		SWTMET = new JTextField(SWTME);
+		add(SWTMET);
 		commentsT = new JTextField();
 		commentsT.setPreferredSize(new Dimension(200,20));
 		add(commentsT);
@@ -111,21 +111,21 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		layout.putConstraint(SpringLayout.WEST, commentsT, 10, SpringLayout.EAST, label4);
 		layout.putConstraint(SpringLayout.NORTH, commentsT, 0, SpringLayout.NORTH, label4);
 		
-		JLabel label5 = new JLabel("RT90 N");
+		JLabel label5 = new JLabel("Sweref99TM N");
 		add(label5);
 		layout.putConstraint(SpringLayout.WEST, label5, 10, SpringLayout.WEST, this);
 		layout.putConstraint(SpringLayout.NORTH, label5, 10, SpringLayout.SOUTH, label4);
 		
-		layout.putConstraint(SpringLayout.WEST, RT90NT, 10, SpringLayout.EAST, label5);
-		layout.putConstraint(SpringLayout.NORTH, RT90NT, 0, SpringLayout.NORTH, label5);
+		layout.putConstraint(SpringLayout.WEST, SWTMNT, 10, SpringLayout.EAST, label5);
+		layout.putConstraint(SpringLayout.NORTH, SWTMNT, 0, SpringLayout.NORTH, label5);
 		
 		JLabel label6 = new JLabel("E");
 		add(label6);
-		layout.putConstraint(SpringLayout.WEST, label6, 10, SpringLayout.EAST, RT90NT);
-		layout.putConstraint(SpringLayout.NORTH, label6, 0, SpringLayout.NORTH, RT90NT);
+		layout.putConstraint(SpringLayout.WEST, label6, 10, SpringLayout.EAST, SWTMNT);
+		layout.putConstraint(SpringLayout.NORTH, label6, 0, SpringLayout.NORTH, SWTMNT);
 		
-		layout.putConstraint(SpringLayout.WEST, RT90ET, 10, SpringLayout.EAST, label6);
-		layout.putConstraint(SpringLayout.NORTH, RT90ET, 0, SpringLayout.NORTH, label6);
+		layout.putConstraint(SpringLayout.WEST, SWTMET, 10, SpringLayout.EAST, label6);
+		layout.putConstraint(SpringLayout.NORTH, SWTMET, 0, SpringLayout.NORTH, label6);
 
 		
 		JLabel label11 = new JLabel("Size");
@@ -187,15 +187,18 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		String localityName = localityT.getText();
 		String districtName = districtT.getText();
 		String provinceName = provinceT.getText();
-		String RT90Nt = RT90NT.getText();
-		String RT90Et = RT90ET.getText();
-		Coordinates c = new Coordinates(Double.parseDouble(RT90Nt), Double.parseDouble(RT90Et));
-		c = c.convertWGS84();
+		String SWTMNt = SWTMNT.getText();
+		String SWTMEt = SWTMET.getText();
+		Coordinates SWTMc = new Coordinates(Double.parseDouble(SWTMNt), Double.parseDouble(SWTMEt));
+		Coordinates wgs84c = SWTMc.convertToWGS84FromSweref99TM();
+		Coordinates rt90c = wgs84c.convertToRT90FromWGS84();
+		String RT90Nt = Long.toString(Math.round(rt90c.getNorth()));
+		String RT90Et = Long.toString(Math.round(rt90c.getEast()));
 		
 		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
 		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
 		
-		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		
 	    System.out.println(sqlstmt + " - " + localityName + "loc size: "+ locSizeT.getText()); // TODO trace print
 		try {
@@ -206,15 +209,17 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		    preparedStmt.setString (3, provinceName);
 		    preparedStmt.setString (4, "Sweden");
 		    preparedStmt.setString (5, "Europe");
-		    preparedStmt.setDouble(6, c.getNorth());
-		    preparedStmt.setDouble(7, c.getEast());
+		    preparedStmt.setDouble(6, wgs84c.getNorth());
+		    preparedStmt.setDouble(7, wgs84c.getEast());
 		    preparedStmt.setString (8, RT90Nt);
 		    preparedStmt.setString (9, RT90Et);
-		    preparedStmt.setString (10, Settings.getValue("user"));
-		    preparedStmt.setString (11, alternativeT.getText() );
-		    preparedStmt.setString (12, coordsourceT.getText());
-		    preparedStmt.setString (13, commentsT.getText());
-		    preparedStmt.setString (14, locSizeT.getText());
+		    preparedStmt.setString (10, SWTMNt);
+		    preparedStmt.setString (11, SWTMEt);
+		    preparedStmt.setString (12, Settings.getValue("user"));
+		    preparedStmt.setString (13, alternativeT.getText() );
+		    preparedStmt.setString (14, coordsourceT.getText());
+		    preparedStmt.setString (15, commentsT.getText());
+		    preparedStmt.setString (16, locSizeT.getText());
 		    preparedStmt.execute();
 		    if (SpecimenList.isOpen()) {
 		    	SpecimenList.updateLocalityList();

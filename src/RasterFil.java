@@ -25,6 +25,7 @@ public class RasterFil implements Layer {
 	private BoundingBox box;
 	private int maxZoom, minZoom;
 	private boolean hidden;
+	private CoordSystem cs;
 
 	public RasterFil(String fileName) throws IOException {
 		this.fileName = fileName;
@@ -32,6 +33,7 @@ public class RasterFil implements Layer {
 		readFile();
 		maxZoom = 0;
 		minZoom = 0;
+		cs = CoordSystem.RT90;
 	}
 
 	public boolean canGetTiffDecoder()
@@ -82,7 +84,7 @@ public class RasterFil implements Layer {
 		double x2 = x+width*xp;
 		double y2 = y+height*yp;
 		box = new BoundingBox(new Point((int) x,(int) y2), new Point((int) x2, (int) y) );
-		//System.out.println(box);
+		//System.out.println("raster box: "+box);
 	}
 
 	@Override
@@ -141,6 +143,17 @@ public class RasterFil implements Layer {
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 
 	/*

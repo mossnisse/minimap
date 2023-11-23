@@ -54,7 +54,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		frame.add(canvas);
 		canvas.addMouseListener(gui);
 		canvas.addMouseWheelListener(gui);
-		coord = new Point(0, 0);
+		//coord = new Point(0, 0);
 		// Display the window.
 		frame.setSize(1000, 1000);
 		frame.setVisible(true);
@@ -74,7 +74,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	public JMenuBar createMenuBar() {
 		JMenuBar menuBar;
 		JMenu menu, menu2, menu3;
-		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11;
+		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12;
 		menuBar = new JMenuBar();
 
 		// Build the first menu.
@@ -142,6 +142,14 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		menuItem5.addActionListener(this);
 		menu2.add(menuItem5);
 
+		
+		menuItem12 = new JMenuItem("Mark/Find Coordinate", KeyEvent.VK_U);
+		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
+		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U,
+				ActionEvent.CTRL_MASK));
+		menuItem12.addActionListener(this);
+		menu2.add(menuItem12);
+		
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K,
@@ -376,7 +384,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 				(TNGPolygonFile) canvas.getLayer("provinser"),
 				(TNGPolygonFile) canvas.getLayer("socknar"));
 		d.setVisible(true);
-		coord = d.getCoordinate();
+		coord = d.getCoordinateSweref99TM();
 		canvas.focus(coord);
 		canvas.setCoordinate(coord);
 	}
@@ -399,7 +407,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		String distance = d.getDistance();
 		String direction = d.getDirection();
 		System.out.println("Distance: "+distance+" Direction: "+direction);
-		Distance dist = new Distance("dist", canvas.getCoordinate(), Integer.parseInt(distance), direction);
+		Distance dist = new Distance("dist", canvas.getCoordinate(), Integer.parseInt(distance), direction,CoordSystem.Sweref99TM);
 		dist.setColor(Color.red);
 		dist.setHidden(false);
 		canvas.delLayer("dist");
@@ -469,6 +477,9 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 						+ "Press c and click on the map to show info about the coordinate\nPress r and click on the map to show the 5x5 km RUBIN ruta";
 				 JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
 				break;
+			case "Mark/Find Coordinate":
+				 MarkCoordDialog();
+				break;
 		}
 	}
 
@@ -512,7 +523,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		d.cancel.requestFocusInWindow();
 		d.setVisible(true);
 		d.cancel.requestFocusInWindow();
-		coord = d.getCoordinate();
+		coord = d.getCoordinateSweref99TM();
 		canvas.focus(coord);
 		canvas.setCoordinate(coord);
 	}
@@ -520,8 +531,11 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	public void showRubin(MouseEvent arg0) {
 		System.out.print("show RUBIN: ");
 		Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
-		String s =  Coordinates.getRUBIN(p);
-		System.out.print(s);
+		 String s = Coordinates.getRUBINfromSweref99TM(p);
+		//Coordinates sweref99TM = new Coordinates(p);
+		//System.out.print(" sweref99tm "+sweref99TM+" ");
+		//String s =  sweref99TM.getRUBINfromSweref99TM();
+		System.out.println(s);
 		Rubin r = new Rubin(s, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
 		canvas.addLayerTop(r);
@@ -718,6 +732,21 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 			step = 0.8;
 		canvas.zoom(step);
 	}
+	
+	public void MarkCoordDialog() {
+		//coord = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
+		//canvas.setCoordinate(coord);
+		System.out.println("MarkDialog");
+		MarkDialog d = new MarkDialog(frame, canvas, coord,
+				(TNGPolygonFile) canvas.getLayer("provinser"),
+				(TNGPolygonFile) canvas.getLayer("socknar"));
+		//d.cancel.requestFocusInWindow();
+		d.setVisible(true);
+		//d.cancel.requestFocusInWindow();
+		//coord = d.getCoordinate();
+		//canvas.focus(coord);
+		//canvas.setCoordinate(coord);
+	}
 
 	public static void main(String[] args) {
 		// Schedule a job for the event-dispatching thread:
@@ -778,6 +807,9 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 			break;
 		case "Create lokality at marker":
 			createLokalAtCoord();
+			break;
+		case "Search localities":
+			search();
 			break;
 	}
 	}

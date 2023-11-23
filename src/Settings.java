@@ -41,10 +41,13 @@ public class Settings {
 		                      new FileInputStream(filename), "UTF-8"));
 		String line = br.readLine();
 		while (line != null) {
-			//System.out.println(line);
+			System.out.println(line);
 			String[] parts = line.split(": ");
 			String key = parts[0]; 
-			String value = parts[1];
+			String value = "";
+			if (parts.length>1) {
+				value = parts[1];
+			}
 			store.put(key, value);
 			line = br.readLine();
 		}
