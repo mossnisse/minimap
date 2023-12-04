@@ -10,17 +10,21 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
 
 public class CreateLocalityDialog extends JPanel implements ActionListener{
 	private static final long serialVersionUID = 5999128550024317489L;
 	private JFrame localFrame;
-	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, commentsT, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
+	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
+	private JTextArea commentsT;
+	private JCheckBox isPlaceT;
 	JButton cancel, ok;
 
 	public CreateLocalityDialog(JFrame localFrame, String SWTMN, String SWTME, String province, String district) {
@@ -67,8 +71,8 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		SWTMNT.setPreferredSize(new Dimension(200,20));
 		SWTMET = new JTextField(SWTME);
 		add(SWTMET);
-		commentsT = new JTextField();
-		commentsT.setPreferredSize(new Dimension(200,20));
+		commentsT = new JTextArea();
+		commentsT.setPreferredSize(new Dimension(400,80));
 		add(commentsT);
 		alternativeT = new JTextField();
 		alternativeT.setPreferredSize(new Dimension(200,20));
@@ -87,6 +91,9 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		zoomLevelT = new JTextField();
 		zoomLevelT.setPreferredSize(new Dimension(200,20));
 		add(zoomLevelT);
+		
+		isPlaceT = new JCheckBox("isPlace");
+		add(isPlaceT);
 		
 		JLabel label1 = new JLabel("Locality");
 		add(label1);
@@ -123,7 +130,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		JLabel label5 = new JLabel("Sweref99TM N");
 		add(label5);
 		layout.putConstraint(SpringLayout.WEST, label5, 10, SpringLayout.WEST, this);
-		layout.putConstraint(SpringLayout.NORTH, label5, 10, SpringLayout.SOUTH, label4);
+		layout.putConstraint(SpringLayout.NORTH, label5, 10, SpringLayout.SOUTH, commentsT);
 		
 		layout.putConstraint(SpringLayout.WEST, SWTMNT, 10, SpringLayout.EAST, label5);
 		layout.putConstraint(SpringLayout.NORTH, SWTMNT, 0, SpringLayout.NORTH, label5);
@@ -162,10 +169,13 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		layout.putConstraint(SpringLayout.WEST, zoomLevelT, 10, SpringLayout.EAST, label11b);
 		layout.putConstraint(SpringLayout.NORTH, zoomLevelT, 0, SpringLayout.NORTH, label11b);
 		
+		layout.putConstraint(SpringLayout.WEST, isPlaceT, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, isPlaceT, 10, SpringLayout.SOUTH, label11b);
+		
 		JLabel label10 = new JLabel("Continent");
 		add(label10);
 		layout.putConstraint(SpringLayout.WEST, label10, 10, SpringLayout.WEST, this);
-		layout.putConstraint(SpringLayout.NORTH, label10, 10, SpringLayout.SOUTH, label11b);
+		layout.putConstraint(SpringLayout.NORTH, label10, 10, SpringLayout.SOUTH, isPlaceT);
 		
 		layout.putConstraint(SpringLayout.WEST, continentT, 10, SpringLayout.EAST, label10);
 		layout.putConstraint(SpringLayout.NORTH, continentT, 0, SpringLayout.NORTH, label10);
@@ -201,7 +211,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		layout.putConstraint(SpringLayout.WEST, ok, 10, SpringLayout.EAST, cancel);
 		layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
 		
-		localFrame.setSize(400, 400);
+		localFrame.setSize(600, 600);
 		localFrame.setVisible(true);
 		
 		localFrame.getRootPane().setDefaultButton(cancel);
@@ -220,6 +230,11 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		        Integer.parseInt(zl);
 		} catch (NumberFormatException nfe) {
 			zl = "0";
+		}
+		
+		int isPlaceV = 0;
+		if (isPlaceT.isSelected()) {
+			isPlaceV =1;
 		}
 		Coordinates SWTMc = new Coordinates(Double.parseDouble(SWTMNt), Double.parseDouble(SWTMEt));
 		Coordinates wgs84c = SWTMc.convertToWGS84FromSweref99TM();
@@ -266,7 +281,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
 		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
 		
-		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision, category, zoomLevel) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision, category, zoomLevel, isPlace) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 		
 	    System.out.println(sqlstmt + " - " + localityName + "loc size: "+ locSizeT.getText()); // TODO trace print
 		try {
@@ -290,6 +305,8 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		    preparedStmt.setString (16, locSizeT.getText());
 		    preparedStmt.setString (17, categoryT.getText());
 		    preparedStmt.setString (18, zl);
+		    preparedStmt.setInt(19, isPlaceV);
+		    
 		    preparedStmt.execute();
 		    if (SpecimenList.isOpen()) {
 		    	SpecimenList.updateLocalityList();
