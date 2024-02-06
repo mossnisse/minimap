@@ -487,7 +487,13 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			
 			
 			//Create table tempspecimens if not exists  /// 
-			String sqlstmt2 = "CREATE TABLE IF NOT EXISTS tempspecimens (AccessionNo VARCHAR(16), Year CHAR(4), Month CHAR(2), Day CHAR(2), original_text TEXT, Genus VARCHAR(32), Species VARCHAR(32), Collector VARCHAR(64), InstitutionCode VARCHAR(3), locality_ID INT(11), locality TEXT, specimens_ID INT(10), RUBIN VARCHAR(16), RiketsN VARCHAR(16), RiketsO VARCHAR(16), Lat_dir VARCHAR(1), Lat_deg VARCHAR(32), Lat_min VARCHAR(16), Lat_sec VARCHAR(16), Long_dir VARCHAR(1), Long_deg VARCHAR(32), Long_min VARCHAR(16), Long_sec VARCHAR(16), CollectionCode VARCHAR(10), distance INT(11), direction VARCHAR(4), oDistrict VARCHAR(32), oProvince VARCHAR(40));";
+			String sqlE = "drop table tempspecimens;";
+			PreparedStatement statementE = h2Conn.prepareStatement(sqlE);
+			statementE.executeUpdate();
+			
+			//String sqlstmt2 = "CREATE TABLE IF NOT EXISTS tempspecimens (AccessionNo VARCHAR(16), Year CHAR(4), Month CHAR(2), Day CHAR(2), original_text TEXT, Genus VARCHAR(32), Species VARCHAR(32), Collector VARCHAR(64), InstitutionCode VARCHAR(3), locality_ID INT(11), locality TEXT, specimens_ID INT(10), RUBIN VARCHAR(16), RiketsN VARCHAR(16), RiketsO VARCHAR(16), Lat_dir VARCHAR(1), Lat_deg VARCHAR(32), Lat_min VARCHAR(16), Lat_sec VARCHAR(16), Long_dir VARCHAR(1), Long_deg VARCHAR(32), Long_min VARCHAR(16), Long_sec VARCHAR(16), CollectionCode VARCHAR(10), distance INT(11), direction VARCHAR(4), oDistrict VARCHAR(32), oProvince VARCHAR(40));";
+			String sqlstmt2 = "CREATE TABLE IF NOT EXISTS tempspecimens (AccessionNo VARCHAR(16), Year SMALLINT, Month TINYINT, Day TINYINT, original_text TEXT, Genus VARCHAR(32), Species VARCHAR(42), Collector VARCHAR(128), InstitutionCode VARCHAR(3), locality_ID INT(11), locality TEXT, specimens_ID INT(10), RUBIN VARCHAR(16), RiketsN VARCHAR(9), RiketsO VARCHAR(9), Lat_dir VARCHAR(1), Lat_deg VARCHAR(32), Lat_min VARCHAR(16), Lat_sec VARCHAR(16), Long_dir VARCHAR(1), Long_deg VARCHAR(32), Long_min VARCHAR(16), Long_sec VARCHAR(16), CollectionCode VARCHAR(10), distance INT(11), direction VARCHAR(4), oDistrict VARCHAR(32), oProvince VARCHAR(40));";
+			
 			PreparedStatement statement2 = h2Conn.prepareStatement(sqlstmt2);
 			statement2.executeUpdate();
 			
