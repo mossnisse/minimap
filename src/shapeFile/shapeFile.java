@@ -83,10 +83,10 @@ public class shapeFile {
 		minM = br.readDoubleSE();
 		maxM = br.readDoubleSE();
 
-		// printShpHeader();
+		printShpHeader();
 
 		if (shapeType == 1.0) {
-			//System.out.println("Point file");
+			System.out.println("Point file");
 			points = new Vector<PointESRI>();
 			while (br.available() != 0) {
 				// System.out.println("Point");
@@ -95,7 +95,7 @@ public class shapeFile {
 		}
 
 		if (shapeType == 5) {
-			// System.out.println("Polygon file");
+			System.out.println("Polygon file");
 			polygons = new Vector<PolygonESRI>();
 			while (br.available() != 0) {
 				PolygonESRI polygon = new PolygonESRI(br);
@@ -133,10 +133,11 @@ public class shapeFile {
 		br.readByte(); // 3  // byte d = 
 		// printHex("year: ", y);
 		nrRecords = br.readIntSE(); // 4-7
+		
 		int headerSize = br.readInt16(); // 8-9
 		nrFields = (headerSize - 32) / 32;
 		br.readInt16(); // 10-11 // int recordSize = 
-		// printN("Record size", recordSize);
+		//printN("Record size", recordSize);
 		br.skipBytes(20);
 		descriptors = new Vector<FieldDescriptor>();
 		for (int i = 0; i < nrFields; i++) {
@@ -219,10 +220,9 @@ public class shapeFile {
 
 		if (shp.shapeType == 5) { // Polygons
 			Iterator<PolygonESRI> it = shp.polygons.iterator();
+			int i=0;
 			for (dbfRecord record : shp.data) {
-
-				out.writeBytes(record.getField(nameField));
-				// System.out.println(record.getField(nameField));
+				out.write(record.getField(nameField));
 				PolygonESRI poly = it.next();
 				BoundingBoxESRI box = poly.getBoundingBox();
 				out.writeInt((int) Math.round(box.getX1()));
@@ -231,6 +231,10 @@ public class shapeFile {
 				out.writeInt((int) Math.round(box.getY2()));
 				out.writeInt(poly.getNumParts());
 				out.writeInt(poly.getNumPoints());
+				i++;
+				if (i<20)
+					System.out.println("writeTNG name: " + record.getField(nameField)+" numParts: "+poly.getNumParts()+" Bounding box"+box);
+				
 				for (int part : poly.getParts()) {
 					out.writeInt(part);
 				}
@@ -244,7 +248,7 @@ public class shapeFile {
 		if (shp.shapeType == 1) { // Points
 			Iterator<PointESRI> it = shp.points.iterator();
 			for (dbfRecord record : shp.data) {
-				out.writeBytes(record.getField(nameField));
+				out.write(record.getField(nameField));
 				// System.out.println(record.getField(nameField));
 				PointESRI point = it.next();
 				out.writeInt((int) Math.round(point.getX()));
@@ -254,6 +258,7 @@ public class shapeFile {
 		out.close();
 	}
 	
+	/*
 	public static void writeSpecial(String filename, shapeFile shp,
 			int nameField) throws IOException {
 		//DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
@@ -277,7 +282,8 @@ public class shapeFile {
 				out.writeInt((int) Math.round(box.getX2()));
 				out.writeInt((int) Math.round(box.getY2()));*/
 				//out.writeInt(poly.getNumParts());
-				//out.writeInt(poly.getNumPoints());
+				//out.writeInt(poly.getNumPoints()); 
+	/*
 				for (int part : poly.getParts()) {
 					out.writeInt(part);
 				}
@@ -299,7 +305,7 @@ public class shapeFile {
 			}
 		}
 		out.close();
-	}
+	}*/
 
 	public static void readTNGfile(String filename) throws IOException {
 		DataInputStreamSE in = new DataInputStreamSE(new FileInputStream(
@@ -357,13 +363,13 @@ public class shapeFile {
 
 			//shapeFile hej = new shapeFile("..\\FloraProvinser\\provinser.shp");
 			//writeTNGfile("..\\provinser.tng",hej,12);
-			shapeFile hej = new shapeFile("..\\socknar_sverige\\socknar_sverige.shp");
-			writeSpecial("..\\socknar.txt",hej,4);
-			//writeTNGfile("..\\socknar.tng",hej,4);
+			shapeFile hej = new shapeFile("c:\\shape\\provinser.shp");
+			//writeSpecial("..\\socknar.txt",hej,4);
+			writeTNGfile("provinserSWEREF99TM.tng",hej,0);
 
-			// hej.printShpHeader();
-			// hej.printShpRecords();
-			// hej.printDBFFeidlDescriptors();
+			//hej.printShpHeader();
+			//hej.printShpRecords();
+			//hej.printDBFFeidlDescriptors();
 
 			// 
 			//
