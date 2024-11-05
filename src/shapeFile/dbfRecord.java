@@ -5,28 +5,32 @@ import java.util.Vector;
 
 
 public class dbfRecord {
-	Vector<String> fdata = new Vector<String>();
+	Vector<byte[]> fdata = new Vector<byte[]>();
 	Vector<FieldDescriptor> descriptors;
 	
 	public dbfRecord(Vector<FieldDescriptor> descriptors) {
 		this.descriptors = descriptors;
 	}
 	
-	public Vector<String> getRecord() {
+	public Vector<byte[]> getRecord() {
 		return fdata;
 	}
 	
-	public String getField(int i) {
+	public byte[] getField(int i) {
 		return fdata.elementAt(i); 
 	}
 	
-	public String getField(String fieldName) {
-		Iterator<String> itr = fdata.iterator();
+	public byte[] getField(String fieldName) {
+		Iterator<byte[]> itr = fdata.iterator();
 		for (FieldDescriptor desc : descriptors) {
-			String data = itr.next();
-			if (desc.name== fieldName) return data;
+			return itr.next();
+			//return data;
+			//if (desc.name == fieldName) {
+				//int n = desc.length;
+				//return String.format("%-"+n+"s", data) ;
+			//}
 		}
-		return "";
+		return null;
 	}
 	
 	public void read(DataInputStreamSE br) throws IOException {
@@ -34,15 +38,16 @@ public class dbfRecord {
 		br.readByte(); //byte fl = 
 		//if (fl == 32) {
 			for (FieldDescriptor desc : descriptors) {
-				String data = br.readStringUTF8(desc.length);
+				byte[] data = br.readBytes(desc.length);
+				//String[] data = br.re
 				//System.out.println(desc.name+": "+data);
-				fdata.add(data.trim());
+				fdata.add(data);  //.trim()
 			}
 		//}
 	}
 	
 	public String toString() {
-		Iterator<String> itr = fdata.iterator();
+		Iterator<byte[]> itr = fdata.iterator();
 		String sv ="";
 		for (FieldDescriptor desc : descriptors) {
 			sv += desc.name+": ";
@@ -52,12 +57,12 @@ public class dbfRecord {
 	}
 	
 	public void print() {
-		System.out.println("");
-		Iterator<String> itr = fdata.iterator();
+		//System.out.println("");
+		Iterator<byte[]> itr = fdata.iterator();
 		for (FieldDescriptor desc : descriptors) {
-			System.out.print(desc.name+": ");
-			String data = itr.next();
-			System.out.println(data);
+			//System.out.print(desc.name+": ");
+			byte[] data = itr.next();
+			System.out.println("print"+desc.name+": ["+data+"]");
 		}
 	}
 }
