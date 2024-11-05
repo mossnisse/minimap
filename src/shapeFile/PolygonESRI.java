@@ -38,9 +38,9 @@ public class PolygonESRI extends ShapeESRI{
 		box = new BoundingBoxESRI(bs);
 		//System.out.println(box);
 		numParts = bs.readIntSE();
-		//System.out.println("NumParts: "+numParts);
+		//System.out.println();
 		numPoints = bs.readIntSE();
-		//System.out.println("NumPoints: "+numPoints);
+		//System.out.println("NumParts: "+numParts+" NumPoints: "+numPoints);
 		parts = new int[numParts];
 		for (int i=0;i<numParts;i++) {
 			parts[i] = bs.readIntSE();
