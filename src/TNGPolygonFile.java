@@ -23,6 +23,7 @@ public class TNGPolygonFile implements Layer{
 	private Color color;
 	private Province[] provinces;
 	private boolean hidden;
+	private CoordSystem cs;
 	
 	public class Province extends Polygon{
 		private String name;
@@ -60,6 +61,7 @@ public class TNGPolygonFile implements Layer{
 		this.fileName=fileName;
 		this.name = fileName;
 		readFile();
+		cs = CoordSystem.Sweref99TM;
 	}
 	
 	private void readFile() throws IOException {
@@ -69,13 +71,15 @@ public class TNGPolygonFile implements Layer{
 			            new FileInputStream(fileName)));
 		in.readInt();
 		int nrRecords = in.readInt();
-		//System.out.println("nrRecords: "+nrRecords);
+		System.out.println("fileName: "+fileName);
+		System.out.println("Read nrRecords: "+nrRecords);
 		nameLength = in.readInt();
-		//System.out.println("nameLenght: "+nameLength);
+		System.out.println("read nameLenght: "+nameLength);
 		provinces = new Province[nrRecords];
 		for (int i = 0; i < nrRecords; i++) {
-			String name = in.readString(nameLength).trim();
-			//System.out.println("name: "+name);
+			//System.out.println("ReccordNr: "+i);
+			String name = in.readStringUTF8(nameLength).trim();  // length +2 stupid java adds a couple of bytes
+			//System.out.println("nR: "+i+" Reads name: "+name);
 			int x1 = in.readInt();
 			int y1 = in.readInt();
 			int x2 = in.readInt();
@@ -84,6 +88,7 @@ public class TNGPolygonFile implements Layer{
 			//System.out.println("BoundingBox: "+box);
 			int numParts = in.readInt();
 			int numPoints = in.readInt();
+			//System.out.println("numParts: "+numParts+" numPoints: "+numPoints);
 			int[] parts = new int[numParts];
 			for (int j = 0; j < numParts; j++) {
 				parts[j] = in.readInt();
@@ -96,6 +101,7 @@ public class TNGPolygonFile implements Layer{
 			}
 			provinces[i] = new Province(name, box, parts, points);
 		}
+		//System.out.println("Read nrRecords: "+nrRecords);
 		in.close();
 	}
 	
@@ -104,10 +110,12 @@ public class TNGPolygonFile implements Layer{
 		DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
 		out.writeInt(5);  // shape type == Polygon
 		out.writeInt(provinces.length);  // number of Polygons
+		System.out.println("Save length: "+provinces.length);
 		out.writeInt(nameLength);  // name field length
+		System.out.println("Save namelength: "+nameLength);
 		for (Province prov : provinces) {
 			//int padlength = 50-prov.getName().length();
-			String name = String.format("%1$-" +  50 + "s", prov.getName());
+			String name = String.format("%1$-" +  nameLength + "s", prov.getName());
 			//System.out.println("padded name:" + "\""+name+ "\"" + " lenght =" + prov.getName().length()+ " padlenght: "+padlength+ " padded lenght: "+  name.length());
 			out.writeBytes(name);
 			// System.out.println(record.getField(nameField));
@@ -247,20 +255,91 @@ public class TNGPolygonFile implements Layer{
 		}
 	}
 	
+	/*
+	public void convertCoordsysrt90toSweref99TM() {
+		for(Polygon pr:provinces) {
+			for(Point p:pr.getPoints()) {
+				Coordinates c = new Coordinates((double)p.getY(),(double)p.getX());
+				Coordinates wgs84 = c.convertWGS84();
+				Coordinates sweref99TM= Coordinates.convertToSweref99TMFromWGS84(wgs84);
+				Point p2 = new Point((int)Math.round(sweref99TM.getEast()),(int)Math.round(sweref99TM.getNorth()));
+				//System.out.println(p);
+				//System.out.println(p2);
+			}
+		}
+	}*/
+	
+	
+// saves an .tng file with RT90 coordinates in Sweref99TM coordinates
+	public void saveFileConvert(String filename) throws IOException {
+		DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
+		out.writeInt(5);  // shape type == Polygon
+		out.writeInt(provinces.length);  // number of Polygons
+		out.writeInt(nameLength);  // name field length
+		System.out.println("Save length: "+provinces.length);
+		System.out.println("Save namelength: "+provinces.length);
+		for (Province prov : provinces) {
+			//int padlength = 50-prov.getName().length();
+			String name = String.format("%1$-" +  nameLength + "s", prov.getName());
+			//System.out.println("padded name:" + "\""+name+ "\"" + " lenght =" + prov.getName().length()+ " padlenght: "+padlength+ " padded lenght: "+  name.length());
+			//System.out.println(name);
+			out.writeBytes(name);
+			// System.out.println(record.getField(nameField));
+			BoundingBox box = prov.getBoundingBox();
+			Point p1 = box.getP1();
+			Point p2 = box.getP2();
+			Coordinates c1 = new Coordinates((double)p1.getY(),(double)p1.getX());
+			Coordinates sweref99TM_1= c1.convertToSweref99TMFromRT90();
+			Point ps1 = new Point((int)Math.round(sweref99TM_1.getEast()),(int)Math.round(sweref99TM_1.getNorth()));
+			Coordinates c2 = new Coordinates((double)p2.getY(),(double)p2.getX());
+			Coordinates sweref99TM_2 = c2.convertToSweref99TMFromRT90();
+			Point ps2 = new Point((int)Math.round(sweref99TM_2.getEast()),(int)Math.round(sweref99TM_2.getNorth()));
+			out.writeInt(ps1.getX());
+			out.writeInt(ps1.getY());
+			out.writeInt(ps2.getX());
+			out.writeInt(ps2.getY());
+			out.writeInt(prov.getNumParts());
+			out.writeInt(prov.getNumPoints());
+			for (int part : prov.getParts()) {
+				out.writeInt(part);
+			}
+			for (Point p : prov.getPoints()) {
+				Coordinates c = new Coordinates((double)p.getY(),(double)p.getX());
+				Coordinates sweref99TM= c.convertToSweref99TMFromRT90();
+				Point ps = new Point((int)Math.round(sweref99TM.getEast()),(int)Math.round(sweref99TM.getNorth()));
+				out.writeInt((int) Math.round(ps.getX()));
+				out.writeInt((int) Math.round(ps.getY()));
+			}
+		}
+		System.out.println("Save length: "+provinces.length);
+		out.close();
+	}
+	
+	
 	public static void main(String[] args) {
-		TNGPolygonFile poly;
+		/*TNGPolygonFile poly;
 		try {
+			//poly = new TNGPolygonFile("provinser.tng");
+
 			//poly = new TNGPolygonFile("socknar.tng");
-			//poly.calcSizes();
-			poly = new TNGPolygonFile("provinser.tng");
-			poly.correctProvNames();
-			poly.saveFile("provinser2.tng");
+			
+			//poly.saveFileConvert("provinserSWEREF99TM.tng");
+			//poly.saveFileConvert("socknarSWEREF99TM.tng");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
+		}*/
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		// TODO Auto-generated method stub
 		
 	}
-	 
+
+	@Override
+	public CoordSystem getCRS() {
+		// TODO Auto-generated method stub
+		return cs;
+	}
 }
