@@ -48,4 +48,10 @@ public class DataInputStreamSE extends DataInputStream {
 		read(n, 0, i);
 		return new String(n, "UTF8");
 	}
+	
+	public byte[] readBytes(int i) throws IOException {
+		byte[] n = new byte[i];
+		read(n, 0, i);
+		return n;
+	}
 }
