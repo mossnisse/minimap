@@ -1,6 +1,7 @@
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.io.Serial;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -18,6 +19,7 @@ import javax.swing.SpringLayout;
 /* Dialog for viewing and editing already existing Localities in the db */
 
 public class LocalityDialog  extends JPanel implements ActionListener{
+	@Serial
 	private static final long serialVersionUID = -6495783408904343790L;
 	public JButton cancel, delete, ok;
 	private int localityID;
@@ -209,21 +211,21 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	private void deleteLokal() {
 		int dialogResult = JOptionPane.showConfirmDialog (null, "Do you realy want to delete the local?","Warning",JOptionPane.YES_NO_OPTION);
 		if(dialogResult == JOptionPane.YES_OPTION){
-		try {
-			Connection conn = MYSQLConnection.getConn();
-			String sqlstmt = "DELETE FROM locality WHERE ID =?";
-			System.out.println(sqlstmt);
-			PreparedStatement statement = conn.prepareStatement(sqlstmt);
-			statement.setInt(1, localityID);
-			statement.execute();
-			if (SpecimenList.isOpen()) {
-		    	SpecimenList.updateLocalityList();
-		    	SpecimenList.updateSpecimenList();
-		    }
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+			try {
+				Connection conn = MYSQLConnection.getConn();
+				String sqlstmt = "DELETE FROM locality WHERE ID =?";
+				System.out.println(sqlstmt);
+				PreparedStatement statement = conn.prepareStatement(sqlstmt);
+				statement.setInt(1, localityID);
+				statement.execute();
+				if (SpecimenList.isOpen()) {
+					SpecimenList.updateLocalityList();
+					SpecimenList.updateSpecimenList();
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		}
 	}
 	
@@ -266,9 +268,6 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 			    	SpecimenList.updateLocalityList();
 			    	SpecimenList.updateSpecimenList();
 			    }
-			/*if (result.next()) {
-				
-			}*/
 		} catch (SQLException | IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

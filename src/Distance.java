@@ -7,12 +7,12 @@ import java.awt.Stroke;
 
 public class Distance implements Layer {
 	private Color color;
-	private String name, direction;
+	private String name;
+	private final String direction;
 	private boolean hidden;
-	private Point c;
-	private int dist;
+	private final Point c;
+	private final int dist;
 	private CoordSystem cs;
-	
 
 	Distance(String name, Point c, int dist, String direction, CoordSystem cs) {
 		this.name = name;
@@ -64,54 +64,57 @@ public class Distance implements Layer {
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
-			double yShift, double yScale, BoundingBox bounds) {
-			g2d.setColor(color);
-			Stroke s = g2d.getStroke();
-			g2d.setStroke(new BasicStroke(2));
-			int x1 = (int) (((c.getX())*xScale)+xShift);
-			int y1 = (int) (((c.getY())*yScale)+yShift);
-			int ds = (int) (dist * xScale);
-			int x2 = x1;
-			int y2 = y1;
-			if (direction.equals("E")) {
-				x2+= ds;
-			}
-			
-			if (direction.equals("W")) {
-				x2-= ds;
-			}
-			
-			if (direction.equals("N")) {
-				y2-= ds;
-			}
-			
-			if (direction.equals("S")) {
-				y2+= ds;
-			}
-			
-			if (direction.equals("NE")) {
-				y2-= ds/Math.sqrt(2);
-				x2+= ds/Math.sqrt(2);
-			}
-			
-			if (direction.equals("SE")) {
-				y2+= ds/Math.sqrt(2);
-				x2+= ds/Math.sqrt(2);
-			}
-			
-			if (direction.equals("NW")) {
-				y2-= ds/Math.sqrt(2);
-				x2-= ds/Math.sqrt(2);
-			}
-			
-			if (direction.equals("SW")) {
-				y2+= ds/Math.sqrt(2);
-				x2-= ds/Math.sqrt(2);
-			}
-			
-			g2d.drawLine(x1,y1,x2,y2);
-			//System.out.println("Draw Dist x1: "+ x1 + " x2: "+ x2);
-			g2d.setStroke(s);
+	                 double yShift, double yScale, BoundingBox bounds) {
+		if (hidden) return;
+
+		g2d.setColor(color);
+		Stroke originalStroke = g2d.getStroke();
+		g2d.setStroke(new BasicStroke(2));
+
+		// Calculate screen start point
+		int x1 = (int) ((c.getX() * xScale) + xShift);
+		int y1 = (int) ((c.getY() * yScale) + yShift);
+
+		// Convert distance to screen pixels
+		double ds = dist * xScale;
+
+		// Get angle based on direction string
+		double angleDegrees = getAngleFromDirection(direction);
+		double angleRadians = Math.toRadians(angleDegrees);
+
+		// Standard Trig: X uses Cos, Y uses Sin
+		// Note: We subtract Sin because Y-axis is inverted in Swing
+		int x2 = x1 + (int) (ds * Math.cos(angleRadians));
+		int y2 = y1 - (int) (ds * Math.sin(angleRadians));
+
+		g2d.drawLine(x1, y1, x2, y2);
+
+		// Optional: Draw a small cross or circle at the end point
+		g2d.drawOval(x2-2, y2-2, 4, 4);
+
+		g2d.setStroke(originalStroke);
+	}
+
+	private double getAngleFromDirection(String dir) {
+		return switch (dir) {
+			case "E"   -> 0.0;
+			case "ENE" -> 22.5;
+			case "NE"  -> 45.0;
+			case "NNE" -> 67.5;
+			case "N"   -> 90.0;
+			case "NNW" -> 112.5;
+			case "NW"  -> 135.0;
+			case "WNW" -> 157.5;
+			case "W"   -> 180.0;
+			case "WSW" -> 202.5;
+			case "SW"  -> 225.0;
+			case "SSW" -> 247.5;
+			case "S"   -> 270.0;
+			case "SSE" -> 292.5;
+			case "SE"  -> 315.0;
+			case "ESE" -> 337.5;
+			default    -> 0.0;
+		};
 	}
 
 	@Override
@@ -127,7 +130,6 @@ public class Distance implements Layer {
 	@Override
 	public void setCRS(CoordSystem cs) {
 		this.cs = cs;
-		
 	}
 
 	@Override

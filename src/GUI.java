@@ -257,7 +257,6 @@ public class GUI implements NActionListener {
 	}
 
 	public static void setCursorWait() {
-		//getComponent();
 		frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		for( Window window : frame.getOwnedWindows() ){
             if( window.isVisible() ){
@@ -394,16 +393,28 @@ public class GUI implements NActionListener {
 	}
 
 	public void distance() {
-		DistanceDialog d = new DistanceDialog(frame);
-		d.setVisible(true);
-		String distance = d.getDistance();
-		String direction = d.getDirection();
-		System.out.println("Distance: "+distance+" Direction: "+direction);
-		Distance dist = new Distance("dist", canvas.getCoordinate(), Integer.parseInt(distance), direction,CoordSystem.Sweref99TM);
-		dist.setColor(Color.red);
-		dist.setHidden(false);
-		canvas.delLayer("dist");
-		canvas.addLayerTop(dist);
+		DistanceDialog dlg = new DistanceDialog(frame);
+		dlg.setVisible(true);
+
+		if (!dlg.wasCancelled()) {
+			String direction = dlg.getDirection();
+			String distStr = dlg.getDistance();
+
+			try {
+				int distVal = Integer.parseInt(distStr);
+				Distance dist = new Distance("dist", canvas.getCoordinate(), distVal, direction, CoordSystem.Sweref99TM);
+				dist.setColor(Color.red);
+				dist.setHidden(false);
+				canvas.delLayer("dist");
+				canvas.addLayerTop(dist);
+				canvas.repaint(); // Don't forget to repaint!
+			} catch (NumberFormatException e) {
+				JOptionPane.showMessageDialog(frame, "Please enter a valid numeric distance.");
+			}
+		} else {
+			System.out.println("User cancelled.");
+		}
+		dlg.dispose();
 	}
 
 	public void userDialog() {
@@ -569,32 +580,42 @@ public class GUI implements NActionListener {
 
 	private void createLocalityDialog(MouseEvent me) {
 		System.out.println("skapa lokal");
-		//Point p = canvas.translatePoint2(new Point(me.getX(), me.getY()));
+
+		// Get coordinates and update canvas marker
 		coord = canvas.translatePoint(new Point(me.getX(), me.getY()));
 		canvas.setCoordinate(coord);
-		String provins = "", socken = "";
+
+		// Fetch Province and District info
+		String provins = "utanför lager", socken = "utanför lager";
 		TNGPolygonFile provinces = (TNGPolygonFile)canvas.getLayer("provinser");
 		TNGPolygonFile districts = (TNGPolygonFile)canvas.getLayer("socknar");
 
-		TNGPolygonFile.Province pr = provinces.inPolygon(coord);
-		if (pr != null) {
-			provins = pr.getName();
-		} else {
-			provins ="utanför lager";
+		if (provinces != null) {
+			TNGPolygonFile.Province pr = provinces.inPolygon(coord);
+			if (pr != null) provins = pr.getName();
 		}
-		TNGPolygonFile.Province so = districts.inPolygon(coord);
-		if (so != null) {
-			socken = so.getName();
-		} else {
-			socken = "utanför lager";
+
+		if (districts != null) {
+			TNGPolygonFile.Province so = districts.inPolygon(coord);
+			if (so != null) socken = so.getName();
 		}
-		//CreateLocalityD d = new CreateLocalityD(frame, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
-		//d.setVisible(true);
-		JFrame lframe = new JFrame();
-		CreateLocalityDialog diag = new CreateLocalityDialog(lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
-		lframe.add(diag);
+
+		// Initialize the Frame
+		JFrame lframe = new JFrame("Create new Locality");
+		lframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+		// Create the Dialog
+		CreateLocalityDialog diag = new CreateLocalityDialog(
+				lframe,
+				Integer.toString(coord.getY()),
+				Integer.toString(coord.getX()),
+				provins,
+				socken
+		);
+
+		// Focus the cancel button (or OK button)
 		diag.cancel.requestFocusInWindow();
-		canvas.repaint();
+
 		canvas.repaint();
 	}
 	

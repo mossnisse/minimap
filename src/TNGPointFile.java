@@ -7,13 +7,10 @@ import java.awt.Stroke;
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-
 import shapeFile.DataInputStreamSE;
-import shapeFile.PointESRI;
 
 public class TNGPointFile implements Layer{
 	private String fileName, name;
@@ -116,7 +113,6 @@ public class TNGPointFile implements Layer{
 	@Override
 	public void setColor(Color color) {
 		this.color=color;
-		
 	}
 
 	@Override
