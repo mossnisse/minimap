@@ -12,7 +12,8 @@ import java.util.ArrayList;
 import org.h2.jdbcx.JdbcDataSource;
 
 public class H2Table implements Layer {
-	private String name, tableName;
+	private final String tableName;
+	private String name;
 	private Color color;
 	private boolean hidden;
 	private Connection conn;
@@ -23,27 +24,46 @@ public class H2Table implements Layer {
 		this.tableName = tableName;
 		createConnection();
 	}
-	
+
 	private void createConnection() {
-        JdbcDataSource ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:˜/test");
-        ds.setUser("sa");
-        ds.setPassword("sa");
-        try {
-            conn = ds.getConnection();
-            /*String sql = "set collation en strength primary";
-          
-    			Statement select = conn.createStatement();
-    			select.execute(sql);*/
-            }  catch (Exception e) {
-            	System.err.println("Caught IOException: " + e.getMessage());
-            }
-    }
+		JdbcDataSource ds = new JdbcDataSource();
+
+		String url = "jdbc:h2:./h2/test;IFEXISTS=TRUE";
+		ds.setURL(url);
+		ds.setUser("sa");
+		ds.setPassword("sa");
+
+		try {
+			conn = ds.getConnection();
+			System.out.println("Successfully connected to: " + url);
+
+			// DEBUG: Print every table name actually found in this file
+			java.sql.DatabaseMetaData meta = conn.getMetaData();
+			try (ResultSet res = meta.getTables(null, null, null, new String[]{"TABLE"})) {
+				System.out.println("--- Tables found in this database ---");
+				boolean found = false;
+				while (res.next()) {
+					System.out.println("Table: " + res.getString("TABLE_NAME"));
+					found = true;
+				}
+				if (!found) System.out.println("WARNING: No tables found! You are likely in an empty DB.");
+			}
+
+		} catch (SQLException e) {
+			System.err.println("CRITICAL H2 ERROR:");
+			System.err.println("Error Code: " + e.getErrorCode());
+			System.err.println("SQL State: " + e.getSQLState());
+			System.err.println("Message: " + e.getMessage());
+
+			if (e.getMessage().contains("Database \"~/test\" not found")) {
+				System.err.println("HELP: The path is wrong. Check if the file is 'test.mv.db' or 'test.h2.db'.");
+			}
+		}
+	}
 
 	@Override
 	public void setColor(Color c) {
 		this.color =c;
-		
 	}
 
 	@Override
@@ -59,7 +79,6 @@ public class H2Table implements Layer {
 	@Override
 	public void setMinZoomL(int zoomLevel) {
 		minZoom = zoomLevel;
-		
 	}
 
 	@Override
@@ -117,7 +136,6 @@ public class H2Table implements Layer {
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
-
 	}
 
 	public TNGPointFile find(int provinsNr, String value) {
@@ -180,8 +198,7 @@ public class H2Table implements Layer {
 
 	@Override
 	public void setCRS(CoordSystem cs) {
-		// TODO Auto-generated method stub
-		
+		this.cs = cs;
 	}
 
 	@Override
@@ -203,7 +220,6 @@ public class H2Table implements Layer {
 			statmt0.execute();
 			PreparedStatement statmt1= conn.prepareStatement(sql1);
 			PreparedStatement statmt2= conn.prepareStatement(sql2);
-			
 			
 			statmt1.setInt(2, batchsize);
 			//statmt0.execute();
@@ -234,8 +250,6 @@ public class H2Table implements Layer {
 						//swtm = rt90;
 						System.out.println("not valid rt90: "+rt90);
 					}
-					
-					
 				}
 				System.out.println("i "+i);
 			}
@@ -268,10 +282,9 @@ public class H2Table implements Layer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
 	}
 
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		H2Table h2 = new H2Table("ortnamnsDB");
 		//String sql = "select * from ortnamnsDB where North = 123544";
 		/*try {
@@ -284,12 +297,8 @@ public class H2Table implements Layer {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}*/
-	
-		
 		//ResultSetMetaData rsmd = result.getMetaData();*/
 		h2.saveConvert();
-		
-		
 		//h2.showC();
 	}
 }

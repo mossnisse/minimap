@@ -391,7 +391,6 @@ public class GUI implements NActionListener {
 			Point p = r.getMiddle();
 			canvas.focus(p);
 		}
-
 	}
 
 	public void distance() {
@@ -477,22 +476,21 @@ public class GUI implements NActionListener {
 		//Point p2 = r.getMiddle();
 		//canvas.focus(p2);
 	}
-	
+
 	public void showLokal(MouseEvent arg0) {
-		System.out.println("show Locality");
 		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
-
 		MYSQLTable ldb = (MYSQLTable) canvas.getLayer("LokalDB");
-		int localityID = ldb.findNearest(p,1000);
-		if (localityID != -1) {
+		int localityID = ldb.findNearest(p, 1000);
 
+		if (localityID != -1) {
 			JFrame lframe = new JFrame("Locality");
-			LocalityDialog diag = new LocalityDialog(localityID,lframe);
-			//lframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+			lframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+			LocalityDialog diag = new LocalityDialog(localityID, lframe);
 			lframe.add(diag);
-			diag.cancel.requestFocusInWindow();
+			lframe.pack();
+			lframe.setLocationRelativeTo(frame);
+			lframe.setVisible(true);
 		}
-		//canvas.repaint();
 	}
 	
 	public void showLokalAtCoord() {

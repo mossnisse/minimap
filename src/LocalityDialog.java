@@ -1,4 +1,3 @@
-import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -16,6 +15,8 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
 
+/* Dialog for viewing and editing already existing Localities in the db */
+
 public class LocalityDialog  extends JPanel implements ActionListener{
 	private static final long serialVersionUID = -6495783408904343790L;
 	public JButton cancel, delete, ok;
@@ -23,230 +24,192 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, localitySize, zoomLevel, category;
 	JTextArea comments;
 	JCheckBox isPlace;
+	JLabel labelCreated, labelModified;
 	JFrame localFrame;
 
 	public LocalityDialog(int localityID, JFrame localFrame) {
-		//System.out.println("open Locality diag");
 		this.localFrame = localFrame;
-		localFrame.setTitle("View Locality");
-		this.localityID=localityID;
+		this.localityID = localityID;
+		this.localFrame.setTitle("Loading Locality...");
+
+		// Set up Layout
 		SpringLayout layout = new SpringLayout();
 		setLayout(layout);
-		
-		JLabel label1, label2, label3, label4, label5, label6, label7, label8, label9, label10, label11, label12, label13;
-		
+
+		// Initialize components (but leave them empty)
+		initComponents();
+
+		// Load data from DB
+		loadData();
+
+		//localFrame.setSize(600, 700);
+		localFrame.pack();
+		localFrame.setLocationRelativeTo(null); // Center it!
+		localFrame.setVisible(true);
+	}
+
+	private void initComponents() {
+		SpringLayout layout = (SpringLayout) getLayout();
+
+		// Initialize Components
+		name = new JTextField(20);
+		altNames = new JTextField(20);
+		RT90N = new JTextField(10);
+		RT90E = new JTextField(10);
+		province = new JTextField(15);
+		district = new JTextField(15);
+		localitySize = new JTextField(10);
+		coordinate_source = new JTextField(20);
+		category = new JTextField(15);
+		zoomLevel = new JTextField(5);
+		comments = new JTextArea(4, 30);
+		comments.setLineWrap(true);
+		comments.setWrapStyleWord(true);
+		javax.swing.JScrollPane scrollPane = new javax.swing.JScrollPane(comments);
+		// Force vertical scrollbar only when needed
+		scrollPane.setVerticalScrollBarPolicy(javax.swing.JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.setPreferredSize(new java.awt.Dimension(350, 80));
+
+		isPlace = new JCheckBox("Is Place");
+
+		labelCreated = new JLabel("Created: ");
+		labelModified = new JLabel("Modified: ");
+
 		cancel = new JButton("Cancel");
+		delete = new JButton("Delete");
+		ok = new JButton("OK - Change");
+
+		// Add to Layout
+		JLabel lName = addField("Name:", name, this, layout, 10);
+		JLabel lAlt = addField("Alt Names:", altNames, lName, layout, 10);
+		JLabel lNorth = addField("RT90 N:", RT90N, lAlt, layout, 10);
+		JLabel lEast = addField("RT90 E:", RT90E, lNorth, layout, 10);
+		JLabel lProv = addField("Province:", province, lEast, layout, 10);
+		JLabel lSize = addField("Size:", localitySize, lProv, layout, 10);
+		JLabel lDist = addField("District:", district, lSize, layout, 10);
+		JLabel lSrc = addField("Source:", coordinate_source, lDist, layout, 10);
+		//JLabel lComm = addField("Comments:", comments, lSrc, layout, 10);
+		JLabel lComm = new JLabel("Comments:");
+		add(lComm);
+		add(scrollPane); // Add the scrollPane, NOT comments
+
+		layout.putConstraint(SpringLayout.WEST, lComm, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, lComm, 10, SpringLayout.SOUTH, lSrc);
+
+		layout.putConstraint(SpringLayout.WEST, scrollPane, 120, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, scrollPane, 0, SpringLayout.NORTH, lComm);
+
+		// Comments is a JTextArea, so the next field needs a bigger gap (70-80px)
+		JLabel lCat = addField("Category:", category, scrollPane, layout, 80);
+		JLabel lZoom = addField("Zoom:", zoomLevel, lCat, layout, 10);
+
+		// Metadata Labels
+		add(labelCreated);
+		layout.putConstraint(SpringLayout.WEST, labelCreated, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, labelCreated, 15, SpringLayout.SOUTH, lZoom);
+
+		add(labelModified);
+		layout.putConstraint(SpringLayout.WEST, labelModified, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, labelModified, 5, SpringLayout.SOUTH, labelCreated);
+
+		// Checkbox
+		add(isPlace);
+		layout.putConstraint(SpringLayout.WEST, isPlace, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, isPlace, 10, SpringLayout.SOUTH, labelModified);
+
+		// Buttons
 		add(cancel);
+		add(delete);
+		add(ok);
+
+		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, cancel, 20, SpringLayout.SOUTH, isPlace);
+
+		layout.putConstraint(SpringLayout.WEST, delete, 10, SpringLayout.EAST, cancel);
+		layout.putConstraint(SpringLayout.NORTH, delete, 0, SpringLayout.NORTH, cancel);
+
+		layout.putConstraint(SpringLayout.WEST, ok, 10, SpringLayout.EAST, delete);
+		layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
+
+		// Anchor the right edge of the panel to the right edge of the text fields
+		layout.putConstraint(SpringLayout.EAST, this, 10, SpringLayout.EAST, name);
+		// Anchor the bottom edge of the panel to the bottom of the buttons
+		layout.putConstraint(SpringLayout.SOUTH, this, 10, SpringLayout.SOUTH, cancel);
+		// This tells the layout "The width is name.width + 10px"
+		layout.putConstraint(SpringLayout.EAST, this, 20, SpringLayout.EAST, scrollPane);
+		// This tells the layout "The height is cancel.bottom + 10px"
+		layout.putConstraint(SpringLayout.SOUTH, this, 10, SpringLayout.SOUTH, cancel);
+
+		// Listeners
 		cancel.addActionListener(this);
+		delete.addActionListener(this);
+		ok.addActionListener(this);
 		cancel.setActionCommand("cancel");
-		
-		try {
-			Connection conn = MYSQLConnection.getConn();
-			String sqlstmt = "SELECT locality, alternative_names, RT90N, RT90E, province, district, coordinate_source, lcomments, created, createdBy, modified, modifiedBy, Coordinateprecision, category, zoomLevel, isPlace FROM locality WHERE ID =?";
-			System.out.println(sqlstmt);
-			PreparedStatement statement = conn.prepareStatement(sqlstmt);
-			statement.setInt(1, localityID);
-			ResultSet result = statement.executeQuery();
-			if (result.next()) {
-				
-				label1 = new JLabel("Name: ");
-				add(label1);
-				name = new JTextField(result.getString(1));
-				add(name);
-				
-				label2 = new JLabel("Alternative names: ");
-				add(label2);
-				altNames = new JTextField(result.getString(2));
-				altNames.setPreferredSize(new Dimension(200,20));
-				add(altNames);
-				
-				label3 = new JLabel("RT90 North: ");
-				add(label3);
-				RT90N = new JTextField(result.getString(3));
-				add(RT90N);
-				
-				label4 = new JLabel("RT90 East: ");
-				add(label4);
-				RT90E = new JTextField(result.getString(4));
-				add(RT90E);
-				
-				label5 = new JLabel("Province: ");
-				add(label5);
-				province = new JTextField(result.getString(5));
-				add(province);
-				
-				label6 = new JLabel("district: ");
-				add(label6);
-				district = new JTextField(result.getString(6));
-				add(district);
-				
-				label7 = new JLabel("Coordinate source: ");
-				add(label7);
-				coordinate_source = new JTextField(result.getString(7));
-				coordinate_source.setPreferredSize(new Dimension(200,20));
-				add(coordinate_source);
-				
-				label8 = new JLabel("Comments: ");
-				add(label8);
-				comments = new JTextArea(result.getString(8));
-				comments.setPreferredSize(new Dimension(400,80));
-				add(comments);
-				
-				label9 = new JLabel("Created:" +result.getString(9) + " " + result.getString(10));
-				add(label9);
-				
-				
-				label10 = new JLabel("Modified: "+result.getString(11) + " " +result.getString(12));
-				add(label10);
-				
-				label11 = new JLabel("Size:");
-				add(label11);
-				localitySize = new JTextField(result.getString(13));
-				localitySize.setPreferredSize(new Dimension(200,20));
-				add(localitySize);
-				
-				label12 = new JLabel("Category:");
-				add(label12);
-				category = new JTextField(result.getString(14));
-				category.setPreferredSize(new Dimension(200,20));
-				add(category);
-				
-				label13 = new JLabel("Zoom Level:");
-				add(label13);
-				zoomLevel = new JTextField(String.valueOf(result.getInt(15)));
-				zoomLevel.setPreferredSize(new Dimension(200,20));
-				add(zoomLevel);
-				
-				int isPlacev = result.getInt(16);
-				System.out.println("isPlace: "+isPlacev);
-				//System.out.println("isPlace2: ");
-				isPlace = new JCheckBox("isPlace:", isPlacev==1);
-				add(isPlace);
-				
-				delete = new JButton("Delete");
-				add(delete);
-				delete.addActionListener(this);
-				delete.setActionCommand("delete");
-				ok = new JButton("OK -Change");
-				add(ok);
-				ok.addActionListener(this);
-				ok.setActionCommand("ok");
-				
-				localFrame.getRootPane().setDefaultButton(cancel);
-				
-				
-				//cancel.requestFocus();
-				
-				layout.putConstraint(SpringLayout.WEST, label1, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label1, 10, SpringLayout.NORTH, this);
-				
-				layout.putConstraint(SpringLayout.WEST, name, 10, SpringLayout.EAST, label1);
-				layout.putConstraint(SpringLayout.NORTH, name, 0, SpringLayout.NORTH, label1);
-				
-				layout.putConstraint(SpringLayout.WEST, label2, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label2, 10, SpringLayout.SOUTH, label1);
-				
-				layout.putConstraint(SpringLayout.WEST, altNames, 10, SpringLayout.EAST, label2);
-				layout.putConstraint(SpringLayout.NORTH, altNames, 0, SpringLayout.NORTH, label2);
-				
-				layout.putConstraint(SpringLayout.WEST, label3, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label3, 10, SpringLayout.SOUTH, label2);
-				
-				layout.putConstraint(SpringLayout.WEST, RT90N, 10, SpringLayout.EAST, label3);
-				layout.putConstraint(SpringLayout.NORTH, RT90N, 0, SpringLayout.NORTH, label3);
-				
-				layout.putConstraint(SpringLayout.WEST, label4, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label4, 10, SpringLayout.SOUTH, label3);
-				
-				layout.putConstraint(SpringLayout.WEST, RT90E, 10, SpringLayout.EAST, label4);
-				layout.putConstraint(SpringLayout.NORTH, RT90E, 0, SpringLayout.NORTH, label4);
-				
-				layout.putConstraint(SpringLayout.WEST, label5, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label5, 10, SpringLayout.SOUTH, label4);
-				
-				layout.putConstraint(SpringLayout.WEST, province, 10, SpringLayout.EAST, label5);
-				layout.putConstraint(SpringLayout.NORTH, province, 0, SpringLayout.NORTH, label5);
-				
-				
-				layout.putConstraint(SpringLayout.WEST, label11, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label11, 10, SpringLayout.SOUTH, label5);
-				
-				layout.putConstraint(SpringLayout.WEST, localitySize, 10, SpringLayout.EAST, label11);
-				layout.putConstraint(SpringLayout.NORTH, localitySize, 0, SpringLayout.NORTH, label11);
-				
-				
-				
-				layout.putConstraint(SpringLayout.WEST, label6, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label6, 10, SpringLayout.SOUTH, label11);
-				
-				layout.putConstraint(SpringLayout.WEST, district, 10, SpringLayout.EAST, label6);
-				layout.putConstraint(SpringLayout.NORTH, district, 0, SpringLayout.NORTH, label6);
-				
-				layout.putConstraint(SpringLayout.WEST, label7, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label7, 10, SpringLayout.SOUTH, label6);
-				
-				layout.putConstraint(SpringLayout.WEST, coordinate_source, 10, SpringLayout.EAST, label7);
-				layout.putConstraint(SpringLayout.NORTH, coordinate_source, 0, SpringLayout.NORTH, label7);
-				
-				layout.putConstraint(SpringLayout.WEST, label8, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label8, 10, SpringLayout.SOUTH, label7);
-				
-				layout.putConstraint(SpringLayout.WEST, comments, 10, SpringLayout.EAST, label8);
-				layout.putConstraint(SpringLayout.NORTH, comments, 0, SpringLayout.NORTH, label8);
-				
-				layout.putConstraint(SpringLayout.WEST, label12, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label12, 10, SpringLayout.SOUTH, comments);
-				
-				layout.putConstraint(SpringLayout.WEST, category, 10, SpringLayout.EAST, label12);
-				layout.putConstraint(SpringLayout.NORTH, category, 0, SpringLayout.NORTH, label12);
-				
-				layout.putConstraint(SpringLayout.WEST, label13, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label13, 10, SpringLayout.SOUTH, label12);
-				
-				layout.putConstraint(SpringLayout.WEST, zoomLevel, 10, SpringLayout.EAST, label13);
-				layout.putConstraint(SpringLayout.NORTH, zoomLevel, 0, SpringLayout.NORTH, label13);
-				
-				layout.putConstraint(SpringLayout.WEST, isPlace, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, isPlace, 10, SpringLayout.SOUTH, label13);
-				
-				layout.putConstraint(SpringLayout.WEST, label9, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label9, 10, SpringLayout.SOUTH, isPlace);
-				
-				layout.putConstraint(SpringLayout.WEST, label10, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, label10, 10, SpringLayout.SOUTH, label9);
-				
-				layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, this);
-				layout.putConstraint(SpringLayout.NORTH, cancel, 10, SpringLayout.SOUTH, label10);
-				
-				layout.putConstraint(SpringLayout.WEST, delete, 10, SpringLayout.EAST, cancel);
-				layout.putConstraint(SpringLayout.NORTH, delete, 0, SpringLayout.NORTH, cancel);
-				
-				layout.putConstraint(SpringLayout.WEST, ok, 10, SpringLayout.EAST, delete);
-				layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
+		delete.setActionCommand("delete");
+		ok.setActionCommand("ok");
+	}
+
+	private JLabel addField(String labelText, java.awt.Component field, java.awt.Component topAnchor, SpringLayout layout, int margin) {
+		JLabel label = new JLabel(labelText);
+		add(label);
+		add(field);
+
+		// Label Constraints
+		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, label, margin, (topAnchor == this) ? SpringLayout.NORTH : SpringLayout.SOUTH, topAnchor);
+
+		// Field Constraints (Align to a fixed column at x=120)
+		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
+
+		return label;
+	}
+
+	private void loadData() {
+		String sql = "SELECT locality, alternative_names, RT90N, RT90E, province, district, " +
+				"coordinate_source, lcomments, created, createdBy, modified, modifiedBy, " +
+				"Coordinateprecision, category, zoomLevel, isPlace FROM locality WHERE ID = ?";
+
+		try (Connection conn = MYSQLConnection.getConn();
+		     PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+			stmt.setInt(1, localityID);
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) {
+					// Basic Fields
+					name.setText(rs.getString(1));
+					altNames.setText(rs.getString(2));
+					RT90N.setText(rs.getString(3));
+					RT90E.setText(rs.getString(4));
+					province.setText(rs.getString(5));
+					district.setText(rs.getString(6));
+					coordinate_source.setText(rs.getString(7));
+					comments.setText(rs.getString(8));
+
+					// Metadata Labels (Columns 9, 10, 11, 12)
+					labelCreated.setText("Created: " + rs.getString(9) + " by " + rs.getString(10));
+					labelModified.setText("Modified: " + rs.getString(11) + " by " + rs.getString(12));
+
+					// Lower Fields
+					localitySize.setText(rs.getString(13));
+					category.setText(rs.getString(14));
+					zoomLevel.setText(rs.getString(15));
+
+					isPlace.setSelected(rs.getInt(16) == 1);
+
+					localFrame.setTitle("View Locality: " + rs.getString(1));
+				}
 			}
-			
-			
-			//setPreferredSize(new Dimension(120,120));
-			//setVisible(true);
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
+			JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
 			e.printStackTrace();
 		}
-		
-		localFrame.setSize(600, 600);
-		localFrame.setVisible(true);
-		
-		cancel.requestFocusInWindow();
-		
 	}
 	
 	private void deleteLokal() {
 		int dialogResult = JOptionPane.showConfirmDialog (null, "Do you realy want to delete the local?","Warning",JOptionPane.YES_NO_OPTION);
 		if(dialogResult == JOptionPane.YES_OPTION){
-		  // Saving code here
-		
 		try {
-			
 			Connection conn = MYSQLConnection.getConn();
 			String sqlstmt = "DELETE FROM locality WHERE ID =?";
 			System.out.println(sqlstmt);
@@ -257,15 +220,11 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 		    	SpecimenList.updateLocalityList();
 		    	SpecimenList.updateSpecimenList();
 		    }
-			/*if (result.next()) {
-				
-			}*/
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		}
-		
 	}
 	
 	private void updateLokal() {
@@ -301,8 +260,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 			statement.setInt(13, i);
 			
 			statement.setInt(14, localityID);
-			
-			
+
 			statement.execute();
 			 if (SpecimenList.isOpen()) {
 			    	SpecimenList.updateLocalityList();
