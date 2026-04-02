@@ -71,5 +71,4 @@ public class Geojson {
 			e.printStackTrace();
 		}
 	}
-
 }

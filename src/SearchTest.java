@@ -3,9 +3,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import org.h2.jdbcx.JdbcDataSource;
-
 
 public class SearchTest {
 	static Connection conn;

@@ -1,15 +1,13 @@
-import java.awt.KeyEventDispatcher;
+
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Keyboard {
-	public static Keyboard extatic = new Keyboard();
-	private static boolean[] key_down = new boolean[256];
-	private static ArrayList<NActionListener> actionListeners = new ArrayList<NActionListener>();
-	private static HashMap<Key, String> accelerators = new HashMap<Key, String>();
+	private static final boolean[] key_down = new boolean[256];
+	private static final ArrayList<NActionListener> actionListeners = new ArrayList<NActionListener>();
+	private static final HashMap<Key, String> accelerators = new HashMap<Key, String>();
 	
 	public static void addActionListener(NActionListener al) {
 		actionListeners.add(al);
@@ -20,31 +18,31 @@ public class Keyboard {
 	}
 	
 	public static void activate() {
-		KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(new KeyEventDispatcher() {
-            @Override
-            public boolean dispatchKeyEvent(KeyEvent ke) {
-                synchronized (KeyListener.class) {
-                    switch (ke.getID()) {
-                    case KeyEvent.KEY_PRESSED:
-                        	key_down[ke.getKeyCode()] = true;
-                        	//System.out.println(new Key(ke)); 
-                        	//System.out.println(accelerators);
-                        	if (Keyboard.accelerators.containsKey(new Key(ke))) {
-                        		System.out.println("Fire in the hole: "+ke+"\naction: "+accelerators.get(ke.getKeyCode()));
-                        		 for (NActionListener al: actionListeners ) {
-                        			 //System.out.println(actionListeners);
-                        			 al.nActionPerformed(accelerators.get(new Key(ke)));
-                        		 }
-                        	}	
-                        break;
-                    case KeyEvent.KEY_RELEASED:
-                        	key_down[ke.getKeyCode()] = false;
-                        break;
-                    }
-                    return false;
-                }
-            }
-        });
+		KeyboardFocusManager focusManager = KeyboardFocusManager.getCurrentKeyboardFocusManager();
+
+		// The existing Dispatcher
+		focusManager.addKeyEventDispatcher(ke -> {
+			if (ke.getSource() instanceof javax.swing.text.JTextComponent) {
+				return false;
+			}
+			synchronized (Keyboard.class) { // Use Keyboard.class, not KeyListener.class
+				switch (ke.getID()) {
+					case KeyEvent.KEY_PRESSED -> key_down[ke.getKeyCode()] = true;
+					case KeyEvent.KEY_RELEASED -> key_down[ke.getKeyCode()] = false;
+				}
+				return false;
+			}
+		});
+
+		focusManager.addPropertyChangeListener("focusedWindow", evt -> {
+			if (evt.getNewValue() == null) {
+				// Focus left the app entirely - clear all keys!
+				synchronized (Keyboard.class) {
+					java.util.Arrays.fill(key_down, false);
+					System.out.println("Focus lost: Clearing all keys.");
+				}
+			}
+		});
 		
 		addAccelerator(new Key(KeyEvent.VK_F, KeyEvent.CTRL_MASK), "Search" );
 		addAccelerator(new Key(KeyEvent.VK_RIGHT), "Next" );
@@ -54,9 +52,5 @@ public class Keyboard {
 	
 	public static boolean isKeyDown(int keyCode) {
 		return key_down[keyCode];
-	}
-	
-	public static boolean[] getKeys() {
-		return key_down;
 	}
 }

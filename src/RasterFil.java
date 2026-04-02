@@ -1,6 +1,5 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
@@ -10,11 +9,9 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Scanner;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.swing.JOptionPane;
-
 import shapeFile.DataInputStreamSE;
 
 public class RasterFil implements Layer {

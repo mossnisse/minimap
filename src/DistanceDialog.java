@@ -1,4 +1,4 @@
-	import java.awt.Frame;
+import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
@@ -97,5 +97,4 @@ import javax.swing.JTextField;
 			System.out.println("acti"+arg0);
 			
 		}
-		
 	}

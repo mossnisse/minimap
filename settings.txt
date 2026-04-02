@@ -1,5 +1,6 @@
 specimen dialog: closed
-landskap: Lule lappmark
-socken: Jokkmokk
-cnr: 14863
+password: bruhh
+landskap: Bohuslän
+socken: Tjärnö
+cnr: 3449
 user: Nils Ericson

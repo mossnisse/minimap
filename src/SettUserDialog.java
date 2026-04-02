@@ -5,11 +5,9 @@ import java.beans.PropertyChangeListener;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-
 
 public class SettUserDialog extends JDialog implements ActionListener, PropertyChangeListener{
 
@@ -74,6 +72,4 @@ public class SettUserDialog extends JDialog implements ActionListener, PropertyC
 		// TODO Auto-generated method stub
 		
 	}
-
-
 }

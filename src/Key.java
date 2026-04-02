@@ -1,6 +1,5 @@
 import java.awt.event.KeyEvent;
 
-
 public class Key {
 	private int keyCode;
 	private int modifiers;
@@ -49,8 +48,4 @@ public class Key {
 	public String toString() {
 		return "keyCode: "+Integer.toString(keyCode) + " modifiers: "+Integer.toString(modifiers); 
 	}
-	
-	
 }
-
-

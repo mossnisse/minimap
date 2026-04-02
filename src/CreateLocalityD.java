@@ -13,27 +13,20 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
-
 public class CreateLocalityD extends JDialog implements ActionListener, PropertyChangeListener{
 
 	private static final long serialVersionUID = 7103631385545360092L;
-	
 	private JTextField localityf, districtf, provincef, countryf, continentf, Nf, Ef, coordSysf, commentsf, alternativef, coordsourcef;
-	
 	private JOptionPane optionPane;
-	
-	//private Connection conn;
-	
+
 	public CreateLocalityD(Frame aFrame, String N, String E, String province, String district, CoordSystem coordSys) {
 		super(aFrame, true);
 		setTitle("Create new Locality");
-		
-		//this.conn = conn;
+
 		this.localityf = new JTextField();
 		this.districtf = new JTextField();
 		this.provincef = new JTextField();
@@ -55,11 +48,10 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 		
 		Object[] array = {"Locality", localityf, "Alternative names", alternativef, "coordinate source", coordsourcef, "comments", commentsf,  "North", Nf, "East", Ef, "Provins", provincef, "District", districtf};
 
-	        //Create an array specifying the number of dialog buttons
-	        //and their text.
+		//Create an array specifying the number of dialog buttons and their text.
 		Object[] options = {"Cancel", "OK"};
 
-	        //Create the JOptionPane.
+		//Create the JOptionPane.
 	    optionPane = new JOptionPane(array,
 	                                    JOptionPane.QUESTION_MESSAGE,
 	                                    JOptionPane.YES_NO_OPTION,
@@ -98,58 +90,33 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 	    });
 	    optionPane.addPropertyChangeListener(this);
 	}
-	
-	public CreateLocalityD(Frame aFrame ) {
-		super(aFrame, true);
-		setTitle("Create new Locality");
-		
-		localityf = new JTextField();
-		districtf = new JTextField();
-		provincef = new JTextField();
-		countryf = new JTextField();
-		continentf = new JTextField();
-		Nf = new JTextField();
-		Ef = new JTextField();
-		coordSysf = new JTextField();
-		
-		Object[] array = {"Locality", localityf, "North", Nf, "East", Ef, "Coordinate System", coordSysf, "Provins", provincef, "District", districtf};
-
-	        //Create an array specifying the number of dialog buttons
-	        //and their text.
-		Object[] options = {"Cancel", "OK"};
-
-	        //Create the JOptionPane.
-	    optionPane = new JOptionPane(array,
-	                                    JOptionPane.QUESTION_MESSAGE,
-	                                    JOptionPane.YES_NO_OPTION,
-	                                    null,
-	                                    options,
-	                                    options[0]);
-
-	        //Make this dialog display it.
-	    setContentPane(optionPane);
-	    pack();
-	    setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-	}
-	
-	 
 
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
-		// TODO Auto-generated method stub
-		if(isVisible()){
-    		System.out.println(e.getNewValue());
-    		if (e.getNewValue()=="OK") {
-    			CreateLocality();
-    			setVisible(false);
-    			GUI.canvas.repaint();
-            	dispose();
-    		} else if (e.getNewValue()=="Cancel") {
-    			System.out.println("Stänger dialog");
-    			setVisible(false);
-            	dispose();
-    		} 
-    	}
+		if (!isVisible() || !"value".equals(e.getPropertyName())) return;
+
+		Object value = e.getNewValue();
+		if (value == JOptionPane.UNINITIALIZED_VALUE) return;
+
+		// Modern switch handles the button clicks
+		switch (value.toString()) {
+			case "OK" -> {
+				try {
+					CreateLocality();
+					setVisible(false);
+					GUI.canvas.repaint();
+					dispose();
+				} catch (Exception ex) {
+					JOptionPane.showMessageDialog(this, "Error saving: " + ex.getMessage());
+				}
+			}
+			case "Cancel" -> {
+				setVisible(false);
+				dispose();
+			}
+		}
+		// Reset optionPane so it can be clicked again if there was a validation error
+		optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
 	}
 
 	@Override
@@ -157,50 +124,44 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 		// TODO Auto-generated method stub
 		
 	}
-	
+
 	public void CreateLocality() {
-		System.out.println("Skapar lokalD");
 		String localityName = localityf.getText();
 		String districtName = districtf.getText();
 		String provinceName = provincef.getText();
 		String Nt = Nf.getText();
 		String Et = Ef.getText();
-	
+
 		Coordinates sweref99TM = new Coordinates(Double.parseDouble(Nt), Double.parseDouble(Et));
 		Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
 		Coordinates rt90 = wgs84.convertToRT90FromSweref99TM();
 		Point rt90p = rt90.getPoint();
-		/*String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, RT90N, RT90E, lat, long) "
-		 		+ "VALUES locality = \""+localityName+"\", district = \""+districtName+"\", province = \""+provinceName+"\", country = \"Sweden\", continent = \"Europe\", RT90N = \""+ RT90Nt +"\", RT90E = \""+RT90Et+"\", lat = \"\", long = \"\";";*/
-		
-		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, createdby, alternative_names, coordinate_source, lcomments) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
-		
-	    System.out.println(sqlstmt + " - " + localityName);
+
+		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, createdby, alternative_names, coordinate_source, lcomments) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+	    //System.out.println(sqlstmt + " - " + localityName);
 		try {
 			Connection conn = MYSQLConnection.getConn();
-			PreparedStatement preparedStmt = conn.prepareStatement(sqlstmt);
-			preparedStmt.setString (1, localityName);
-		    preparedStmt.setString (2, districtName);
-		    preparedStmt.setString (3, provinceName);
-		    preparedStmt.setString (4, "Sweden");
-		    preparedStmt.setString (5, "Europe");
-		    preparedStmt.setDouble(6, wgs84.getNorth());
-		    preparedStmt.setDouble(7, wgs84.getEast());
-		    preparedStmt.setString (8, Integer.toString(rt90p.getY()));
-		    preparedStmt.setString (9, Integer.toString(rt90p.getX()));
-		    preparedStmt.setString (10, Settings.getValue("user"));
-		    preparedStmt.setString (11, alternativef.getText() );
-		    preparedStmt.setString (12, coordsourcef.getText());
-		    preparedStmt.setString (13, commentsf.getText());
-		    preparedStmt.execute();
+			PreparedStatement pstmt = conn.prepareStatement(sqlstmt);
+			pstmt.setString (1, localityName);
+			pstmt.setString (2, districtName);
+			pstmt.setString (3, provinceName);
+			pstmt.setString (4, "Sweden");
+			pstmt.setString (5, "Europe");
+			pstmt.setDouble(6, wgs84.getNorth());
+			pstmt.setDouble(7, wgs84.getEast());
+			pstmt.setString (8, Integer.toString(rt90p.getY()));
+			pstmt.setString (9, Integer.toString(rt90p.getX()));
+			pstmt.setString (10, Settings.getValue("user"));
+			pstmt.setString (11, alternativef.getText() );
+			pstmt.setString (12, coordsourcef.getText());
+			pstmt.setString (13, commentsf.getText());
+			pstmt.executeUpdate();
 			SpecimenList.updateLocalityList();
-			SpecimenList.updateSpecimenList();		
-		} catch (SQLException | IOException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
+			SpecimenList.updateSpecimenList();
+		} catch (SQLException | IOException ex) {
+			ex.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Database Error: " + ex.getMessage());
 		}
-		
-		
 	}
-
 }

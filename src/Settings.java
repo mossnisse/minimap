@@ -30,7 +30,6 @@ public class Settings {
 			writer.println(e.getKey()+": "+e.getValue());
 		}
 		writer.close();
-
 	}
 
 	private static void readStore() throws IOException {

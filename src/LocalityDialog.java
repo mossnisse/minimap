@@ -6,7 +6,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFrame;
@@ -17,7 +16,6 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
 
-
 public class LocalityDialog  extends JPanel implements ActionListener{
 	private static final long serialVersionUID = -6495783408904343790L;
 	public JButton cancel, delete, ok;
@@ -26,8 +24,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	JTextArea comments;
 	JCheckBox isPlace;
 	JFrame localFrame;
-	 
-	
+
 	public LocalityDialog(int localityID, JFrame localFrame) {
 		//System.out.println("open Locality diag");
 		this.localFrame = localFrame;
@@ -51,8 +48,6 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 			statement.setInt(1, localityID);
 			ResultSet result = statement.executeQuery();
 			if (result.next()) {
-				
-				
 				
 				label1 = new JLabel("Name: ");
 				add(label1);
@@ -340,7 +335,5 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 			localFrame.setVisible(false);
 			localFrame.dispose();
 		}
-		
 	}
-
 }

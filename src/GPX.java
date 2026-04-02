@@ -5,10 +5,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -51,7 +49,6 @@ public class GPX {
 		return "outside shapefile";
 	}
 
-	
 	public static void CMDL(String[] args) {
 		String GPXfile;
 		String CSVfile;
@@ -251,5 +248,4 @@ public class GPX {
 			GUI.main(args);
 		}
 	}
-
 }

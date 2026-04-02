@@ -28,7 +28,5 @@ public class TableIterator implements Iterator<Table.Row>{
 	@Override
 	public void remove() {
 		// TODO Auto-generated method stub
-		
 	}
-
 }

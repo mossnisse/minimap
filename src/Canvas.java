@@ -1,34 +1,25 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.io.IOException;
+import java.io.Serial;
 import java.util.ArrayList;
 import java.util.Iterator;
-
 import javax.swing.JPanel;
 
-
 public class Canvas extends JPanel {
+	@Serial
 	private static final long serialVersionUID = 1L;
-	private CoordSystem cs;
+	private final CoordSystem cs;
 	BoundingBox bounds;
 	Point coord;
-	private ArrayList<Layer> layers;
-	//private Image img;
-	//Connection conn;
+	private final ArrayList<Layer> layers;
 	
 	public Canvas() {
 		cs = CoordSystem.Sweref99TM;
-		//this.conn = conn;
-		// Sverige RT90
-		/*int xMin = 1200000;
-		int xMax = 1900000;
-		int yMin = 6100000;
-		int yMax = 7693900;*/
 		
 		// Sverige Sweref99TM
 		int xMin = 194181;
@@ -45,28 +36,12 @@ public class Canvas extends JPanel {
 			prFile.setColor(Color.black);
 			prFile.setName("provinser");
 			addLayerBotom(prFile);
-			
-			/*
-			TNGPolygonFile prFile = new TNGPolygonFile("provinser.tng");
-			prFile.setColor(Color.blue);
-			prFile.setName("provinser");
-			addLayerBotom(prFile);
-			*/
-			
-			/*
-			TNGPolygonFile socFile = new TNGPolygonFile("socknar.tng");
-			socFile.setColor(Color.red);
-			socFile.setName("socknar");
-			addLayerBotom(socFile);*/
-			
 
 			TNGPolygonFile socFile = new TNGPolygonFile("socknarSWEREF99TM.tng");
 			socFile.setColor(Color.red);
 			socFile.setName("socknar");
-			socFile.setHidden(true);
+			socFile.setHidden(false);
 			addLayerBotom(socFile);
-			
-			
 
 			H2Table od = new H2Table("ortnamnSWTM");
 			od.setColor(Color.green);
@@ -75,20 +50,11 @@ public class Canvas extends JPanel {
 			od.setMaxZoomL(5);
 			addLayerBotom(od);
 			
-			/*
 			MYSQLTable md = new MYSQLTable();
 			md.setColor(Color.red);
 			md.setName("LokalDB");
 			md.setHidden(false);
 			md.setMaxZoomL(40);
-			addLayerBotom(md);
-			*/
-			
-			Locality md = new Locality();
-			md.setColor(Color.red);
-			md.setName("LokalDB");
-			md.setHidden(false);
-			md.setMaxZoomL(230);
 			addLayerBotom(md);
 			
 			Topoweb tb = new Topoweb();
@@ -112,7 +78,7 @@ public class Canvas extends JPanel {
 		return coord;
 	}
 	
-	public void hideCooirdinate() {
+	public void hideCoordinate() {
 		coord = null;
 		repaint();
 	}
@@ -158,8 +124,6 @@ public class Canvas extends JPanel {
 		int yMin = (int) (middle.getY()-stepp*(bounds.getHeight())/2);
 		bounds = new BoundingBox(xMin, yMin, xMax, yMax);
 		
-		//Dimension size = getSize();
-		
 		//System.out.println("Scale:"+bounds.getHeight()/size.getHeight()+" m/pix");
 		//System.out.println("xMax"+xMax+"xMin"+xMin);
 		repaint();
@@ -191,41 +155,7 @@ public class Canvas extends JPanel {
 		repaint();
 	}
 	
-	public void setAreaRT90(int xMax, int xMin, int yMax, int yMin) {
-		
-	}
-	
-	public void setAreaPixlar(int xMax, int xMin, int yMax, int yMin) {
-		
-	}
-	
 	public Point translatePoint(Point p) {
-		Dimension size = getSize();
-		double yScale = size.getHeight()/-bounds.getHeight();
-		
-		Point m = bounds.getMidlePoint();
-		int x1 = (int) (m.getX()+size.getWidth()/yScale);
-		int x2 = (int) (m.getX()-size.getWidth()/yScale);
-		bounds.setX1(x1);
-		bounds.setX2(x2);
-		
-		int xMin = bounds.getX1();
-		int xMax = bounds.getX2();
-		int yMin = bounds.getY1();
-		int yMax = bounds.getY2();
-		
-		double xShift1 = -xMin-(xMax-xMin)/2;
-		double yShift1 = -yMin-(yMax-yMin)/2;
-		double xScale = size.getHeight()/bounds.getHeight();
-		
-		int xShift2 =  (int) size.getWidth()/2;
-		int yShift2 = (int) size.getHeight()/2;
-		int x = (int) ((int) ((p.getX()+xShift1)*xScale)+xShift2);
-		int y = (int) ((int) ((p.getY()+yShift1)*yScale)+yShift2);
-		return new Point(x,y);
-	}
-	
-	public Point translatePoint2(Point p) {
 		Dimension size = getSize();
 		
 		double yScale = size.getHeight()/-bounds.getHeight();

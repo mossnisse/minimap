@@ -27,7 +27,7 @@ import javax.swing.SpringLayout;
 
 public class SpecimenList extends JPanel implements ActionListener, ItemListener, FocusListener, NActionListener  {
 	private static final long serialVersionUID = 7300006405490558336L;
-	private static JTextField landskap, socken, cnr, yearS, collectorS, originalS, distance, oProvince, oDistrict, coordinateprecision;
+	private static JTextField landskap, socken, cnr, yearS, collectorS, originalS, distance, oProvince, oDistrict, coordinateprecision, accessionNo;
 	private static JButton next, prev, rubinD, RT90D, latlongD, focusL, searchspecimens, copyLastB, localityD;
 	private static JTextPane collect_info;
 	private static JComboBox<String> lokaler, direction;
@@ -86,6 +86,13 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		originalS = new JTextField();
 		originalS.setPreferredSize(new Dimension(320,20));
 		this.add(originalS);
+		
+		JLabel label6 = new JLabel("Accesion Nr: ");
+		this.add(label6);
+		accessionNo = new JTextField();
+		accessionNo.setPreferredSize(new Dimension(320,20));
+		this.add(accessionNo);
+		
 		
 		try {
 			nr = Integer.parseInt(Settings.getValue("cnr"));
@@ -253,9 +260,25 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				5,
 				SpringLayout.SOUTH, label5);
 		
+		layout.putConstraint(SpringLayout.NORTH, label6,
+				10,
+				SpringLayout.SOUTH, label5);
+
+		layout.putConstraint(SpringLayout.WEST, label6,
+				10,
+				SpringLayout.WEST, this);
+
+		layout.putConstraint(SpringLayout.WEST, accessionNo,
+				5,
+				SpringLayout.EAST, label6);
+
+		layout.putConstraint(SpringLayout.SOUTH, accessionNo,
+				5,
+				SpringLayout.SOUTH, label6);
+		
 		layout.putConstraint(SpringLayout.NORTH, searchspecimens,
 				5,
-				SpringLayout.SOUTH, label5);
+				SpringLayout.SOUTH, label6);
 		
 		layout.putConstraint(SpringLayout.WEST, searchspecimens,
 				10,
@@ -472,15 +495,30 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			
 			Connection conn = MYSQLConnection.getConn();
 			// get data from MYSQL
-			String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, LEFT(Collector,64), specimens.InstitutionCode, locality.ID, specimens.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
+			String acctext = accessionNo.getText();
+			PreparedStatement statement;
+			if (acctext.equals("")) {
+				String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, LEFT(Collector,64), specimens.InstitutionCode, locality.ID, specimens.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
 					//+ " FROM specimens left join specimen_locality on specimens.InstitutionCode = specimen_locality.InstitutionCode and specimens.AccessionNo = specimen_locality.AccessionNo left join locality on specimen_locality.locality_ID = locality.ID WHERE "
 					+ " FROM specimens left join specimen_locality on specimens.ID = specimen_locality.specimen_ID  left join locality on specimen_locality.locality_ID = locality.ID WHERE "
 					+ "Specimens.Province = ? and specimens.district = ?";
-			System.out.println(sqlstmt);  // TODO: print trace
+				System.out.println(sqlstmt);  // TODO: print trace
 			
-			PreparedStatement statement = conn.prepareStatement(sqlstmt);
-			statement.setString(1, province);
-			statement.setString(2, district);
+				statement = conn.prepareStatement(sqlstmt);
+				statement.setString(1, province);
+				statement.setString(2, district);
+			} else {
+				String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, LEFT(Collector,64), specimens.InstitutionCode, locality.ID, specimens.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
+						//+ " FROM specimens left join specimen_locality on specimens.InstitutionCode = specimen_locality.InstitutionCode and specimens.AccessionNo = specimen_locality.AccessionNo left join locality on specimen_locality.locality_ID = locality.ID WHERE "
+						+ " FROM specimens left join specimen_locality on specimens.ID = specimen_locality.specimen_ID  left join locality on specimen_locality.locality_ID = locality.ID WHERE "
+						+ "Specimens.AccessionNo = ?";
+					System.out.println(sqlstmt);  // TODO: print trace
+				
+					statement = conn.prepareStatement(sqlstmt);
+					statement.setString(1, acctext);
+				
+			}
+			
 			ResultSet result = statement.executeQuery();
 			
 			Connection h2Conn = MYSQLConnection.getH2Conn();

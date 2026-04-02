@@ -5,17 +5,7 @@ import java.awt.Color;
 import java.awt.Container;
 import java.awt.Cursor;
 import java.awt.Window;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import javax.swing.Box;
@@ -30,13 +20,13 @@ import javax.swing.KeyStroke;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
+import java.awt.Desktop;
+import java.net.URI;
 
-public class GUI implements ActionListener, ItemListener, MouseListener, MouseWheelListener, NActionListener {
+public class GUI implements NActionListener {
 	static JFrame frame;
 	public static Canvas canvas;
 	static Point coord;
-	int mouseDownX, mouseDownY;
-	ShapePointFile orter;
 	static JFrame sframe;
 	static SpecimenList sList;
 
@@ -52,9 +42,48 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		frame.setContentPane(gui.createContentPane());
 		canvas = new Canvas();
 		frame.add(canvas);
-		canvas.addMouseListener(gui);
-		canvas.addMouseWheelListener(gui);
-		//coord = new Point(0, 0);
+		final java.awt.Point pressPt = new java.awt.Point();
+
+		canvas.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				pressPt.setLocation(e.getPoint()); // Store the point in the holder
+				canvas.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				int dx = e.getX() - pressPt.x;
+				int dy = e.getY() - pressPt.y;
+				canvas.panPixel(dx, dy);
+				canvas.setCursor(Cursor.getDefaultCursor());
+			}
+
+			@Override
+			public void mouseClicked(MouseEvent arg0) {
+				if(Keyboard.isKeyDown(KeyEvent.VK_A)) {
+					gui.showLokal(arg0);
+				} else if (Keyboard.isKeyDown(KeyEvent.VK_R)) {
+					gui.showRubin(arg0);
+				} else if (Keyboard.isKeyDown(KeyEvent.VK_C)) {
+					gui.showCoordDialog(arg0);
+				} else if (Keyboard.isKeyDown(KeyEvent.VK_S)) {
+					gui.createLocalityDialog(arg0);
+				} else if (Keyboard.isKeyDown(KeyEvent.VK_K)) {  //K
+					gui.OpenKartbildcom(arg0);
+				} else {
+					Point p  = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
+					canvas.setCoordinate(p);
+				}
+			}
+		});
+
+		canvas.addMouseWheelListener(e -> {
+			int rot = e.getWheelRotation();
+			double step = (rot > 0) ? 1.2 : 0.8;
+			canvas.zoom(step);
+		});
+
 		// Display the window.
 		frame.setSize(1000, 1000);
 		frame.setVisible(true);
@@ -74,23 +103,20 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	public JMenuBar createMenuBar() {
 		JMenuBar menuBar;
 		JMenu menu, menu2, menu3;
-		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12;
+		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12, menuItem13;
 		menuBar = new JMenuBar();
 
 		// Build the first menu.
 		menu = new JMenu("File");
 		// menu.setMnemonic(KeyEvent.VK_A);
-		menu.getAccessibleContext().setAccessibleDescription(
-				"The only menu in this program that has menu items");
+		menu.getAccessibleContext().setAccessibleDescription("The only menu in this program that has menu items");
 		menuBar.add(menu);
 
 		menuItem0 = new JMenuItem("Open File", KeyEvent.VK_O);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem0.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O,
-				ActionEvent.CTRL_MASK));
-		menuItem0.getAccessibleContext().setAccessibleDescription(
-				"This doesn't really do anything");
-		menuItem0.addActionListener(this);
+		menuItem0.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.CTRL_MASK));
+		menuItem0.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
+		menuItem0.addActionListener(e -> openFile());
 		menu.add(menuItem0);
 
 		menuItem1 = new JMenuItem("Open .gpx File", KeyEvent.VK_G);
@@ -99,7 +125,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 				ActionEvent.CTRL_MASK));
 		menuItem1.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem1.addActionListener(this);
+		menuItem1.addActionListener(e->openGPXFile());
 		menu.add(menuItem1);
 
 		menuItem2 = new JMenuItem("Save as .csv", KeyEvent.VK_S);
@@ -107,7 +133,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 				ActionEvent.CTRL_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem2.addActionListener(this);
+		menuItem2.addActionListener(e->saveCSV());
 		menu.add(menuItem2);
 
 		menuItem2 = new JMenuItem("Set user", KeyEvent.VK_I);
@@ -115,7 +141,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 				ActionEvent.CTRL_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"It sets the name for the registrator");
-		menuItem2.addActionListener(this);
+		menuItem2.addActionListener(e->userDialog());
 		menu.add(menuItem2);
 
 		menuItem3 = new JMenuItem("Exit", KeyEvent.VK_Q);
@@ -123,7 +149,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 				ActionEvent.CTRL_MASK));
 		menuItem3.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem3.addActionListener(this);
+		menuItem3.addActionListener(e->System.exit(0));
 		menu.add(menuItem3);
 
 		menu2 = new JMenu("View");
@@ -132,14 +158,14 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
 				ActionEvent.CTRL_MASK));
-		menuItem4.addActionListener(this);
+		menuItem4.addActionListener(e->canvas.zoom(0.5));
 		menu2.add(menuItem4);
 
 		menuItem5 = new JMenuItem("Zoom out", KeyEvent.VK_M);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M,
 				ActionEvent.CTRL_MASK));
-		menuItem5.addActionListener(this);
+		menuItem5.addActionListener(e->canvas.zoom(2));
 		menu2.add(menuItem5);
 
 		
@@ -147,56 +173,56 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U,
 				ActionEvent.CTRL_MASK));
-		menuItem12.addActionListener(this);
+		menuItem12.addActionListener(e->MarkCoordDialog());
 		menu2.add(menuItem12);
 		
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K,
 				ActionEvent.CTRL_MASK));
-		menuItem6.addActionListener(this);
+		menuItem6.addActionListener(e->viewCoordinate());
 		menu2.add(menuItem6);
 
 		menuItem8 = new JMenuItem("View Rubin", KeyEvent.VK_R);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,
 				ActionEvent.CTRL_MASK));
-		menuItem8.addActionListener(this);
+		menuItem8.addActionListener(e->viewRubin());
 		menu2.add(menuItem8);
 
 		menuItem7 = new JMenuItem("Search localities", KeyEvent.VK_F);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F,
 				ActionEvent.CTRL_MASK));
-		//menuItem7.addActionListener(this);
+		menuItem7.addActionListener(e->search());
 		menu2.add(menuItem7);
 
 		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D,
 				ActionEvent.CTRL_MASK));
-		menuItem8.addActionListener(this);
+		menuItem8.addActionListener(e->distance());
 		menu2.add(menuItem8);
 		
 		menuItem9 = new JMenuItem("Search specimens", KeyEvent.VK_E);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem9.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
 				ActionEvent.CTRL_MASK));
-		menuItem9.addActionListener(this);
+		menuItem9.addActionListener(e->searchSpecimens());
 		menu2.add(menuItem9);
-		
+
 		menuItem10 = new JMenuItem("Show lokality at marker", KeyEvent.VK_T);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
 				ActionEvent.CTRL_MASK));
-		menuItem10.addActionListener(this);
+		menuItem10.addActionListener(e->showLokalAtCoord());
 		menu2.add(menuItem10);
 		
 		menuItem11 = new JMenuItem("Create lokality at marker", KeyEvent.VK_Y);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem11.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y,
 				ActionEvent.CTRL_MASK));
-		menuItem11.addActionListener(this);
+		menuItem11.addActionListener(e->createLokalAtCoord());
 		menu2.add(menuItem11);
 
 		menuBar.add(Box.createHorizontalGlue());
@@ -206,37 +232,29 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 
 		menuItem9 = new JMenuItem("About");
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem9.addActionListener(this);
+		menuItem9.addActionListener(e->JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013"));
 		menu3.add(menuItem9);
 		
 		menuItem11 = new JMenuItem("Shortcuts");
-		menuItem11.addActionListener(this);
+		menuItem11.addActionListener(e->showShortcuts());
 		menu3.add(menuItem11);
 
 		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_L);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
 				ActionEvent.CTRL_MASK));
-		menuItem10.addActionListener(this);
+		//menuItem10.addActionListener(this);
 		menu2.add(menuItem10);
+		
+		menuItem13 = new JMenuItem("Search Ortnamnsregistret", KeyEvent.VK_B);
+		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
+		menuItem13.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_B,
+				ActionEvent.CTRL_MASK));
+		menuItem13.addActionListener(e->SearchOrtReg());
+		menu2.add(menuItem13);
 
 		return menuBar;
 	}
-
-	@Override
-	public void itemStateChanged(ItemEvent e) {
-		// TODO Auto-generated method stub
-		/*
-		 * JMenuItem source = (JMenuItem)(e.getSource()); String s =
-		 * "Item event detected." + newline + "    Event source: " +
-		 * source.getText() + " (an instance of " + getClassName(source) + ")" +
-		 * newline + "    New state: " + ((e.getStateChange() ==
-		 * ItemEvent.SELECTED) ? "selected":"unselected"); output.append(s +
-		 * newline); output.setCaretPosition(output.getDocument().getLength());
-		 */
-		//System.out.println("changed");
-	}
-
 
 	public static void setCursorWait() {
 		//getComponent();
@@ -286,15 +304,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 				JOptionPane.showMessageDialog(null, "kan inte öppna: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			}
 			setCursorDefault();
-			/*
-			 * try { GPXFile l; l = new GPXFile(file.getCanonicalPath());
-			 * l.setColor(Color.ORANGE); l.setName(file.getName());
-			 * canvas.addLayer(l); } catch (ParserConfigurationException e)
-			 * { // TODO Auto-generated catch block e.printStackTrace(); }
-			 * catch (SAXException e) { // TODO Auto-generated catch block
-			 * e.printStackTrace(); } catch (IOException e) { // TODO
-			 * Auto-generated catch block e.printStackTrace(); }
-			 */
 
 		} else {
 			System.out.println("Open cancelled");
@@ -345,7 +354,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
 			System.out.println("Save: " + file.getName());
-			// This is where a real application would open the file.
 			// log.append("Opening: " + file.getName() + "." + newline);
 		} else {
 			// log.append("Open command cancelled by user." + newline);
@@ -362,21 +370,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 			SearchDialog d = new SearchDialog(frame, this, sList.getSelectedText());
 			d.setVisible(true);
 		}
-
-		//d.setModalityType(JDialog.ModalityType.MODELESS);
-
-		
-
-		/*if(d.isEntered()) {
-						//String provins = d.getProvins();
-						String lokal = d.getLokal();
-						int prNr = d.getProvinsNr();
-						//String provins = d.getProvins();
-						//String socken = d.getSocken();
-						search(prNr, "", lokal);
-
-						//System.out.println("lokal: " + lokal);
-					}*/
 	}
 
 	public void viewCoordinate() {
@@ -419,68 +412,10 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		l.setVisible(true);
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent arg0) {
-		JMenuItem source = (JMenuItem) (arg0.getSource());
-		switch (source.getText()) {
-			case "Open File":
-				openFile();
-				break;
-			case "Open .gpx File":
-				openGPXFile();
-				break;
-			case "Save as .csv":
-				saveCSV();
-				break;
-			case "Exit":
-				System.exit(0);
-				break;
-			case "Search":
-				search();
-				break;
-			case "Zoom in":
-				canvas.zoom(0.5);
-				break;
-			case "Zoom out":
-				canvas.zoom(2);
-				break;
-			case "View Coordinate":
-				viewCoordinate();
-				break;
-			case "View Rubin":
-				viewRubin();
-				break;
-			case "About":
-				JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013");
-				break;
-			case "Distance and Direction":
-				distance();
-				break;
-			case "Layers":
-				LayerDialog l = new LayerDialog(frame, canvas.getLayers());
-				l.setVisible(true);
-				break;
-			case "Set user":
-				userDialog();
-				break;
-			case "Search specimens":
-				searchSpecimens();
-				break;
-			case "Show lokality at marker":
-				showLokalAtCoord();
-				break;
-			case "Create lokality at marker":
-				createLokalAtCoord();
-				break;
-			case "Shortcuts":
-				String message = "Press s and click on the map to create a new Locality\nPress a and click on the map to edit Locality information\n"
-						+ "Press c and click on the map to show info about the coordinate\nPress r and click on the map to show the 5x5 km RUBIN ruta";
-				 JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
-				break;
-			case "Mark/Find Coordinate":
-				 MarkCoordDialog();
-				break;
-		}
+	public void showShortcuts() {
+		String message = "Press s and click on the map to create a new Locality\nPress a and click on the map to edit Locality information\n"
+				+ "Press c and click on the map to show info about the coordinate\nPress r and click on the map to show the 5x5 km RUBIN ruta";
+		JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	public void search(int prNr, String socken, String lokal) {
@@ -515,7 +450,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	}
 
 	public void showCoordDialog(MouseEvent arg0) {
-		coord = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
+		coord = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
 		canvas.setCoordinate(coord);
 		CoordinateDialog d = new CoordinateDialog(frame, coord,
 				(TNGPolygonFile) canvas.getLayer("provinser"),
@@ -530,7 +465,7 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 
 	public void showRubin(MouseEvent arg0) {
 		System.out.print("show RUBIN: ");
-		Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
+		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
 		 String s = Coordinates.getRUBINfromSweref99TM(p);
 		//Coordinates sweref99TM = new Coordinates(p);
 		//System.out.print(" sweref99tm "+sweref99TM+" ");
@@ -542,30 +477,12 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		//Point p2 = r.getMiddle();
 		//canvas.focus(p2);
 	}
-
-	/*
-	public void showLokal(MouseEvent arg0) {
-		System.out.println("show Locality");
-		Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
-
-		MYSQLTable ldb = (MYSQLTable) canvas.getLayer("LokalDB");
-		int localityID = ldb.findNearest(p,1000);
-		if (localityID != -1) {
-
-			JFrame lframe = new JFrame("Locality");
-			LocalityDialog diag = new LocalityDialog(localityID,lframe);
-			//lframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			lframe.add(diag);
-			diag.cancel.requestFocusInWindow();
-		}
-		//canvas.repaint();
-	}*/
 	
 	public void showLokal(MouseEvent arg0) {
 		System.out.println("show Locality");
-		Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
+		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
 
-		Locality ldb = (Locality) canvas.getLayer("LokalDB");
+		MYSQLTable ldb = (MYSQLTable) canvas.getLayer("LokalDB");
 		int localityID = ldb.findNearest(p,1000);
 		if (localityID != -1) {
 
@@ -599,7 +516,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	private void createLokalAtCoord() {
 		System.out.println("create Locality at");  // TODO trace print
 		
-		
 		coord =  canvas.getCoordinate();
 		String provins = "", socken = "";
 		TNGPolygonFile provinces = (TNGPolygonFile)canvas.getLayer("provinser");
@@ -616,10 +532,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		} else {
 			socken = "utanför lager";
 		}
-		
-		/*
-		CreateLocalityD d = new CreateLocalityD(frame, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
-		d.setVisible(true);*/
 		
 		JFrame lframe = new JFrame();
 		CreateLocalityDialog diag = new CreateLocalityDialog(lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
@@ -657,11 +569,10 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		sframe.setVisible(true);
 	}
 
-
 	private void createLocalityDialog(MouseEvent me) {
 		System.out.println("skapa lokal");
 		//Point p = canvas.translatePoint2(new Point(me.getX(), me.getY()));
-		coord = canvas.translatePoint2(new Point(me.getX(), me.getY()));
+		coord = canvas.translatePoint(new Point(me.getX(), me.getY()));
 		canvas.setCoordinate(coord);
 		String provins = "", socken = "";
 		TNGPolygonFile provinces = (TNGPolygonFile)canvas.getLayer("provinser");
@@ -689,66 +600,49 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 		canvas.repaint();
 	}
 	
-	
-
-	@Override
-	public void mouseClicked(MouseEvent arg0) {
-		//System.out.println("W-key down: "+IsKeyPressed.isWPressed());
-		System.out.println("mouse clicked: " + arg0.getX() + "key: " +Keyboard.getKeys() );
-
-
-		if(Keyboard.isKeyDown(65)) {
-			showLokal(arg0);
-		} else if (Keyboard.isKeyDown(82)) {
-			showRubin(arg0);
-		} else if (Keyboard.isKeyDown(67)) {
-			showCoordDialog(arg0);
-		} else if (Keyboard.isKeyDown(83)) {
-			createLocalityDialog(arg0);
+	private void OpenKartbildcom(MouseEvent arg0) {
+		System.out.println("Open Kartbild.com");
+		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+		    try {
+		    	int map = 40000;
+		    	int zoomLevel = 12;
+		    	Point point = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
+		    	
+		    	Coordinates sweref99TM = new Coordinates(point);
+		    	Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
+		    	System.out.println("coord: "+wgs84);
+		    	//double latitude = 59.9256;
+		    	//double longitude = 18.1844;
+		    	String uri = "https://kartbild.com/#"+String.valueOf(zoomLevel)+"/"+String.valueOf(wgs84.getNorth())+"/"+String.valueOf(wgs84.getEast())+"/0x"+String.valueOf(map);
+		    	System.out.println("URI: "+uri);
+		    	Desktop.getDesktop().browse(new URI(uri));
+		    } catch(Exception e) {
+		    		
+		    }
 		} else {
-			Point p  = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
-			canvas.setCoordinate(p);
+			System.out.println("open browser not supported");
 		}
 	}
-
-	@Override
-	public void mouseEntered(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-
-	}
-
-	@Override
-	public void mouseExited(MouseEvent arg0) {
-		// TODO Auto-generated method stub
-	}
-
-	@Override
-	public void mousePressed(MouseEvent arg0) {
-		mouseDownX = arg0.getX();
-		mouseDownY = arg0.getY();
-		canvas.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-	}
-
-	@Override
-	public void mouseReleased(MouseEvent arg0) {
-		int x = arg0.getX();
-		int y = arg0.getY();
-		int dx = x - mouseDownX;
-		int dy = y - mouseDownY;
-		canvas.panPixel(dx, dy);
-		canvas.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-	}
-
-	@Override
-	public void mouseWheelMoved(MouseWheelEvent arg0) {
-		int rot = arg0.getWheelRotation();
-		double step = 1;
-		if (rot > 0)
-			step = 1.2;
-		else if (rot < 0)
-			step = 0.8;
-		canvas.zoom(step);
+	
+	private void SearchOrtReg() {
+		System.out.println("Try search Ortnamnsregistret");
+		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+		    try {
+		    	String placeName;
+		    	if (sList == null) {
+		    		placeName = "";
+				} else {
+					placeName = sList.getSelectedText();
+				}
+		    	String url = "https://ortnamnsregistret.isof.se/place-names?place-name="+placeName;
+		    	Desktop.getDesktop().browse(new URI(url));
+		    } catch(Exception e) {
+		    	
+		    }
+		} else {
+		    System.out.println("open browser not supported");
+		}
+		
 	}
 	
 	public void MarkCoordDialog() {
@@ -778,7 +672,6 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 	}
 
 	public void nActionPerformed(String a) {
-		// TODO Auto-generated method stub
 		switch (a) {
 		case "Open File":
 			openFile();
@@ -828,6 +721,9 @@ public class GUI implements ActionListener, ItemListener, MouseListener, MouseWh
 			break;
 		case "Search localities":
 			search();
+			break;
+		case "Search Ortnamnsregistret":
+			SearchOrtReg();
 			break;
 	}
 	}

@@ -363,9 +363,9 @@ public class shapeFile {
 
 			//shapeFile hej = new shapeFile("..\\FloraProvinser\\provinser.shp");
 			//writeTNGfile("..\\provinser.tng",hej,12);
-			shapeFile hej = new shapeFile("c:\\shape\\provinser.shp");
+			shapeFile hej = new shapeFile("c:\\shape\\landskap_swref.shp");
 			//writeSpecial("..\\socknar.txt",hej,4);
-			writeTNGfile("provinserSWEREF99TM.tng",hej,0);
+			writeTNGfile("provinserSWEREF99TM.tng",hej,1);
 
 			//hej.printShpHeader();
 			//hej.printShpRecords();

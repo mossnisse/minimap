@@ -2,7 +2,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import org.h2.jdbcx.JdbcDataSource;
 
 public class H2test {
@@ -20,7 +19,8 @@ public class H2test {
             Connection conn = ds.getConnection();
             ResultSet rs;
             Statement stat = conn.createStatement();
-			rs = stat.executeQuery("update ortnamnsDB set FPNUMMER = 'Västergötland' where FPNUMMER = 'Göteborg';");
+			//rs = stat.executeQuery("update ortnamnsDB set FPNUMMER = 'Västergötland' where FPNUMMER = 'Göteborg';");
+            rs = stat.executeQuery("update provinser set Landskap = 'Bohuslän' where Province = 'Bohusländ';");
             
             
            // rs = stat.executeQuery("select * from test");
@@ -55,5 +55,4 @@ public class H2test {
              System.out.println(rs.getString(rs.getString("name")));
          }
     }
-
 }

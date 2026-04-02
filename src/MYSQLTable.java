@@ -8,9 +8,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import javax.swing.JOptionPane;
-
-
 public class MYSQLTable implements Layer {
 	private String name, tableName;
 	private Color color;
@@ -23,7 +20,6 @@ public class MYSQLTable implements Layer {
 		//createConnection();
 		//this.conn = conn;
 	}
-	
 
 	@Override
 	public void setColor(Color c) {

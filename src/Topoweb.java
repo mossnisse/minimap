@@ -2,23 +2,23 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.HashMap;
-
+import java.util.LinkedHashMap;
 import javax.imageio.ImageIO;
-
 import geometry.BoundingBox;
 
 public class Topoweb implements Layer{
-	private String key = "007d0995-da35-38ed-81b6-2a11e9c29d10";
-	private String url = "https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/";
+	//private final String key = "007d0995-da35-38ed-81b6-2a11e9c29d10";
+	//private final String url = "https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/";
+	private final String url = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";
+	// http://hades.slu.se/lm/topowebb/wms/v1/?SERVICE=WMS&REQUEST=GetCapabilities
 	private String name;
 	private boolean hidden;
 	private Color color;
 	private int minZoomL;
 	private int maxZoomL;
-	private TileBuffer tileBuffer; 
+	private final TileBuffer tileBuffer;
 	private CoordSystem cs;
 	
 	public class TileIndex {
@@ -95,7 +95,7 @@ public class Topoweb implements Layer{
 		
 	    @Override
 	    public int hashCode() {
-	        return col*row*zoomLevel;
+			return java.util.Objects.hash(col, row, zoomLevel);
 	    }
 	    
 	    @Override
@@ -105,20 +105,26 @@ public class Topoweb implements Layer{
 	}
 	
 	private class TileBuffer {
-		private HashMap<TileIndex,Image> tiles;
-		
-		TileBuffer() {
-			tiles = new HashMap<TileIndex,Image>();
-		}
+		private final int MAX_TILES = 1000;
+
+		private final HashMap<TileIndex, Image> tiles = new LinkedHashMap<TileIndex, Image>(MAX_TILES, 0.75f, true) {
+			@Override
+			protected boolean removeEldestEntry(java.util.Map.Entry<TileIndex, Image> eldest) {
+				return size() > MAX_TILES;
+			}
+		};
 		
 		public Image getTile(TileIndex index) throws IOException {
 			if (tiles.containsKey(index)) {
 				return tiles.get(index);
 			} else {
 				try {
-				URL path = new URL(url+key
+				URL path = new URL(url  //+key
 					+"/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX="
 					+index.zoomLevel+"&TILEROW="+index.row+"&TILECOL="+index.col+"&FORMAT=image/png");
+				/*URL path = new URL(url+"?SERVICE=WMS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX="
+						+index.zoomLevel+"&TILEROW="+index.row+"&TILECOL="+index.col+"&FORMAT=image/png");*/
+					
 					System.out.println(path);
 					Image img = ImageIO.read(path);
 					tiles.put(index, img);
@@ -248,13 +254,11 @@ public class Topoweb implements Layer{
 
 	@Override
 	public void setCRS(CoordSystem cs) {
-		// TODO Auto-generated method stub
-		
+		this.cs = cs;
 	}
 
 	@Override
 	public CoordSystem getCRS() {
 		return cs;
 	}
-
 }

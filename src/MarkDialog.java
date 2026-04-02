@@ -9,7 +9,6 @@ import java.beans.PropertyChangeListener;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-
 import geometry.Point;
 
 public class MarkDialog extends JDialog implements PropertyChangeListener{

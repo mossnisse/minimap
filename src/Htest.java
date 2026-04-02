@@ -3,25 +3,18 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-
 import org.h2.jdbcx.JdbcDataSource;
-
 
 public class Htest {
 	static Connection conn;
-
 	 
     public static void main(String[] args) {
  
         createConnection();
- 
         runStatement("create table ortnamnsDB (Ort_ID INTEGER, Ortnamn VARCHAR(55), Detaljtyp VARCHAR(9), FPNummer INTEGER, Socken VARCHAR(19))");
-       
- 
+
         //doQuery("SELECT * FROM employees");
- 
         //runStatement("drop table employees");
- 
     }
  
     public static void createConnection() {
@@ -39,7 +32,6 @@ public class Htest {
  
     public static void runStatement(String sqlstmt) {
         System.out.println(sqlstmt);
- 
  
         Statement stmt;
         try {
@@ -304,6 +296,4 @@ public class ShapePointFile implements Layer{
 	public Vector<dbfRecord> getRecords() {
 		return data;
 	}
-
 }*/
-

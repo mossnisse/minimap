@@ -1,17 +1,17 @@
 public enum CoordSystem {
 	
 	//parameters to compensate for the bessel elipsoid, to convert direct to the "wgs84" elipsoid
-	RT90("RT 90 2.5 gon V 0:-15.","Sweden",CoordType.TransverseMercator
+	RT90("RT90 2.5 gonV 0:-15.","EPSG:3021", "Sweden",CoordType.TransverseMercator
 			,-667.711,1500064.274,15.0 + 48.0 / 60.0 + 22.624306 / 3600.0,1.00000561024,6378137.0,1.0 / 298.257222101
 			,6100000,7700000,1200000,1900000
 		), 
-	Sweref99TM("Sweref99TM", "Sweden",CoordType.TransverseMercator,
+	Sweref99TM("Sweref99TM", "EPSG:3006", "Sweden",CoordType.TransverseMercator,
 			0.0,500000.0,15.00,0.9996,6378137.0,1.0 / 298.257222101
 			,6000000,7700000,200000,960000
 		), 
-	WGS84("WGS84","Global",CoordType.Ellipsoid2D), 
-	bessel("Bessel 1841","Global",CoordType.Ellipsoid2D), 
-	Sweref99("Sweref99","Global",CoordType.Ellipsoid2D);
+	WGS84("WGS84", "EPSG:4326", "Global",CoordType.Ellipsoid2D), 
+	bessel("Bessel 1841","?","Global",CoordType.Ellipsoid2D), 
+	Sweref99("Sweref99","?", "Global",CoordType.Ellipsoid2D);
 		
 	static public enum CoordType {
 		TransverseMercator, Ellipsoid2D
@@ -20,6 +20,7 @@ public enum CoordSystem {
 	public String name;
 	public String country;
 	public CoordType type;
+	public String CRS;
 	public double falseNorthing;
 	public double falseEasting;
 	public double centralMeridian;
@@ -59,14 +60,16 @@ public enum CoordSystem {
     public double delta4;
     
 	
-	CoordSystem(String name, String country, CoordType type) {
+	CoordSystem(String name, String CRS, String country, CoordType type) {
 		this.name = name;
+		this.CRS = CRS;
 		this.country = country;
 		this.type = type;
 	}
 
-	CoordSystem(String name, String country, CoordType type, double falseNorthing, double falseEasting, double centralMeridian, double scale, double axis, double flattening) {
+	CoordSystem(String name, String CRS, String country, CoordType type, double falseNorthing, double falseEasting, double centralMeridian, double scale, double axis, double flattening) {
 		this.name = name;
+		this.CRS = CRS;
 		this.country = country;
 		this.type = type;
 		this.falseNorthing = falseNorthing;
@@ -99,8 +102,8 @@ public enum CoordSystem {
 		delta4 = 4397.0 * n * n * n * n / 161280.0;
 	}
 
-	CoordSystem(String name, String country, CoordType type, double falseNorthing, double falseEasting, double centralMeridian, double scale, double axis, double flattening, double Nmin, double Nmax, double Emin, double Emax) {
-		this(name, country, type, falseNorthing, falseEasting, centralMeridian, scale, axis, flattening);
+	CoordSystem(String name, String CRS, String country, CoordType type, double falseNorthing, double falseEasting, double centralMeridian, double scale, double axis, double flattening, double Nmin, double Nmax, double Emin, double Emax) {
+		this(name, country, CRS, type, falseNorthing, falseEasting, centralMeridian, scale, axis, flattening);
 		this.Nmin = Nmin;
 		this.Nmax = Nmax;
 		this.Emin = Emin;
@@ -109,6 +112,10 @@ public enum CoordSystem {
 	
 	public String getName() {
 		return name;
+	}
+	
+	public String getCRS() {
+		return CRS;
 	}
 }
 

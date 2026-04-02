@@ -136,5 +136,4 @@ public class DistanceWGS implements Layer {
 	public CoordSystem getCRS() {
 		return cs;
 	}
-
 }

@@ -2,9 +2,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-
 import javax.swing.JOptionPane;
-
 import org.h2.jdbcx.JdbcDataSource;
 
 public class MYSQLConnection {
@@ -17,7 +15,6 @@ public class MYSQLConnection {
 		return conn;
 	}
 
-	
 	private static void openConn(String pass) throws SQLException {
 		//String url = "jdbc:mysql://130.239.50.18:3306/samhall";
 		String url = "jdbc:mysql://172.18.144.38:3306/samhall?connectionCollation=utf8_general_ci";
@@ -63,8 +60,7 @@ public class MYSQLConnection {
 			conn = null;
 		}
 	}
-	
-	
+
 	public static Connection getH2Conn() throws SQLException {
 		if (h2Conn == null) createH2Conn();
 		return h2Conn;
@@ -84,5 +80,4 @@ public class MYSQLConnection {
 			h2Conn = null;
 		}
 	}
-
 }

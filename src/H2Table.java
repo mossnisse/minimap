@@ -1,6 +1,5 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.sql.Connection;
@@ -10,10 +9,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-
 import org.h2.jdbcx.JdbcDataSource;
-
-
 
 public class H2Table implements Layer {
 	private String name, tableName;
@@ -41,8 +37,7 @@ public class H2Table implements Layer {
     			select.execute(sql);*/
             }  catch (Exception e) {
             	System.err.println("Caught IOException: " + e.getMessage());
-            } 
-
+            }
     }
 
 	@Override
@@ -160,9 +155,7 @@ public class H2Table implements Layer {
 		try {
 			Statement select = conn.createStatement();
 			ResultSet result = select.executeQuery(sqlstmt);
-			
-		
-	    
+
 			double ndist = 700000000;
 			String nearest = "";
 			while (result.next()) {
@@ -198,8 +191,8 @@ public class H2Table implements Layer {
 	
 	public void saveConvert() {
 		createConnection();
-		//String drop = "DROP table if exists ortnamnSWTM";
-		//String sql0 ="Create table ortnamnSWTM as select * FROM ortnamnsDB";
+		String drop = "DROP table if exists ortnamnSWTM";
+		String sql0 ="Create table ortnamnSWTM as select * FROM ortnamnsDB";
 		String sql1 ="SELECT NORTH, EAST, ORT_ID from ortnamnSWTM LIMIT ?,?";
 		String sql2 ="Update ortnamnSWTM set NORTH = ?, EAST = ? where ORT_ID = ?";
 		int batchsize=5000;
@@ -277,8 +270,7 @@ public class H2Table implements Layer {
 		}
 		
 	}
-	
-	
+
 	public static void main(String[] args) {
 		H2Table h2 = new H2Table("ortnamnsDB");
 		//String sql = "select * from ortnamnsDB where North = 123544";

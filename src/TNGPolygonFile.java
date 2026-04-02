@@ -71,13 +71,15 @@ public class TNGPolygonFile implements Layer{
 			            new FileInputStream(fileName)));
 		in.readInt();
 		int nrRecords = in.readInt();
-		//System.out.println("Read nrRecords: "+nrRecords);
+		System.out.println("fileName: "+fileName);
+		System.out.println("Read nrRecords: "+nrRecords);
 		nameLength = in.readInt();
-		//System.out.println("read nameLenght: "+nameLength);
+		System.out.println("read nameLenght: "+nameLength);
 		provinces = new Province[nrRecords];
 		for (int i = 0; i < nrRecords; i++) {
-			String name = in.readString(nameLength).trim();
-			//System.out.println("Reads name: "+name);
+			//System.out.println("ReccordNr: "+i);
+			String name = in.readStringUTF8(nameLength).trim();  // length +2 stupid java adds a couple of bytes
+			//System.out.println("nR: "+i+" Reads name: "+name);
 			int x1 = in.readInt();
 			int y1 = in.readInt();
 			int x2 = in.readInt();
@@ -86,6 +88,7 @@ public class TNGPolygonFile implements Layer{
 			//System.out.println("BoundingBox: "+box);
 			int numParts = in.readInt();
 			int numPoints = in.readInt();
+			//System.out.println("numParts: "+numParts+" numPoints: "+numPoints);
 			int[] parts = new int[numParts];
 			for (int j = 0; j < numParts; j++) {
 				parts[j] = in.readInt();

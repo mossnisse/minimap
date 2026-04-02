@@ -5,9 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 
-
-
-
 public class Parser {
 	public static class Synonym {
 		public String gammalt, nytt, gAuctor;

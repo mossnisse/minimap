@@ -9,7 +9,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener; //property change stuff
-
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
@@ -26,7 +25,6 @@ class CoordinateDialog extends JDialog
     private Point p;
     private Frame aFrame;
     public JButton cancel;
-    //private boolean hidden;
 
     public Point getCoordinateSweref99TM() {
     	int norths = Integer.parseInt(sweref99TMnorth.getText());
@@ -167,31 +165,35 @@ class CoordinateDialog extends JDialog
     }
 
     /** This method reacts to state changes in the option pane. */
-    public void propertyChange(PropertyChangeEvent e) {
-    	System.out.println("Property chang");
-    	//JOptionPane source = (JOptionPane) e.getSource();
-    	if(isVisible()){
-    		System.out.println(e.getNewValue());
-    		if (e.getNewValue()=="Update") {
-    			System.out.println("Updated");
-    			//p = getCoordinate();
-    			updateFromRubin();
-    		} else if (e.getNewValue()=="Hide") {
-    			//hidden = true;
-    		/*} else if (e.getNewValue()=="Create Locality") {
-    			createLocalityDialog();*/
-    			
-    		} else {
-    			setVisible(false);
-            	dispose();
-    		}
-    	}
-    }
+	public void propertyChange(PropertyChangeEvent e) {
+		// Only care about the "Value" property of the JOptionPane
+		if (!"value".equals(e.getPropertyName()) || !isVisible()) return;
 
-    /** This method clears the dialog and hides it. */
-    /*
-    public void clearAndHide() {
-        textField.setText(null);
-        setVisible(false);
-    }*/
+		Object value = e.getNewValue();
+		if (value == null || value == JOptionPane.UNINITIALIZED_VALUE) return;
+
+		// Reset the value so the next click triggers a change again
+		optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
+
+		// Modern Switch (Java 21)
+		switch (value.toString()) {
+			case "Update" -> {
+				System.out.println("Updating from RUBIN...");
+				updateFromRubin();
+			}
+			case "Enter" -> {
+				// Logic for 'Enter'
+				setVisible(false);
+				dispose();
+			}
+			case "Cancel", "Hide" -> {
+				setVisible(false);
+				dispose();
+			}
+			default -> {
+				setVisible(false);
+				dispose();
+			}
+		}
+	}
 }

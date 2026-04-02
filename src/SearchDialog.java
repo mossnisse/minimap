@@ -1,6 +1,5 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
@@ -15,14 +14,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.SpringLayout;
-
 
 public class SearchDialog extends JDialog implements ActionListener, ItemListener {
 
@@ -323,8 +320,6 @@ public class SearchDialog extends JDialog implements ActionListener, ItemListene
 			//setVisible(false);
 		}
 	}
-
-
 
 	@Override
 	public void itemStateChanged(ItemEvent ev) {
