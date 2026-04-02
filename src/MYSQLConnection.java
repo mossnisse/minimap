@@ -11,47 +11,49 @@ public class MYSQLConnection {
 	private static String password;
 
 	public static Connection getConn() throws SQLException {
-		if (conn == null) createConn();
+		if (conn == null || conn.isClosed()) {
+			createConn();
+		}
 		return conn;
 	}
 
 	private static void openConn(String pass) throws SQLException {
-		//String url = "jdbc:mysql://130.239.50.18:3306/samhall";
 		String url = "jdbc:mysql://172.18.144.38:3306/samhall?connectionCollation=utf8_general_ci";
 		String user = "MiniMap";
-		conn = DriverManager.getConnection(url, user, password);
+		conn = DriverManager.getConnection(url, user, pass);
 	}
-	
+
 	private static void createConn() throws SQLException {
-		if (password == null) {
-			try {
-				password = Settings.getValue("password");
-				System.out.println("Password: "+password);
-				if (password == null) {
-					PasswDialog l = new PasswDialog();
-					password = l.open();
-					if(!password.equals("codeCancel")) {
-						try {
-							openConn(password);
-							Settings.setValue("password", password);
-						} catch(SQLException e2) {
-								JOptionPane.showMessageDialog(null, e2.getMessage());
-								password = null;
-								createConn();
-						} catch(IOException e1) {
-							System.out.println("Couldn't save password");
-							e1.printStackTrace();
-						}
-					}
-				} else {
-					openConn(password);
-				}
-			} catch (IOException e) {
-				
-			}
-			
+		// If we already have the password but connection is null/closed
+		if (password != null) {
+			openConn(password);
+			return;
 		}
-		
+
+		try {
+			password = Settings.getValue("password");
+			if (password == null) {
+				PasswDialog l = new PasswDialog();
+				String input = l.open();
+				if (input != null && !input.equals("codeCancel")) {
+					password = input;
+					try {
+						openConn(password);
+						Settings.setValue("password", password);
+					} catch (SQLException e2) {
+						JOptionPane.showMessageDialog(null, "Login failed: " + e2.getMessage());
+						password = null; // Reset so we ask again
+						createConn();
+					} catch (IOException e1) {
+						System.err.println("Couldn't save password");
+					}
+				}
+			} else {
+				openConn(password);
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	public static void close() throws SQLException {

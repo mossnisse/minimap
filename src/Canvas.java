@@ -170,12 +170,10 @@ public class Canvas extends JPanel {
 		Dimension size = getSize();
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return p;
 
-		// FIX: Cast to double to prevent Integer Division!
 		double rawXScale = size.width / (double) bounds.getWidth();
 		double rawYScale = size.height / (double) bounds.getHeight();
 		double scale = Math.min(rawXScale, rawYScale);
 
-		// Same shift logic as paintComponent
 		Point m = bounds.getMidlePoint();
 		double xShift = (size.width / 2.0) - (m.getX() * scale);
 		double yShift = (size.height / 2.0) - (m.getY() * -scale);
