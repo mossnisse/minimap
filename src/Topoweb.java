@@ -2,7 +2,6 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.io.IOException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import javax.imageio.ImageIO;
@@ -62,7 +61,6 @@ public class Topoweb implements Layer{
 			int rowMax=	tp4.row;
 			int colMin=	tp3.col;
 			int colMax=	tp4.col;
-			
 			int numTiles = (rowMax-rowMin+1)*(colMax-colMin+1);
 			//System.out.println("numTiles: "+numTiles);
 			TileIndex[] indexes = new TileIndex[numTiles];
@@ -106,34 +104,54 @@ public class Topoweb implements Layer{
 	
 	private class TileBuffer {
 		private final int MAX_TILES = 1000;
+		private static final java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+		private final java.util.Set<TileIndex> loading = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
-		private final HashMap<TileIndex, Image> tiles = new LinkedHashMap<TileIndex, Image>(MAX_TILES, 0.75f, true) {
-			@Override
-			protected boolean removeEldestEntry(java.util.Map.Entry<TileIndex, Image> eldest) {
-				return size() > MAX_TILES;
-			}
-		};
-		
-		public Image getTile(TileIndex index) throws IOException {
+		private final java.util.Map<TileIndex, Image> tiles = java.util.Collections.synchronizedMap(
+				new LinkedHashMap<TileIndex, Image>(MAX_TILES, 0.75f, true) {
+					@Override
+					protected boolean removeEldestEntry(java.util.Map.Entry<TileIndex, Image> eldest) {
+						return size() > MAX_TILES;
+					}
+				}
+		);
+
+		public Image getTileOrFetch(TileIndex index) {
 			if (tiles.containsKey(index)) {
 				return tiles.get(index);
-			} else {
-				try {
-				URL path = new URL(url  //+key
-					+"/?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX="
-					+index.zoomLevel+"&TILEROW="+index.row+"&TILECOL="+index.col+"&FORMAT=image/png");
-				/*URL path = new URL(url+"?SERVICE=WMS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX="
-						+index.zoomLevel+"&TILEROW="+index.row+"&TILECOL="+index.col+"&FORMAT=image/png");*/
-					
-					System.out.println(path);
-					Image img = ImageIO.read(path);
-					tiles.put(index, img);
-					return img;
-				} catch (Exception e) {
-					tiles.put(index, null);
-					return null;
-				}
 			}
+
+			// If not already loading, start the download
+			if (loading.add(index)) {
+				downloadTileAsync(index);
+			}
+			return null; // Return null immediately; we'll draw it once it arrives
+		}
+
+		private void downloadTileAsync(TileIndex index) {
+			String tileUrl = url + "?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb"
+					+ "&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX=" + index.zoomLevel
+					+ "&TILEROW=" + index.row + "&TILECOL=" + index.col + "&FORMAT=image/png";
+
+			java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+					.uri(java.net.URI.create(tileUrl))
+					.build();
+
+			client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofInputStream())
+					.thenApply(response -> {
+						try (var is = response.body()) {
+							return ImageIO.read(is);
+						} catch (IOException e) {
+							return null;
+						}
+					})
+					.thenAccept(img -> {
+						if (img != null) {
+							tiles.put(index, img);
+							GUI.canvas.repaint();
+						}
+						loading.remove(index); // Done loading
+					});
 		}
 	}
 	
@@ -177,7 +195,6 @@ public class Topoweb implements Layer{
 	public void setName(String name) {
 		this.name = name;
 	}
-
 	
 	private static int tileWidth (int tilematrix) {
 		return 1048576/(int)(Math.pow((double)2,(double)tilematrix));
@@ -212,32 +229,28 @@ public class Topoweb implements Layer{
 		if (m>9) m=9;
 		return m;
 	}
-	
-	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) throws Exception {
-		int tilesize = 256; //pixlar
-		int tilematrix = 0;  //zoomlevel?		
-		//origo 8500000; -1200000;  // övre vänstra hörnet
-		//tilematrix == 0 => 4096 m/pixel  tilematrix == 1 => 2048 m/pixel  tilematrix == 2 => 1024 m/pixel
-		 
-		//System.out.println("xScale: "+xScale);
-		//System.out.println("1/xScale: "+1/xScale);
-		int tileWidth = tileWidth(tilematrix);
-		//System.out.println("tileWidth: "+tileWidth);
-		tilematrix = tileMatrix((int)Math.round (1/xScale*tilesize));	
-		//System.out.println("calc tile matrix: " + calcTilematrix);
-		TileIndex bla = new TileIndex();
-		TileIndex[] indexes = bla.getTileIndexes(bounds,tilematrix);
 
-		for (TileIndex ind: indexes) {
-			if (ind.col>-1 & ind.row >-1) {
-				Image img = tileBuffer.getTile(ind);
-				BoundingBox box = getTileBounds(ind);
-				int x1 = (int) ((box.getX1()*xScale)+xShift);
-				int y1 = (int) ((box.getY1()*yScale)+yShift);
-				int x2 = (int) ((box.getX2()*xScale)+xShift);
-				int y2 = (int) ((box.getY2()*yScale)+yShift);
-				g2d.drawImage(img,x1,y2,x2-x1,y1-y2,null);
+	@Override
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+		int tilesize = 256;
+		int tilematrix = tileMatrix((int)Math.round(1/xScale * tilesize));
+
+		TileIndex[] indexes = new TileIndex().getTileIndexes(bounds, tilematrix);
+
+		for (TileIndex ind : indexes) {
+			if (ind.col > -1 && ind.row > -1) {
+				// This call is now lightning fast
+				Image img = tileBuffer.getTileOrFetch(ind);
+
+				if (img != null) {
+					BoundingBox box = getTileBounds(ind);
+					int x1 = (int) ((box.getX1() * xScale) + xShift);
+					int y1 = (int) ((box.getY1() * yScale) + yShift);
+					int x2 = (int) ((box.getX2() * xScale) + xShift);
+					int y2 = (int) ((box.getY2() * yScale) + yShift);
+
+					g2d.drawImage(img, x1, y2, x2 - x1, y1 - y2, null);
+				}
 			}
 		}
 	}

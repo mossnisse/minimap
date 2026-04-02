@@ -515,7 +515,7 @@ public class GUI implements NActionListener {
 	
 	private void createLokalAtCoord() {
 		System.out.println("create Locality at");  // TODO trace print
-		
+
 		coord =  canvas.getCoordinate();
 		String provins = "", socken = "";
 		TNGPolygonFile provinces = (TNGPolygonFile)canvas.getLayer("provinser");

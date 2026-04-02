@@ -7,7 +7,6 @@ import java.awt.Graphics2D;
 import java.io.IOException;
 import java.io.Serial;
 import java.util.ArrayList;
-import java.util.Iterator;
 import javax.swing.JPanel;
 
 public class Canvas extends JPanel {
@@ -84,7 +83,7 @@ public class Canvas extends JPanel {
 	}
 	
 	public void addLayerBotom(Layer l) {
-		layers.add(0,l);
+		layers.addFirst(l);
 		repaint();
 	}
 	
@@ -92,15 +91,9 @@ public class Canvas extends JPanel {
 		layers.add(l);
 		repaint();
 	}
-	
+
 	public void delLayer(String name) {
-		Iterator<Layer> itr = layers.iterator();
-	      while(itr.hasNext()) {
-	         Layer l = itr.next();
-	         if (l.getName().equals(name)) {
-					itr.remove();
-				}
-	      }
+		layers.removeIf(l -> l != null && name.equals(l.getName()));
 	}
 	
 	public Layer getLayer(String name) {
@@ -115,17 +108,18 @@ public class Canvas extends JPanel {
 	public ArrayList<Layer> getLayers() {
 		return layers;
 	}
-	
-	public void zoom(double stepp) {
+
+	public void zoom(double step) {
 		Point middle = bounds.getMidlePoint();
-		int xMax = (int) (middle.getX()+stepp*(bounds.getWidth())/2);
-		int xMin = (int) (middle.getX()-stepp*(bounds.getWidth())/2);
-		int yMax = (int) (middle.getY()+stepp*(bounds.getHeight())/2);
-		int yMin = (int) (middle.getY()-stepp*(bounds.getHeight())/2);
+		double halfW = (bounds.getWidth() * step) / 2.0;
+		double halfH = (bounds.getHeight() * step) / 2.0;
+
+		int xMin = (int) (middle.getX() - halfW);
+		int xMax = (int) (middle.getX() + halfW);
+		int yMin = (int) (middle.getY() - halfH);
+		int yMax = (int) (middle.getY() + halfH);
+
 		bounds = new BoundingBox(xMin, yMin, xMax, yMax);
-		
-		//System.out.println("Scale:"+bounds.getHeight()/size.getHeight()+" m/pix");
-		//System.out.println("xMax"+xMax+"xMin"+xMin);
 		repaint();
 	}
 	
@@ -137,14 +131,31 @@ public class Canvas extends JPanel {
 	public BoundingBox getBoundingBox() {
 		return bounds;
 	}
-	
-	public void panPixel(int x, int y) {
+
+	public void panPixel(int dx, int dy) {
 		Dimension size = getSize();
-		double yscale = (bounds.getHeight())/size.getHeight();
-		int xMax = (int) (bounds.getX2()-x*yscale);
-		int xMin = (int) (bounds.getX1()-x*yscale);
-		int yMax = (int) (bounds.getY2()+y*yscale);
-		int yMin = (int) (bounds.getY1()+y*yscale);
+		if (size.width <= 0 || size.height <= 0 || bounds == null) return;
+
+		// Calculate the EXACT same scale used in paintComponent
+		double rawXScale = size.width / (double)bounds.getWidth();
+		double rawYScale = size.height / (double)bounds.getHeight();
+		double uniformScale = Math.min(rawXScale, rawYScale);
+
+		// Convert pixel movement to map meters
+		// We divide by the scale. If scale is 0.001 px/m, 10px = 10,000m.
+		double meterDX = dx / uniformScale;
+		double meterDY = dy / uniformScale;
+
+		// Shift the bounds
+		// To pan the map "with" the mouse, we subtract the meter delta
+		int xMin = (int) (bounds.getX1() - meterDX);
+		int xMax = (int) (bounds.getX2() - meterDX);
+
+		// Since Swing Y is down and Map Y is up, dragging "down" (positive dy)
+		// means we want to see higher Y coordinates (North). So we ADD dy.
+		int yMin = (int) (bounds.getY1() + meterDY);
+		int yMax = (int) (bounds.getY2() + meterDY);
+
 		bounds = new BoundingBox(xMin, yMin, xMax, yMax);
 		repaint();
 	}
@@ -154,83 +165,89 @@ public class Canvas extends JPanel {
 		System.out.println(bounds);
 		repaint();
 	}
-	
+
 	public Point translatePoint(Point p) {
 		Dimension size = getSize();
-		
-		double yScale = size.getHeight()/-bounds.getHeight();
-		double xScale = size.getHeight()/bounds.getHeight();
-		
-		Point m = bounds.getMidlePoint();
-		int x1 = (int) (m.getX()+size.getWidth()/yScale);
-		int x2 = (int) (m.getX()-size.getWidth()/yScale);
-		bounds.setX1(x1);
-		bounds.setX2(x2);
-		
-		int xMin = bounds.getX1();
-		int xMax = bounds.getX2();
-		int yMin = bounds.getY1();
-		int yMax = bounds.getY2();
+		if (size.width <= 0 || size.height <= 0 || bounds == null) return p;
 
-		double xShift = (-xMin-(xMax-xMin)/2)*xScale + size.getWidth()/2;
-		double yShift = (-yMin-(yMax-yMin)/2)*yScale + size.getHeight()/2;
-		
-		int x = (int) ((p.getX()-xShift)/xScale);
-		int y = (int) ((p.getY()-yShift)/yScale);
-		return new Point(x,y);
+		// FIX: Cast to double to prevent Integer Division!
+		double rawXScale = size.width / (double) bounds.getWidth();
+		double rawYScale = size.height / (double) bounds.getHeight();
+		double scale = Math.min(rawXScale, rawYScale);
+
+		// Same shift logic as paintComponent
+		Point m = bounds.getMidlePoint();
+		double xShift = (size.width / 2.0) - (m.getX() * scale);
+		double yShift = (size.height / 2.0) - (m.getY() * -scale);
+
+		// Inverse transform (Pixels back to Meters)
+		int x = (int) ((p.getX() - xShift) / scale);
+		int y = (int) ((p.getY() - yShift) / -scale);
+
+		return new Point(x, y);
 	}
-	
-	public void paintComponent(Graphics g) {
-		super.paintComponent(g);
-		
-		Dimension size = getSize();
-		
-		double yScale = size.getHeight()/-bounds.getHeight();
-		double xScale = size.getHeight()/bounds.getHeight();
-		int zoomL = (int)bounds.getHeight()/(int)size.getHeight();
-		
-		Point m = bounds.getMidlePoint();
-		int x1 = (int) (m.getX()+size.getWidth()/yScale);
-		int x2 = (int) (m.getX()-size.getWidth()/yScale);
-		bounds.setX1(x1);
-		bounds.setX2(x2);
-		
-		int xMin = bounds.getX1();
-		int xMax = bounds.getX2();
-		int yMin = bounds.getY1();
-		int yMax = bounds.getY2();
 
-		double xShift = (-xMin-(xMax-xMin)/2)*xScale + size.getWidth()/2;
-		double yShift = (-yMin-(yMax-yMin)/2)*yScale + size.getHeight()/2;
-		
+	@Override
+	protected void paintComponent(Graphics g) {
+		super.paintComponent(g);
 		Graphics2D g2d = (Graphics2D) g;
-		
-		//g2d.drawImage(img, 100,100,null);
-		try {
-			for(Layer l: layers) {
-				//System.out.println("drawing: "+l.getName());
-				//System.out.println("ZoomL: "+zoomL);
-				if (l.isInZoomLevel(zoomL)) {
-					g2d.setColor(l.getColor());
-					l.draw(g2d, xShift, xScale, yShift, yScale, bounds);
+		Dimension size = getSize();
+
+		// Safety check for invisible components
+		if (size.width <= 0 || size.height <= 0 || bounds == null) return;
+
+		double h = bounds.getHeight();
+		double w = bounds.getWidth();
+
+		// Calculate the scales for both axes
+		double rawXScale = size.width / w;
+		double rawYScale = size.height / h;
+
+		// Pick the uniform scale (ensures 1m X = 1m Y)
+		double scale = Math.min(rawXScale, rawYScale);
+
+		// Create "Draw Bounds" (The actual area visible in the window)
+		double drawWidth = size.width / scale;
+		double drawHeight = size.height / scale;
+		Point m = bounds.getMidlePoint();
+
+		BoundingBox drawBounds = new BoundingBox(
+				(int)(m.getX() - drawWidth / 2.0),
+				(int)(m.getY() - drawHeight / 2.0),
+				(int)(m.getX() + drawWidth / 2.0),
+				(int)(m.getY() + drawHeight / 2.0)
+		);
+
+		// Calculate Shifts to center the map in the window
+		double xShift = (size.width / 2.0) - (m.getX() * scale);
+		double yShift = (size.height / 2.0) - (m.getY() * -scale);
+
+		// zoomL is meters per pixel (approximate)
+		int zoomL = (int) (1.0 / scale);
+
+		// Draw Layers using the LOCAL drawBounds
+		synchronized (layers) {
+			for (Layer l : layers) {
+				if (!l.isHidden() && l.isInZoomLevel(zoomL)) {
+					try {
+						g2d.setColor(l.getColor());
+						// Pass drawBounds here so Topoweb knows exactly which tiles to fetch
+						l.draw(g2d, xShift, scale, yShift, -scale, drawBounds);
+					} catch (Exception e) {
+						System.err.println("Error drawing layer: " + l.getName());
+					}
 				}
 			}
-		} 
-		catch(Exception e) {
-			System.out.println("error in Layer");
-			e.printStackTrace();
-			delLayer("LokalDB");
 		}
-		
+
+		//Draw the Marker
 		if (coord != null) {
-			//System.out.println("Draw coord");
-			g2d.setColor(Color.red);
-			int x = (int) ((int) ((coord.getX()*xScale)+xShift));
-			int y = (int) ((int) ((coord.getY()*yScale)+yShift));
-			//System.out.println("x: "+x+", y:"+y);
-			g2d.drawOval(x-10, y-10, 20, 20);
-			g2d.drawLine(x-10,y-10,x+10,y+10);
-			g2d.drawLine(x-10,y+10,x+10,y-10);
+			g2d.setColor(Color.RED);
+			int x = (int) (coord.getX() * scale + xShift);
+			int y = (int) (coord.getY() * -scale + yShift);
+			g2d.drawOval(x - 10, y - 10, 20, 20);
+			g2d.drawLine(x - 10, y - 10, x + 10, y + 10);
+			g2d.drawLine(x - 10, y + 10, x + 10, y - 10);
 		}
 	}
 }
