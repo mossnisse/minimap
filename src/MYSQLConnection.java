@@ -70,7 +70,7 @@ public class MYSQLConnection {
 	
 	private static void createH2Conn() throws SQLException {
         JdbcDataSource ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:˜/test");
+        ds.setURL("jdbc:h2:./h2/test");
         ds.setUser("sa");
         ds.setPassword("sa");
         h2Conn = ds.getConnection();

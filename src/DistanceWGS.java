@@ -12,7 +12,6 @@ public class DistanceWGS implements Layer {
 	private Point c;
 	private int dist;
 	private CoordSystem cs;
-	
 
 	DistanceWGS(String name, Point c, int dist, String direction, CoordSystem cs) {
 		this.name = name;
@@ -68,8 +67,6 @@ public class DistanceWGS implements Layer {
 			g2d.setColor(color);
 			Stroke s = g2d.getStroke();
 			g2d.setStroke(new BasicStroke(2));
-			
-			
 			
 			int x1 = (int) (((c.getX())*xScale)+xShift);
 			int y1 = (int) (((c.getY())*yScale)+yShift);

@@ -363,10 +363,10 @@ public class GUI implements NActionListener {
 	public void search() {
 		
 		if (sList == null) {
-			SearchDialog d = new SearchDialog(frame, this, "");
+			SearchDialog d = new SearchDialog(frame, "");
 			d.setVisible(true);
 		} else {
-			SearchDialog d = new SearchDialog(frame, this, sList.getSelectedText());
+			SearchDialog d = new SearchDialog(frame, sList.getSelectedText());
 			d.setVisible(true);
 		}
 	}
@@ -382,13 +382,19 @@ public class GUI implements NActionListener {
 	}
 
 	public void viewRubin() {
-		String s = (String) JOptionPane.showInputDialog(frame, "Rubin", "Customized Dialog", JOptionPane.PLAIN_MESSAGE, null, null,"");
-		if ((s != null) && (s.length() > 0)) {
-			Rubin r = new Rubin(s, "Rubin", Color.green);
+		String s = (String) JOptionPane.showInputDialog(frame, "Enter RUBIN (e.g. 12H5j):",
+				"Search Grid Square", JOptionPane.PLAIN_MESSAGE, null, null, "");
+		if (s != null && !s.trim().isEmpty()) {
+			Rubin r = new Rubin(s.trim(), "Rubin", Color.green);
 			canvas.delLayer("Rubin");
 			canvas.addLayerTop(r);
 			Point p = r.getMiddle();
-			canvas.focus(p);
+			if (p != null) {
+				canvas.focus(p);
+				canvas.repaint(); // Ensure the green box appears immediately
+			} else {
+				JOptionPane.showMessageDialog(frame, "Invalid RUBIN format.", "Error", JOptionPane.ERROR_MESSAGE);
+			}
 		}
 	}
 

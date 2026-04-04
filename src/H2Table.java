@@ -19,6 +19,8 @@ public class H2Table implements Layer {
 	private Connection conn;
 	private int maxZoom, minZoom;
 	private CoordSystem cs = CoordSystem.RT90;
+	private BoundingBox lastBounds;
+	private ArrayList<Locality> cachedPoints = new ArrayList<>();
 	
 	H2Table(String tableName) {
 		this.tableName = tableName;
@@ -100,29 +102,30 @@ public class H2Table implements Layer {
 	public void draw(Graphics2D g2d, double xShift, double xScale,
 			double yShift, double yScale, BoundingBox bounds) {
 		if (!hidden) {
-		g2d.setColor(color);
-		
-		
-		String sqlstmt = "SELECT NORTH, EAST, Ortnamn FROM "+tableName+" where North > " +bounds.getY1()+" and North < " + bounds.getY2()+ " and East > "+bounds.getX1()+ "and East < "+bounds.getX2() ;
-		try {
-			Statement select = conn.createStatement();
-			ResultSet result = select.executeQuery(sqlstmt);
-        
-			while (result.next()) { // process results one row at a time
-				int north = Integer.parseInt(result.getString(1));
-				int east = Integer.parseInt(result.getString(2));
-				//Point p = new Point(east, north);
-				//if (bounds.isInside(new Point(east, north))) {
+			/*
+			if (lastBounds == null || !lastBounds.equals(bounds)) {
+				updateCache(bounds);
+				lastBounds = bounds;
+			}*/
+			g2d.setColor(color);
+
+
+			String sqlstmt = "SELECT NORTH, EAST, Ortnamn FROM "+tableName+" where North > " +bounds.getY1()+" and North < " + bounds.getY2()+ " and East > "+bounds.getX1()+ "and East < "+bounds.getX2() ;
+			try {
+				Statement select = conn.createStatement();
+				ResultSet result = select.executeQuery(sqlstmt);
+
+				while (result.next()) { // process results one row at a time
+					int north = Integer.parseInt(result.getString(1));
+					int east = Integer.parseInt(result.getString(2));
 					String name = result.getString(3);
 					int x = (int) ((east*xScale)+xShift);
 					int y = (int) ((north*yScale)+yShift);
 					g2d.drawOval(x-3,y-3,6,6);
 					g2d.setColor(Color.black);
 					g2d.drawString(name,x,y);
-				//}
-			}
+				}
 			} catch (SQLException e) {
-			// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
@@ -140,57 +143,66 @@ public class H2Table implements Layer {
 
 	public TNGPointFile find(int provinsNr, String value) {
 		value = value.trim();
+		if (value.contains("*")) {
+			value = value.replace("*", "%");
+		}
 		ArrayList<Point> ans = new ArrayList<Point>();
 		ArrayList<String> names = new ArrayList<String>();
-		String sqlstmt = "";
-		if(provinsNr == -1) {
-			sqlstmt = "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM "+tableName+" where Ortnamn Like '"+value+"' Order by SOCKEN";
-		} else {
-			sqlstmt = "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM "+tableName+" where Ortnamn Like '"+value+"' and FPNUMMER = "+provinsNr+" Order by SOCKEN";
-		}
-		try {
-			Statement select = conn.createStatement();
-			ResultSet result = select.executeQuery(sqlstmt);
+		String sql = (provinsNr == -1)
+				? "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM " + tableName + " WHERE Ortnamn ILIKE ? ORDER BY SOCKEN"
+				: "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM " + tableName + " WHERE Ortnamn ILIKE ? AND FPNUMMER = ? ORDER BY SOCKEN";
+		try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+			pstmt.setString(1, value);
+			if (provinsNr != -1) pstmt.setInt(2, provinsNr);
 
-			while (result.next()) { // process results one row at a time
-				System.out.println("NORTH: "+result.getString(1)+", EAST: "+ result.getString(2)+ ", DETALJTYP: "+result.getString(3)+", SOCKEN: "+result.getString(4));
-				ans.add(new Point(Integer.parseInt(result.getString(1)), Integer.parseInt(result.getString(2))));
-				names.add(result.getString(3)+", "+result.getString(4));
+			try (ResultSet result = pstmt.executeQuery()) {
+				while (result.next()) { // process results one row at a time
+					//System.out.println("NORTH: " + result.getString(1) + ", EAST: " + result.getString(2) + ", DETALJTYP: " + result.getString(3) + ", SOCKEN: " + result.getString(4));
+					int north = result.getInt(1);
+					int east = result.getInt(2);
+
+					ans.add(new Point(east, north)); // East=X, North=Y
+					names.add(result.getString(3) + ", " + result.getString(4));
+				}
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return new TNGPointFile(ans, names, "ans");
 	}
-	
-	public String findNearest(Point p, int limit) {
-		System.out.println("Find Nearest Ortnamn");
-		
-		String sqlstmt = "SELECT NORTH, EAST, Ortnamn FROM "+tableName+" where NORTH > " 
-				+ Integer.toString(p.getX()-limit) + " and NORTH < " + Integer.toString(p.getX()+limit) + " and EAST > "+ Integer.toString(p.getY()-limit) + " and EAST < " + Integer.toString(p.getY()+limit) + ";";
-		System.out.println(sqlstmt);
-		try {
-			Statement select = conn.createStatement();
-			ResultSet result = select.executeQuery(sqlstmt);
 
-			double ndist = 700000000;
+	public String findNearest(Point p, int limit) {
+		int eastVal = p.getY();
+		int northVal = p.getX();
+
+		String sqlstmt = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
+				" WHERE NORTH > " + (northVal - limit) +
+				" AND NORTH < " + (northVal + limit) +
+				" AND EAST > " + (eastVal - limit) +
+				" AND EAST < " + (eastVal + limit);
+
+		try (Statement select = conn.createStatement();
+		     ResultSet result = select.executeQuery(sqlstmt)) {
+
+			double ndist = Double.MAX_VALUE;
 			String nearest = "";
+
 			while (result.next()) {
-				int north = Integer.parseInt(result.getString(1));
-				int east = Integer.parseInt(result.getString(2));
-				String temp = result.getString(3);
-				Point pc = new Point(north,east);
+				int north = result.getInt(2);
+				int east = result.getInt(1);
+				String name = result.getString(3);
+
+				// Ensure pc is created as (East, North) to match p
+				Point pc = new Point(east, north);
 				double dist = p.distance(pc);
-				if (dist<ndist) {
+
+				if (dist < ndist) {
 					ndist = dist;
-					nearest = temp;
+					nearest = name;
 				}
 			}
-			System.out.println("nearest: "+nearest + " dist: "+ndist);
 			return nearest;
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return "";

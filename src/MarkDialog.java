@@ -6,15 +6,17 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.Serial;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import geometry.Point;
 
 public class MarkDialog extends JDialog implements PropertyChangeListener{
+	@Serial
 	private static final long serialVersionUID = 1L;
-	private JTextField north, east, coordinateSys, swerefF, rt90F, wgs84F, provinceF, districtF, rubinF;
-	private JOptionPane optionPane;
+	private final JTextField north, east, coordinateSys, swerefF, rt90F, wgs84F, provinceF, districtF, rubinF;
+	private final JOptionPane optionPane;
 	private TNGPolygonFile provinces, district;
 	private Frame aFrame;
 	private Canvas canvas;
@@ -86,7 +88,6 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 		Coordinates wgs84 = new Coordinates(0,0);
 		Coordinates sweref = new Coordinates(0,0);
 		String rubin = new String("");
-		
 		
 		try {
 			double northI = Double.parseDouble(northS);

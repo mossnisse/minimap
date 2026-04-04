@@ -24,7 +24,6 @@ public class Locality implements Layer {
 	@Override
 	public void setColor(Color c) {
 		this.color =c;
-		
 	}
 
 	@Override
@@ -129,7 +128,6 @@ public class Locality implements Layer {
 	@Override
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
-		
 	}
 	
 	public int findNearest(Point p) {

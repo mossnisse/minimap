@@ -106,7 +106,16 @@ public class BoundingBox {
 		p2.setX(x2-sx);
 		p2.setY(y2-sy);
 	}
-	
+
+	public BoundingBox expand(int amount) {
+		return new BoundingBox(
+				this.getX1() - amount,
+				this.getY1() - amount,
+				this.getX2() + amount,
+				this.getY2() + amount
+		);
+	}
+
 	public String toString() {
 		return "BoundingBox("+p1+" "+p2+")";
 	}

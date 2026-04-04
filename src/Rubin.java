@@ -10,16 +10,25 @@ public class Rubin implements Layer {
 	private Color color;
 	private boolean hidden;
 	private CoordSystem cs;
+	private double westBoundary;
+	private double northBoundary;
 	
 	public Rubin(String rubin, String name, Color c) {
 		this.rubin = rubin;
 		this.name = name;
 		this.color = c;
-		this.cs = CoordSystem.RT90;
+		setRubin(rubin);
 	}
-	
+
 	public void setRubin(String rubin) {
 		this.rubin = rubin;
+		// Pre-calculate the grid boundaries
+		Coordinates c = new Coordinates(0,0);
+		c.setRUBINSweref99TM(rubin);
+
+		// A standard RUBIN square is 5000m x 5000m
+		this.westBoundary = c.getEast() - 2500;
+		this.northBoundary = c.getNorth() + 2500;
 	}
 	
 	public Point getMiddle() {
@@ -45,47 +54,42 @@ public class Rubin implements Layer {
 
 	@Override
 	public void setMinZoomL(int zoomLevel) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void setMaxZoomL(int zoomLevel) {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		// TODO Auto-generated method stub
 		return true;
 	}
 
 	@Override
 	public void setName(String name) {
 		this.name = name;
-		
 	}
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		//System.out.println("Drawing rubin");
-		if (!hidden) {
-			g2d.setColor(color);
-			Stroke s = g2d.getStroke();
-			g2d.setStroke(new BasicStroke(2));
-			Coordinates c = new Coordinates(0,0);
-			c.setRUBINSweref99TM(rubin);
-			System.out.println("rubin midle: "+c);
-			int x1 = (int) (((c.getEast()-2500)*xScale)+xShift);
-			int y1 = (int) (((c.getNorth()+2500)*yScale)+yShift);
-			int xWidth = (int) (5000 * xScale);
-			int yWidth = -(int) (5000 * yScale);
-			//System.out.println("x1:"+x1+" y1:"+y1+" xWidth:"+xWidth+" yWidth:"+yWidth);
-			g2d.drawRect(x1,y1,xWidth,yWidth);
-			g2d.setStroke(s);
-		}
-		
+		if (hidden) return;
+
+		g2d.setColor(color);
+		Stroke originalStroke = g2d.getStroke();
+		g2d.setStroke(new BasicStroke(2));
+
+		// Convert map coordinates to screen coordinates
+		int x = (int) ((westBoundary * xScale) + xShift);
+		int y = (int) ((northBoundary * yScale) + yShift);
+
+		// Calculate width and height in pixels
+		int w = (int) (5000 * xScale);
+		int h = (int) Math.abs(5000 * yScale); // Height must be positive for drawRect
+
+		// If your map Y is inverted (North is up),
+		// the northBoundary is actually the top (smallest Y in screen space)
+		g2d.drawRect(x, y, w, h);
+		g2d.setStroke(originalStroke);
 	}
 
 	@Override
@@ -100,8 +104,7 @@ public class Rubin implements Layer {
 
 	@Override
 	public void setCRS(CoordSystem cs) {
-		// TODO Auto-generated method stub
-		
+		this.cs = cs;
 	}
 
 	@Override

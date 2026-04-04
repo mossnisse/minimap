@@ -22,7 +22,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	@Serial
 	private static final long serialVersionUID = -6495783408904343790L;
 	public JButton cancel, delete, ok;
-	private int localityID;
+	private final int localityID;
 	JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, localitySize, zoomLevel, category;
 	JTextArea comments;
 	JCheckBox isPlace;

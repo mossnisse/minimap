@@ -99,8 +99,8 @@ public class TNGPointFile implements Layer{
 		localities = new Locality[nrRecords];
 		for (int i = 0; i < nrRecords; i++) {
 			String name = in.readString(nameLength).trim();
-			int x = in.readInt();
 			int y = in.readInt();
+			int x = in.readInt();
 			localities[i] = new Locality(x,y,name);
 		}
 		in.close();
@@ -131,32 +131,34 @@ public class TNGPointFile implements Layer{
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale,double yShift, double yScale, BoundingBox bounds) {
-		if (!hidden) {
-			Stroke s = g2d.getStroke();
-			g2d.setStroke(new BasicStroke(2));
-			for(Locality koord:localities) {
-				int x = (int) ((koord.getY()*xScale)+xShift);
-				int y = (int) ((koord.getX()*yScale)+yShift);
-					g2d.drawOval(x-6, y-6, 12, 12);
-					g2d.drawLine(x,y+10,x,y-10);
-					g2d.drawLine(x+10,y,x-10,y);
-				//System.out.println("name:" + koord.name +" long: "+koord.getY()+" lat: "+koord.getX()+" x:"+x+" y:"+y);
-			}
-			g2d.setStroke(s);
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+		if (hidden) return;
+
+		Stroke s = g2d.getStroke();
+		g2d.setStroke(new BasicStroke(2));
+		g2d.setColor(color);
+
+		for (Locality koord : localities) {
+			// Standard Mapping: X -> Horizontal, Y -> Vertical
+			int x = (int) ((koord.getX() * xScale) + xShift);
+			int y = (int) ((koord.getY() * yScale) + yShift);
+
+			// Draw a crosshair target
+			g2d.drawOval(x - 6, y - 6, 12, 12);
+			g2d.drawLine(x, y + 10, x, y - 10);
+			g2d.drawLine(x + 10, y, x - 10, y);
 		}
+		g2d.setStroke(s);
 	}
 
 	@Override
 	public void setMinZoomL(int zoomLevel) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
 	public void setMaxZoomL(int zoomLevel) {
 		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -174,19 +176,21 @@ public class TNGPointFile implements Layer{
 	public void setHidden(boolean hidden) {
 		this.hidden = hidden;
 	}
-	
+
 	public BoundingBox getBounds() {
-		int maxX = -500000000;
-		int maxY = -500000000;
-		int minX =  500000000;
-		int minY =  500000000;
-		for(Locality koord:localities) {
-			if (koord.getY()<minY) minY=koord.getY();
-			if (koord.getY()>maxY) maxY=koord.getY();
-			if (koord.getX()<minX) minX=koord.getX();
-			if (koord.getX()>maxX) maxX=koord.getX();
+		if (localities.length == 0) return new BoundingBox(0,0,0,0);
+
+		int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
+		int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
+
+		for (Locality koord : localities) {
+			if (koord.getX() < minX) minX = koord.getX();
+			if (koord.getX() > maxX) maxX = koord.getX();
+			if (koord.getY() < minY) minY = koord.getY();
+			if (koord.getY() > maxY) maxY = koord.getY();
 		}
-		return new BoundingBox(minY,minX,maxY,maxX);
+		// Order: minX, minY, maxX, maxY
+		return new BoundingBox(minX, minY, maxX, maxY);
 	}
 	
 	public String toString() {
@@ -203,8 +207,7 @@ public class TNGPointFile implements Layer{
 
 	@Override
 	public void setCRS(CoordSystem cs) {
-		// TODO Auto-generated method stub
-		
+		this.cs = cs;
 	}
 
 	@Override

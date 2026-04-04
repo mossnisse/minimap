@@ -1,16 +1,16 @@
 import java.awt.Component;
 import java.awt.Container;
 import java.awt.Frame;
+import java.io.Serial;
 import java.util.ArrayList;
-
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.SpringLayout;
 
-
 public class LayerDialog extends JDialog {
+	@Serial
 	private static final long serialVersionUID = -5204215066837865198L;
-	private ArrayList<Layer> layers;
+	private final ArrayList<Layer> layers;
 	
 	public LayerDialog(Frame aFrame, ArrayList<Layer> layers) {
 		super(aFrame, true);
@@ -46,5 +46,4 @@ public class LayerDialog extends JDialog {
 		layout.putConstraint(SpringLayout.EAST, contentPane, 5, SpringLayout.EAST, lastC);
 		pack();
     }
-
 }
