@@ -1,5 +1,5 @@
 import geometry.Point;
-
+import coords.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -135,8 +135,8 @@ public class GPX {
 
 					String lat = waypointElement.getAttribute("lat");
 					String lon = waypointElement.getAttribute("lon");
-					Coordinates c = new Coordinates(Double.valueOf(lat),
-							Double.valueOf(lon)).convertToRT90FromWGS84();
+					Coordinates c = new Coordinates(Double.valueOf(lat), Double.valueOf(lon));
+					c.toProjected(CoordSystem.SWEREF99TM);
 					String north = String.valueOf((int) c.getNorth());
 					String east = String.valueOf((int) c.getEast());
 					String elevation = waypointElement

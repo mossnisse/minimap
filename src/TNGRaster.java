@@ -1,12 +1,11 @@
+import coords.*;
 import geometry.BoundingBox;
-
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-
 import javax.imageio.ImageIO;
 
 public class TNGRaster implements Layer {
@@ -25,7 +24,7 @@ public class TNGRaster implements Layer {
 		chunknr = new int[2000];
 		maxZoom = 0;
 		minZoom = 0;
-		cs = CoordSystem.Sweref99TM;
+		cs = CoordSystem.SWEREF99TM;
 	}
 
 	@Override
@@ -81,6 +80,7 @@ public class TNGRaster implements Layer {
 		for (int ix = xStart; ix<=xStop; ix+=chunkSize) {
 			for (int iy = yStart; iy<=yStop; iy+=chunkSize) {
 				//System.out.println("Ystart "+yStart+"YStop" +yStop+ "iy"+ iy +"ix"+ix );
+				/*
 				int num = Coordinates.getRUBIN50N(ix,iy);
 				Image img = null;
 				if ( chunks[num] != null) {
@@ -102,6 +102,8 @@ public class TNGRaster implements Layer {
 					int y1 = (int)  ((iy*yScale)+yShift);
 					g2d.drawImage(img,x1,y1+imageHeigth,imageWidth,-imageHeigth,null);
 				}
+
+				 */
 			}
 		}
 	}

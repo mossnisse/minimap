@@ -1,5 +1,5 @@
+import coords.*;
 import geometry.Point;
-//import javafx.scene.input.KeyCode;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -24,6 +24,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.SpringLayout;
+import coords.Coordinates;
 
 public class SpecimenList extends JPanel implements ActionListener, ItemListener, FocusListener, NActionListener  {
 	private static final long serialVersionUID = 7300006405490558336L;
@@ -840,9 +841,9 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				}
 			} while(fl);
 			
-			Coordinates rt90 = new Coordinates(p);
+			Coordinates rt90 = new Coordinates(p.getY(), p.getX());
 			Coordinates swtm = rt90.convertToSweref99TMFromRT90();
-			p = swtm.getPoint();
+			p = new Point((int)swtm.getEast(), (int)swtm.getNorth());
 			GUI.canvas.focus(p);
 			GUI.canvas.setCoordinate(p);
 		}
@@ -852,11 +853,11 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		System.out.println("Focus on lat/long");
 		Coordinates c = new Coordinates(0,0);
 		System.out.println("lat: "+latdeg+"long: "+longdeg);
-		c.latlong(latdeg, longdeg, latmin, longmin, latsec, longsec, latdir, longdir);
+		c.setFromDMS(latdeg, latmin, latsec, latdir, longdeg, longmin, longsec, longdir);
 		System.out.println(c);
-		c = c.convertToSweref99TMFromWGS84();
+		c = c.toProjected(CoordSystem.SWEREF99TM);
 		System.out.println(c);
-		Point p = new Point(c.toPoint());
+		Point p = new Point((int)c.getEast(), (int) c.getNorth());
 		System.out.println(p);
 		GUI.canvas.focus(p);
 		GUI.canvas.setCoordinate(p);
@@ -903,7 +904,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 						System.out.println(distanceI);
 						System.out.println(directionS);
 						GUI.canvas.delLayer("distance");
-						GUI.canvas.addLayerTop(new Distance("distance",p,distanceI,directionS,CoordSystem.Sweref99TM));
+						GUI.canvas.addLayerTop(new Distance("distance",p ,distanceI ,directionS, CoordSystem.SWEREF99TM));
 					}
 				}
 			} catch (SQLException e1) {

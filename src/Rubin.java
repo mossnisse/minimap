@@ -1,3 +1,4 @@
+import coords.*;
 import geometry.BoundingBox;
 import geometry.Point;
 import java.awt.BasicStroke;
@@ -24,7 +25,7 @@ public class Rubin implements Layer {
 		this.rubin = rubin;
 		// Pre-calculate the grid boundaries
 		Coordinates c = new Coordinates(0,0);
-		c.setRUBINSweref99TM(rubin);
+		c.setFromRUBIN(rubin, true);
 
 		// A standard RUBIN square is 5000m x 5000m
 		this.westBoundary = c.getEast() - 2500;
@@ -33,8 +34,8 @@ public class Rubin implements Layer {
 	
 	public Point getMiddle() {
 		Coordinates c = new Coordinates(0,0);
-		c.setRUBINSweref99TM(rubin);
-		return c.getPoint();
+		c.setFromRUBIN(rubin, true);
+		return new Point((int) c.getEast(), (int) c.getNorth());
 	}
 	
 	@Override

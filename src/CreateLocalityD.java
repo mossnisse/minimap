@@ -1,5 +1,5 @@
 import geometry.Point;
-
+import coords.*;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -133,9 +133,9 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 		String Et = Ef.getText();
 
 		Coordinates sweref99TM = new Coordinates(Double.parseDouble(Nt), Double.parseDouble(Et));
-		Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
+		Coordinates wgs84 = sweref99TM.toWGS84(CoordSystem.SWEREF99TM);
 		Coordinates rt90 = wgs84.convertToRT90FromSweref99TM();
-		Point rt90p = rt90.getPoint();
+		Point rt90p = new Point((int) rt90.getEast(), (int) rt90.getNorth());
 
 		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, createdby, alternative_names, coordinate_source, lcomments) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
 

@@ -1,5 +1,6 @@
 import geometry.BoundingBox;
 import geometry.Point;
+import coords.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -184,7 +185,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			try (ResultSet result = statement.executeQuery()) {
 				while (result.next()) {
 					Coordinates c = new Coordinates(result.getDouble("lat"), result.getDouble("long"));
-					Point p = c.convertToSweref99TMFromWGS84().getPoint();
+					c.toProjected(CoordSystem.SWEREF99TM);
+					Point p = new Point((int) c.getEast(), (int) c.getNorth());
 					allPoints.add(p);
 					allNames.add(result.getString("locality") + " (" + result.getString("district") + ")");
 				}

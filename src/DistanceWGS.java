@@ -1,5 +1,6 @@
 import geometry.BoundingBox;
 import geometry.Point;
+import coords.*;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;

@@ -1,3 +1,4 @@
+import coords.*;
 import geometry.BoundingBox;
 import geometry.Point;
 import java.awt.Color;
@@ -18,7 +19,7 @@ public class Canvas extends JPanel {
 	private final ArrayList<Layer> layers;
 	
 	public Canvas() {
-		cs = CoordSystem.Sweref99TM;
+		cs = CoordSystem.SWEREF99TM;
 		
 		// Sverige Sweref99TM
 		int xMin = 194181;

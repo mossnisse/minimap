@@ -1,4 +1,5 @@
 import geometry.Point;
+import coords.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
@@ -393,7 +394,7 @@ public class GUI implements NActionListener {
 
 			try {
 				int distVal = Integer.parseInt(distStr);
-				Distance dist = new Distance("dist", canvas.getCoordinate(), distVal, direction, CoordSystem.Sweref99TM);
+				Distance dist = new Distance("dist", canvas.getCoordinate(), distVal, direction, CoordSystem.SWEREF99TM);
 				dist.setColor(Color.red);
 				dist.setHidden(false);
 				canvas.delLayer("dist");
@@ -443,7 +444,8 @@ public class GUI implements NActionListener {
 	public void showRubin(MouseEvent arg0) {
 		System.out.print("show RUBIN: ");
 		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
-		String s = Coordinates.getRUBINfromSweref99TM(p);
+		Coordinates c = new Coordinates(p.getY(), p.getX());
+		String s = c.toRUBIN(true);
 		System.out.println(s);
 		Rubin r = new Rubin(s, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
@@ -589,8 +591,8 @@ public class GUI implements NActionListener {
 		    	int zoomLevel = 12;
 		    	Point point = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
 		    	
-		    	Coordinates sweref99TM = new Coordinates(point);
-		    	Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
+		    	Coordinates sweref99TM = new Coordinates(point.getY(), point.getX());
+		    	Coordinates wgs84 = sweref99TM.toWGS84(CoordSystem.SWEREF99TM);
 		    	System.out.println("coord: "+wgs84);
 		    	String uri = "https://kartbild.com/#"+String.valueOf(zoomLevel)+"/"+String.valueOf(wgs84.getNorth())+"/"+String.valueOf(wgs84.getEast())+"/0x"+String.valueOf(map);
 		    	System.out.println("URI: "+uri);

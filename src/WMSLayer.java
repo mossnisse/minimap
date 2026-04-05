@@ -1,6 +1,7 @@
+import geometry.BoundingBox;
+import coords.*;
 import java.awt.Color;
 import java.awt.Graphics2D;
-import geometry.BoundingBox;
 
 public class WMSLayer implements Layer{
 	private final String url = "http://hades.slu.se/lm/topowebb/wms/v1/";
@@ -9,7 +10,7 @@ public class WMSLayer implements Layer{
 	private Color color;
 	private int minZoomL;
 	private int maxZoomL;
-	private CoordSystem cs = CoordSystem.Sweref99TM;
+	private CoordSystem cs = CoordSystem.SWEREF99TM;
 
 	@Override
 	public void setColor(Color c) {

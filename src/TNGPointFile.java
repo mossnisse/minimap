@@ -1,3 +1,4 @@
+import coords.*;
 import geometry.BoundingBox;
 import geometry.Point;
 import java.awt.BasicStroke;
@@ -73,7 +74,7 @@ public class TNGPointFile implements Layer{
 	public TNGPointFile(String fileName) throws IOException {
 		this.fileName = fileName;
 		this.name = fileName;
-		this.cs = CoordSystem.Sweref99TM;
+		this.cs = CoordSystem.SWEREF99TM;
 		readFile();
 	}
 	

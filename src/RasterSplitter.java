@@ -1,6 +1,6 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
+import coords.*;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
@@ -10,12 +10,8 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Scanner;
-
 import javax.imageio.ImageIO;
-
 import shapeFile.DataInputStreamSE;
-
-
 
 public class RasterSplitter {
 	
@@ -239,7 +235,6 @@ public class RasterSplitter {
 		System.out.println("Splitting done");
 	}
 
-
 	public String[] chNames(BoundingBox box, int chunkSize) {
 		int chunkNum = box.getWidth()/chunkSize * box.getHeight()/chunkSize;
 		//System.out.println(box+"number cunks: "+chunkNum);
@@ -247,8 +242,8 @@ public class RasterSplitter {
 		int i = 0;
 		for (int ix = box.getX1(); ix<=box.getX2(); ix+=chunkSize) {
 			for (int iy = box.getY1(); iy<=box.getY2(); iy+=chunkSize) {
-				String name = Coordinates.getRUBIN50(ix,iy);
-				names[i]=name;
+				//String name = Coordinates.getRUBIN50(ix,iy);
+				//names[i]=name;
 			}
 
 		}

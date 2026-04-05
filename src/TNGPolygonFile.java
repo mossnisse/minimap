@@ -1,3 +1,4 @@
+import coords.*;
 import geometry.BoundingBox;
 import geometry.Line;
 import geometry.Point;
@@ -58,7 +59,7 @@ public class TNGPolygonFile implements Layer{
 		this.fileName=fileName;
 		this.name = fileName;
 		readFile();
-		cs = CoordSystem.Sweref99TM;
+		cs = CoordSystem.SWEREF99TM;
 	}
 	
 	private void readFile() throws IOException {

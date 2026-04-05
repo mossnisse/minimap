@@ -1,3 +1,5 @@
+import geometry.Point;
+import coords.*;
 import java.awt.Color;
 import java.awt.Frame;
 import java.awt.event.ComponentAdapter;
@@ -10,7 +12,6 @@ import java.io.Serial;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
-import geometry.Point;
 
 public class MarkDialog extends JDialog implements PropertyChangeListener{
 	@Serial
@@ -97,24 +98,24 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 				System.out.println("Sweref99TM");
 				coordinateSys.setText("Sweref99TM");
 				sweref = new Coordinates(northI,eastI);
-				wgs84 = sweref.convertToWGS84FromSweref99TM();
-				rt90 = wgs84.convertToRT90FromWGS84();
-				rubin = rt90.getRUBINfromRT90();
+				wgs84 = sweref.toWGS84(CoordSystem.SWEREF99TM);
+				rt90 = wgs84.toProjected(CoordSystem.RT90);
+				rubin = rt90.toRUBIN(false);
 				
 			} else if (northI<7693900 && northI>6100000 && eastI> 1200000 && eastI<1900000) {
 				System.out.println("RT90");
 				coordinateSys.setText("RT90");
 				rt90 = new Coordinates(northI,eastI);
-				wgs84 = rt90.convertToWGS84FromRT90();
-				sweref = wgs84.convertToSweref99TMFromWGS84();
-				rubin = rt90.getRUBINfromRT90();
+				wgs84 = rt90.toWGS84(CoordSystem.RT90);
+				sweref = wgs84.toProjected(CoordSystem.SWEREF99TM);
+				rubin = rt90.toRUBIN(false);
 			} else if (northI >= -90 && northI <= 90 && eastI >=-180 && eastI <= 180) {
 				System.out.println("wgs84");
 				coordinateSys.setText("WGS84");
 				wgs84 = new Coordinates(northI,eastI);
-				rt90 = wgs84.convertToRT90FromWGS84();
-				sweref = wgs84.convertToSweref99TMFromWGS84();
-				rubin = rt90.getRUBINfromRT90();
+				rt90 = wgs84.toProjected(CoordSystem.RT90);
+				sweref = wgs84.toProjected(CoordSystem.RT90);
+				rubin = rt90.toRUBIN(false);
 			} else {
 				System.out.println("Unkown");
 				coordinateSys.setText("Unkonwn");
@@ -129,9 +130,9 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 			System.out.println("RUBIN?"+northS);
 			coordinateSys.setText("RUBIN");
 			rubin = northS;
-			rt90.setRUBINRT90(rubin);
-			wgs84 = rt90.convertToWGS84FromRT90();
-			sweref =wgs84.convertToSweref99TMFromWGS84();
+			rt90.setFromRUBIN(rubin, false);
+			wgs84 = rt90.toWGS84(CoordSystem.RT90);
+			sweref =wgs84.toProjected(CoordSystem.SWEREF99TM);
 			Rubin r = new Rubin(rubin, "Rubin", Color.green);
 			canvas.delLayer("Rubin");
 			canvas.addLayerTop(r);
@@ -140,15 +141,16 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 		rt90F.setText(Double.toString(Math.round(rt90.getEast()))+", "+Double.toString(Math.round(rt90.getNorth())));
 		wgs84F.setText(Double.toString(wgs84.getEast())+", "+Double.toString(wgs84.getNorth()));
 		rubinF.setText(rubin);
-		canvas.focus(sweref.getPoint());
-		canvas.setCoordinate(sweref.getPoint());
-		TNGPolygonFile.Province pr = provinces.inPolygon(sweref.toPoint());
+		Point p = new Point((int) sweref.getEast(), (int) sweref.getNorth());
+		canvas.focus(p);
+		canvas.setCoordinate(p);
+		TNGPolygonFile.Province pr = provinces.inPolygon(p);
     	if (pr != null) {
     		provinceF.setText(pr.getName());
     	} else {
     		provinceF.setText("utanför lager");
     	}
-    	TNGPolygonFile.Province so = district.inPolygon(sweref.toPoint());
+    	TNGPolygonFile.Province so = district.inPolygon(p);
     	if (so != null) {
     		districtF.setText(so.getName());
     	} else {

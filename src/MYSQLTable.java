@@ -1,3 +1,4 @@
+import coords.*;
 import geometry.BoundingBox;
 import geometry.Point;
 import java.awt.Color;
@@ -189,7 +190,7 @@ public class MYSQLTable implements Layer {
 				int id = result.getInt(3);
 				System.out.println("id: "+id);
 				Coordinates c = new Coordinates(lat,longi);
-				Coordinates swtm = c.convertToSweref99TMFromWGS84();
+				Coordinates swtm = c.toProjected(CoordSystem.SWEREF99TM);
 				int swtmN = (int)Math.round(swtm.getNorth());
 				int swtmE = (int)Math.round(swtm.getEast());
 				statmt2.setInt(1,swtmN);

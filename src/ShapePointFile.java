@@ -1,6 +1,6 @@
 import geometry.BoundingBox;
 import geometry.Point;
-
+import coords.*;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.io.BufferedInputStream;
@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Vector;
-
 import shapeFile.DataInputStreamSE;
 import shapeFile.FieldDescriptor;
 import shapeFile.PointESRI;
@@ -35,7 +34,7 @@ public class ShapePointFile implements Layer{
 		this.name = fileName;
 		readShapeFile();
 		readDBF();
-		cs = CoordSystem.Sweref99TM;
+		cs = CoordSystem.SWEREF99TM;
 		//printDBFFeidlDescriptors();
 	}
 	

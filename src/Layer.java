@@ -1,3 +1,4 @@
+import coords.*;
 import geometry.BoundingBox;
 import java.awt.Color;
 import java.awt.Graphics2D;

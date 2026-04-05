@@ -1,4 +1,5 @@
 import geometry.Point;
+import coords.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
@@ -159,8 +160,8 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 			isPlaceV =1;
 		}
 		Coordinates SWTMc = new Coordinates(Double.parseDouble(SWTMNt), Double.parseDouble(SWTMEt));
-		Coordinates wgs84c = SWTMc.convertToWGS84FromSweref99TM();
-		Coordinates rt90c = wgs84c.convertToRT90FromWGS84();
+		Coordinates wgs84c = SWTMc.toWGS84(CoordSystem.SWEREF99TM);
+		Coordinates rt90c = wgs84c.toProjected(CoordSystem.RT90);
 		String RT90Nt = Long.toString(Math.round(rt90c.getNorth()));
 		String RT90Et = Long.toString(Math.round(rt90c.getEast()));
 		

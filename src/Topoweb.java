@@ -1,8 +1,8 @@
+import coords.*;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import javax.imageio.ImageIO;
 import geometry.BoundingBox;
@@ -157,7 +157,7 @@ public class Topoweb implements Layer{
 	
 	public Topoweb() {
 		tileBuffer = new TileBuffer();
-		cs = CoordSystem.Sweref99TM;
+		cs = CoordSystem.SWEREF99TM;
 	}
 	
 	@Override

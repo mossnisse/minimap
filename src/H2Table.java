@@ -1,3 +1,4 @@
+import coords.*;
 import geometry.BoundingBox;
 import geometry.Point;
 import java.awt.Color;
@@ -244,8 +245,8 @@ public class H2Table implements Layer {
 					//int id = result.getInt(3);
 					Coordinates rt90 = new Coordinates(result.getDouble(1), result.getDouble(2));
 					if (rt90.isValid(CoordSystem.RT90)) {
-						Coordinates wgs84 = rt90.convertToWGS84FromRT90();
-						Coordinates swtm = wgs84.convertTo(CoordSystem.Sweref99TM);
+						Coordinates wgs84 = rt90.toWGS84(CoordSystem.RT90);
+						Coordinates swtm = wgs84.toProjected(CoordSystem.SWEREF99TM);
 						statmt2.setDouble(1, swtm.getNorth());
 						statmt2.setDouble(2, swtm.getEast());
 						statmt2.setInt(3, result.getInt(3));

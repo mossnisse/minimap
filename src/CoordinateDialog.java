@@ -1,5 +1,5 @@
 import geometry.Point;
-
+import coords.*;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -113,7 +113,7 @@ class CoordinateDialog extends JDialog
     	String province = provins.getText();
     	String district = socken.getText();
     			
-    	CreateLocalityD d = new CreateLocalityD(aFrame, sweref99TMN, sweref99TME, province, district, CoordSystem.Sweref99TM);
+    	CreateLocalityD d = new CreateLocalityD(aFrame, sweref99TMN, sweref99TME, province, district, CoordSystem.SWEREF99TM);
 		d.setVisible(true);
     	dispose();
     }
@@ -123,8 +123,8 @@ class CoordinateDialog extends JDialog
     	sweref99TMnorth.setText(String.valueOf(p.getY()));
     	sweref99TMeast.setText(String.valueOf(p.getX()));
     	Coordinates sweref99TM = new Coordinates(p.getY(),p.getX());
-    	Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
-    	Coordinates RT90 = wgs84.convertToRT90FromWGS84();
+    	Coordinates wgs84 = sweref99TM.toWGS84(CoordSystem.SWEREF99TM);
+    	Coordinates RT90 = wgs84.toProjected(CoordSystem.RT90);
     	wgs84north.setText(String.valueOf(wgs84.getNorth()));
     	wgs84east.setText(String.valueOf(wgs84.getEast()));
     	rt90north.setText(String.valueOf(RT90.getNorth()));
@@ -142,7 +142,7 @@ class CoordinateDialog extends JDialog
     	} else {
     		socken.setText("utanför lager");
     	}
-    	rubin.setText(RT90.getRUBINfromRT90());
+    	rubin.setText(RT90.toRUBIN(false));
     }
     
     private void updateFromRubin() {
@@ -151,7 +151,7 @@ class CoordinateDialog extends JDialog
     	} else {
     		System.out.println("full gubbe");
     		Coordinates c = new Coordinates(0,0);
-    		c.setRUBINSweref99TM(rubin.getText());
+			c.setFromRUBIN(rubin.getText(), true);
     		p.setX((int) c.getEast());
     		p.setY((int) c.getNorth());
     		update();
