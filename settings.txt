@@ -1,4 +1,4 @@
-specimen dialog: closed
+specimen dialog: open
 password: bruhh
 landskap: Bohuslän
 socken: Tjärnö

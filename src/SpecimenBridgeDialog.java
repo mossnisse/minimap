@@ -8,14 +8,13 @@ public class SpecimenBridgeDialog extends JDialog {
     private int currentIndex = 0;
     private Specimen targetSpecimen;
 
+    private JTextField indexField; // For jumping to specific records
+    private JLabel totalLabel;
+
     // Specimen Info Fields (Selectable)
     private JTextField idField, nameField, collectorField, dateField;
     private JTextArea origTextField; // JTextArea for long descriptions
     private JTextField locField, rubinField, rt90Field, swerefField, latLongField;
-
-    // Specimen Info Labels
-    //private JLabel idLabel, nameLabel, collectorLabel, dateLabel, origTextLabel;
-    //private JLabel locLabel, rubinLabel, rt90Label, swerefLabel, latLongLabel;
 
     // Editable Bridge Fields
     private JComboBox<LocalityRecord> localityCombo;
@@ -31,6 +30,13 @@ public class SpecimenBridgeDialog extends JDialog {
             "", "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
             "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
     };
+
+    // Memory for the "Copy Last" feature
+    private LocalityRecord lastLocality = null;
+    private String lastDist = "";
+    private String lastDir = "";
+    private String lastODist = "";
+    private String lastOProv = "";
 
     public SpecimenBridgeDialog(Frame owner, SpecimenService service) {
         super(owner, "Link Specimen to Locality", false);
@@ -72,26 +78,70 @@ public class SpecimenBridgeDialog extends JDialog {
             }
         });
 
+        // --- F1: COPY LAST SAVED DATA ---
+        inputMap.put(KeyStroke.getKeyStroke("F1"), "copyLast");
+        actionMap.put("copyLast", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                applyLastBridge();
+            }
+        });
+
         // --- TOP: NAVIGATION & SPECIMEN INFO ---
         JPanel topPanel = new JPanel(new BorderLayout());
 
-        // Navigation Bar
-        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        // Row 1: Search Button (Full Width)
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        openSearchBtn.setPreferredSize(new Dimension(200, 30));
+        searchPanel.add(openSearchBtn);
+        topPanel.add(searchPanel, BorderLayout.NORTH);
+
+        // Row 2: Detailed Navigation
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
+
         prevBtn = new JButton("<< Previous");
         nextBtn = new JButton("Next >>");
+
+        // Index Jump Components
+        indexField = new JTextField(4);
+        indexField.setHorizontalAlignment(JTextField.CENTER);
+        totalLabel = new JLabel("/ 0");
+
+        // Add "Jump" logic to the text field (Enter to go)
+        indexField.addActionListener(e -> {
+            try {
+                int target = Integer.parseInt(indexField.getText().trim()) - 1; // 1-based to 0-based
+                if (target >= 0 && target < totalCount) {
+                    loadSpecimen(target);
+                } else {
+                    // Reset to current if out of bounds
+                    indexField.setText(String.valueOf(currentIndex + 1));
+                }
+            } catch (NumberFormatException ex) {
+                indexField.setText(String.valueOf(currentIndex + 1));
+            }
+        });
+
         navPanel.add(prevBtn);
+        navPanel.add(new JLabel("Specimen:"));
+        navPanel.add(indexField);
+        navPanel.add(totalLabel);
         navPanel.add(nextBtn);
-        topPanel.add(navPanel, BorderLayout.NORTH);
+
+        topPanel.add(navPanel, BorderLayout.SOUTH); // Combined with infoPanel later
 
         // Specimen Data Display
         JPanel infoPanel = new JPanel(new GridBagLayout());
+        infoPanel.setBackground(Color.WHITE);
+        infoPanel.setBorder(BorderFactory.createTitledBorder("Specimen Info"));
+
         GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(2, 10, 2, 10);
+        c.insets = new Insets(4, 10, 4, 10); // Spacing between lines
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1.0;
         c.gridx = 0;
 
-        // Initialize fields as plain, selectable text
+        // Initialize fields
         idField = createPlainField();
         nameField = createPlainField();
         collectorField = createPlainField();
@@ -100,17 +150,30 @@ public class SpecimenBridgeDialog extends JDialog {
         rubinField = createPlainField();
 
         // Original Text Area
-        origTextField = new JTextArea(3, 20);
+        origTextField = new JTextArea(4, 20);
         origTextField.setEditable(false);
         origTextField.setLineWrap(true);
         origTextField.setWrapStyleWord(true);
-        origTextField.setBackground(null);
+        origTextField.setOpaque(false); // Let the white panel show through
         origTextField.setBorder(null);
+        origTextField.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 13));
 
-        // Add to panel in vertical order
+        // Create a scroll pane that is also transparent/borderless
+        JScrollPane origScroll = new JScrollPane(origTextField);
+        origScroll.setBorder(null);
+        origScroll.setOpaque(false);
+        origScroll.getViewport().setOpaque(false);
+
+        // Add components in vertical order
         c.gridy = 0; infoPanel.add(idField, c);
         c.gridy = 1; infoPanel.add(nameField, c);
-        c.gridy = 2; infoPanel.add(new JScrollPane(origTextField), c);
+
+        // Add the scrollable original text with more weight so it can expand
+        c.gridy = 2; c.weighty = 1.0; c.fill = GridBagConstraints.BOTH;
+        infoPanel.add(origScroll, c);
+
+        // Reset weights for the rest
+        c.weighty = 0; c.fill = GridBagConstraints.HORIZONTAL;
         c.gridy = 3; infoPanel.add(collectorField, c);
         c.gridy = 4; infoPanel.add(dateField, c);
         c.gridy = 5; infoPanel.add(locField, c);
@@ -225,15 +288,48 @@ public class SpecimenBridgeDialog extends JDialog {
     private void refreshFromCache() {
         isAdjusting = true;
         this.totalCount = service.getCacheCount();
+        totalLabel.setText("/ " + totalCount);
         if (totalCount > 0) {
             loadSpecimen(0);
         } else {
             // Reset fields if cache was cleared but no new hits found
             targetSpecimen = null;
             currentIndex = 0;
-            // ... clear your labels/fields here ...
+            clearFields();
             setTitle("Bridge Tool - Cache Empty");
         }
+    }
+
+    private void clearFields() {
+        isAdjusting = true;
+
+        // Specimen Info Fields
+        idField.setText("");
+        nameField.setText("");
+        origTextField.setText("");
+        collectorField.setText("");
+        dateField.setText("");
+        locField.setText("");
+        rubinField.setText("");
+
+        // Bridge Input Fields
+        overrideDistField.setText("");
+        overrideProvField.setText("");
+        distanceField.setText("");
+        directionCombo.setSelectedIndex(0); // Reset to empty string ""
+
+        // Locality List
+        localityCombo.removeAllItems();
+        localityCombo.addItem(new LocalityRecord(-1, "-- No Data --"));
+
+        // Navigation
+        indexField.setText("0");
+        totalLabel.setText("/ 0");
+        prevBtn.setEnabled(false);
+        nextBtn.setEnabled(false);
+        deleteBtn.setEnabled(false);
+
+        isAdjusting = false;
     }
 
     private void loadSpecimen(int index) {
@@ -277,19 +373,16 @@ public class SpecimenBridgeDialog extends JDialog {
         // Update the Locality ComboBox based on current specimen's district
         updateLocalityList();
 
+        // Update Navigation UI
+        indexField.setText(String.valueOf(currentIndex + 1));
+        totalLabel.setText("/ " + totalCount);
+
         // Update Navigation state
         prevBtn.setEnabled(currentIndex > 0);
         nextBtn.setEnabled(currentIndex < totalCount - 1);
 
         deleteBtn.setEnabled(s.getLocalityId() > 0);
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
-    }
-
-    private void addInfoRow(JPanel panel, String labelText, JLabel valueLabel) {
-        JLabel l = new JLabel(labelText);
-        l.setFont(l.getFont().deriveFont(Font.BOLD));
-        panel.add(l);
-        panel.add(valueLabel);
     }
 
     private void updateLocalityList() {
@@ -377,6 +470,11 @@ public class SpecimenBridgeDialog extends JDialog {
         boolean success = service.linkSpecimenToLocality(specimenId, localityId, oDist, oProv, dist, dir);
 
         if (success) {
+            lastLocality = (LocalityRecord) localityCombo.getSelectedItem();
+            lastDist = distanceField.getText().trim();
+            lastDir = (String) directionCombo.getSelectedItem();
+            lastODist = overrideDistField.getText().trim();
+            lastOProv = overrideProvField.getText().trim();
             // Auto-advance to next specimen for high-speed workflow
             if (currentIndex < totalCount - 1) {
                 loadSpecimen(currentIndex + 1);
@@ -412,5 +510,25 @@ public class SpecimenBridgeDialog extends JDialog {
                 JOptionPane.showMessageDialog(this, "Error: Could not delete link from MySQL.");
             }
         }
+    }
+
+    private void applyLastBridge() {
+        if (lastLocality == null) return;
+        System.out.println("copy from last bridge");
+
+        isAdjusting = true; // Prevent triggering database refreshes mid-paste
+
+        overrideDistField.setText(lastODist);
+        overrideProvField.setText(lastOProv);
+        distanceField.setText(lastDist);
+        directionCombo.setSelectedItem(lastDir);
+
+        // Refresh the list based on the pasted overrides
+        updateLocalityList();
+
+        // Select the correct locality in the newly populated list
+        localityCombo.setSelectedItem(lastLocality);
+
+        isAdjusting = false;
     }
 }
