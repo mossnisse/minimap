@@ -167,7 +167,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		//check if locality already exists and show message if do
 		String sqltestifU = "SELECT COUNT(1) FROM locality WHERE locality = ? AND district = ? AND province = ? AND country = 'Sweden';";
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			PreparedStatement preparedStmt = conn.prepareStatement(sqltestifU);
 			preparedStmt.setString (1, localityName);
 		    preparedStmt.setString (2, districtName);
@@ -202,7 +202,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 		
 	    System.out.println(sqlstmt + " - " + localityName + "loc size: "+ locSizeT.getText()); // TODO trace print
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			PreparedStatement preparedStmt = conn.prepareStatement(sqlstmt);
 			preparedStmt.setString (1, localityName);
 		    preparedStmt.setString (2, districtName);

@@ -445,9 +445,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		layout.putConstraint(SpringLayout.NORTH, copyLastB,
 				10,
 				SpringLayout.SOUTH, latlongL);
-		
-		
-		
 
 		updateLocalityList();
 		updateSpecimenList();
@@ -462,7 +459,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		focusL.addActionListener(this);
 		searchspecimens.addActionListener(this);
 		copyLastB.addActionListener(this);
-		//lokaler.addItemListener(this);
 
 		cnr.addFocusListener(this);
 		socken.addFocusListener(this);
@@ -471,13 +467,8 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		oDistrict.addFocusListener(this);
 		oProvince.addFocusListener(this);
 		
-		
 		Keyboard.addActionListener(this);
-		
-		
-		//pack();
-		//setVisible(true);
-		//addKeyListener(Keyboard.extatic);
+
 		comboenabled = true;
 	}
 
@@ -487,13 +478,11 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		
 		String province = landskap.getText();
 		String district = socken.getText();
-		//String province = "Lycksele Lappmark";
-		//String district = "Malå";
 		
-		System.out.println("\ncreate SpecimenList: "+province+": "+district);  // TODO: print trace
+		System.out.println("\ncreate SpecimenList: "+province+": "+district);
 		try {
 			
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			// get data from MYSQL
 			String acctext = accessionNo.getText();
 			PreparedStatement statement;
@@ -521,15 +510,12 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			
 			ResultSet result = statement.executeQuery();
 			
-			Connection h2Conn = MYSQLConnection.getH2Conn();
-			
-			
-			//Create table tempspecimens if not exists  /// 
+			Connection h2Conn = DBConnection.getH2Conn();
+
 			String sqlE = "drop table tempspecimens;";
 			PreparedStatement statementE = h2Conn.prepareStatement(sqlE);
 			statementE.executeUpdate();
 			
-			//String sqlstmt2 = "CREATE TABLE IF NOT EXISTS tempspecimens (AccessionNo VARCHAR(16), Year CHAR(4), Month CHAR(2), Day CHAR(2), original_text TEXT, Genus VARCHAR(32), Species VARCHAR(32), Collector VARCHAR(64), InstitutionCode VARCHAR(3), locality_ID INT(11), locality TEXT, specimens_ID INT(10), RUBIN VARCHAR(16), RiketsN VARCHAR(16), RiketsO VARCHAR(16), Lat_dir VARCHAR(1), Lat_deg VARCHAR(32), Lat_min VARCHAR(16), Lat_sec VARCHAR(16), Long_dir VARCHAR(1), Long_deg VARCHAR(32), Long_min VARCHAR(16), Long_sec VARCHAR(16), CollectionCode VARCHAR(10), distance INT(11), direction VARCHAR(4), oDistrict VARCHAR(32), oProvince VARCHAR(40));";
 			String sqlstmt2 = "CREATE TABLE IF NOT EXISTS tempspecimens (AccessionNo VARCHAR(16), Year SMALLINT, Month TINYINT, Day TINYINT, original_text TEXT, Genus VARCHAR(32), Species VARCHAR(42), Collector VARCHAR(128), InstitutionCode VARCHAR(3), locality_ID INT(11), locality TEXT, specimens_ID INT(10), RUBIN VARCHAR(16), RiketsN VARCHAR(9), RiketsO VARCHAR(9), Lat_dir VARCHAR(1), Lat_deg VARCHAR(32), Lat_min VARCHAR(16), Lat_sec VARCHAR(16), Long_dir VARCHAR(1), Long_deg VARCHAR(32), Long_min VARCHAR(16), Long_sec VARCHAR(16), CollectionCode VARCHAR(10), distance INT(11), direction VARCHAR(4), oDistrict VARCHAR(32), oProvince VARCHAR(40));";
 			
 			PreparedStatement statement2 = h2Conn.prepareStatement(sqlstmt2);
@@ -581,91 +567,13 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		GUI.setCursorDefault();
 	}
 	
-	/*
+
 	public static void updateSpecimenList() {
 		GUI.setCursorWait();
-		String province = landskap.getText();
-		String district = socken.getText();
 		System.out.println("\nUppdate SpecimenList UI");  // TODO: print trace
-		
 
 		try {
-			Connection conn = MYSQLConnection.getConn();
-			String sqlstmt = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, Collector, specimens.InstitutionCode, locality.ID, locality.locality, specimens.ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, distance, direction, oDistrict, oProvince"
-					//+ " FROM specimens left join specimen_locality on specimens.InstitutionCode = specimen_locality.InstitutionCode and specimens.AccessionNo = specimen_locality.AccessionNo left join locality on specimen_locality.locality_ID = locality.ID WHERE "
-					+ " FROM specimens left join specimen_locality on specimens.ID = specimen_locality.specimen_ID  left join locality on specimen_locality.locality_ID = locality.ID WHERE "
-					+ "Specimens.Province = ? and specimens.district = ? limit ?, 1;";
-			System.out.println(sqlstmt);  // TODO: print trace
-			
-			PreparedStatement statement = conn.prepareStatement(sqlstmt);
-			statement.setString(1, province);
-			statement.setString(2, district);
-			statement.setInt(3, nr);
-			ResultSet result = statement.executeQuery();
-
-			if (result.next()) { // process results one row at a time
-				accnr = result.getString(1);
-				collCode = result.getString(24);
-				instCode = result.getString(9);
-				String text = "<html>" + result.getString(9) + " " + result.getString(1) + "<br>"  
-						//+ result.getString(10) + " - "+ result.getString(11) + "<br>"
-						+ "<i>" + result.getString(6) + " " + result.getString(7) 
-						+ "<br> <br> </i> " + SQL.HTMLF(result.getString(5))
-						+ "<br> <br>" + result.getString(8) + "  -  " +  result.getString(2)+ "-" + result.getString(3) + "-" + result.getString(4) + "</html>";
-
-				System.out.println(text);  // TODO: print trace
-				collect_info.setText(text);
-				//collect_info.repaint();
-				//collect_info.validate();
-				rubinD.setText(result.getString(13));
-				RT90D.setText(result.getString(14)+", "+result.getString(15));
-				//41°25'01"N and 120°58'57"W
-				latlongD.setText(result.getString(17)+"°"+result.getString(18)+"'"+result.getString(19)+"''"+ result.getString(16) +" and "+result.getString(21)+"°"+result.getString(22)+"'"+result.getString(23)+"''"+result.getString(20));
-				specimenID = result.getString(12);
-				distance.setText(result.getString(25));
-				String directionS = "";
-				if (result.getString(26) != null) {
-					directionS = result.getString(26);
-				}
-				direction.setSelectedItem(directionS);
-				
-				oProvince.setText(result.getString(28));
-				oDistrict.setText(result.getString(27));
-				
-				comboenabled = false;
-				String lokalNamn = result.getString(11);
-				if (lokalNamn == null) lokalNamn = "";
-				System.out.println("Set Selected Locality: \""+ lokalNamn+"\" distance: "+result.getString(25) + " direction: "+result.getString(26)); // TODO: print trace
-				
-				if (!(oProvince.getText().equals(oldOverrideProvince) && oDistrict.getText().equals(oldOverrideDistrict))) {
-					updateLocalityList();
-				}
-
-				lokaler.setSelectedItem(lokalNamn);
-				comboenabled = true;
-				//sp.revalidate();
-				//Dimensio
-				//setSize(this.getSize());
-				//revalidate();
-				//exstatic.repaint();
-				//exstatic.pack();
-			}
-			
-		} catch (SQLException e) {
-			e.printStackTrace(); // TODO Auto-generated catch block
-		}
-		GUI.setCursorDefault();
-	}*/
-	
-	public static void updateSpecimenList() {
-		GUI.setCursorWait();
-		//String province = landskap.getText();
-		//String district = socken.getText();
-		System.out.println("\nUppdate SpecimenList UI");  // TODO: print trace
-		
-
-		try {
-			Connection conn = MYSQLConnection.getH2Conn();
+			Connection conn = DBConnection.getH2Conn();
 			String sqlstmt = "SELECT AccessionNo, Year, Month, Day, original_text, Genus, Species, Collector, InstitutionCode, locality_ID, locality, specimens_ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, CollectionCode, distance, direction, oDistrict, oProvince"
 					//+ " FROM specimens left join specimen_locality on specimens.InstitutionCode = specimen_locality.InstitutionCode and specimens.AccessionNo = specimen_locality.AccessionNo left join locality on specimen_locality.locality_ID = locality.ID WHERE "
 					+ " FROM tempspecimens ORDER BY Year, Month, Day, AccessionNo limit ?, 1;";
@@ -674,8 +582,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			statement.setInt(1, nr);
 			ResultSet result = statement.executeQuery();
-			
-			
 
 			if (result.next()) { // process results one row at a time
 				accnr = result.getString(1);
@@ -708,10 +614,9 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				longsec = result.getString(23);
 				specimenID = result.getString(12);
 				System.out.println("Specimen ID: "+specimenID);
-				
-				
+
 				comboenabled = false;
-				Connection MySQLconn = MYSQLConnection.getConn();
+				Connection MySQLconn = DBConnection.getConn();
 				String sqlstmt2 = "SELECT locality, distance, direction, oDistrict, oProvince FROM specimen_locality left join locality on specimen_locality.locality_ID = locality.ID WHERE specimen_ID = ?;";
 				System.out.println("Test1" + sqlstmt2);
 				PreparedStatement statement2 = MySQLconn.prepareStatement(sqlstmt2);
@@ -776,12 +681,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				lokaler.setSelectedItem("");
 				lokaler.setSelectedItem(lokalNamn);
 				comboenabled = true;
-				//sp.revalidate();
-				//Dimensio
-				//setSize(this.getSize());
-				//revalidate();
-				//exstatic.repaint();
-				//exstatic.pack();
 			}
 			
 		} catch (SQLException e) {
@@ -791,7 +690,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		GUI.setCursorDefault();
 	}
 
-	
 	public static String getProvinceFromUI() {
 		if (!oProvince.getText().equals("")) {
 			return oProvince.getText();
@@ -816,7 +714,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		String district = getDistrictFromUI();
 
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			String sqlstmt2 = "SELECT locality FROM locality WHERE Province = ? and district = ? order by locality;";
 			System.out.println(sqlstmt2 + " Province: " +province + " district: "+district);
 			PreparedStatement statement2 = conn.prepareStatement(sqlstmt2);
@@ -842,12 +740,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	public String getSelectedText() {
 		return collect_info.getSelectedText();
 	}
-
-	/*
-	public void setOldOverrides() {
-		
-		  dff
-	}*/
 	
 	public void next() {
 		System.out.println("\nstega upp nummer");  //TODO: print trace
@@ -866,7 +758,6 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		}
 		updateSpecimenList();
 		setOldLocality();
-		//setOldOverrides();
 	}
 	
 	public void prev() {
@@ -990,7 +881,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			try {
 				String query = "SELECT SWTMN, SWTME from locality where locality = ? and province = ? and district = ?";
 				System.out.println(query);
-				Connection conn = MYSQLConnection.getConn();
+				Connection conn = DBConnection.getConn();
 				PreparedStatement statement = conn.prepareStatement(query);
 				statement.setString(1, lokal);
 				statement.setString(2, landskapN);	
@@ -1034,7 +925,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 				try {
 				String query = "SELECT SWTMN, SWTME from locality where locality = ? and province = ? and district = ?";
 				System.out.println(query);
-				Connection conn = MYSQLConnection.getConn();
+				Connection conn = DBConnection.getConn();
 				PreparedStatement statement = conn.prepareStatement(query);
 				statement.setString(1, locality);
 				statement.setString(2, province);	
@@ -1071,7 +962,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		}
 		
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			PreparedStatement preparedStmt = conn.prepareStatement(sqlstmt);
 			preparedStmt.setString (1, localityID);
 			preparedStmt.setString (2, specimen_ID);
@@ -1099,7 +990,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		String sqlstmt = "DELETE FROM Specimen_Locality WHERE locality_ID = ? and specimen_ID = ?"; 
 		System.out.println(sqlstmt + " - " + localityID + " - "+specimen_ID); // TODO: print trace
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			PreparedStatement preparedStmt = conn.prepareStatement(sqlstmt);
 			preparedStmt.setString (1, localityID);
 			preparedStmt.setString (2, specimen_ID);
@@ -1116,7 +1007,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	private String getLocalityID(String lokalNamn, String landskapN, String sockenN) throws SQLException {
 		String sqlstmt = "SELECT ID from locality where locality = ? and province = ? and district = ?;";
 		System.out.println(sqlstmt + "\nlocality: "+  lokalNamn + " landskap: " + landskapN + " socken: " + sockenN);  // TODO: print trace
-		Connection conn = MYSQLConnection.getConn();
+		Connection conn = DBConnection.getConn();
 		PreparedStatement statement = conn.prepareStatement(sqlstmt);
 		statement.setString(1, lokalNamn);
 		statement.setString(2, landskapN);	
@@ -1188,7 +1079,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 						//System.out.println(sqlstmt2 + " ID: "+localityID+" user: "+ Settings.getValue("user")+ " direction: " + direction.getSelectedItem().toString() + " distance: " + distN + " oDistrict: " + oDistrict.getText() + "oProvince: " + oProvince.getText()+ " specimenID: "+specimenID); // TODO: print trace
 						//System.out.println("localityID: "+localityID);
 						
-						Connection conn = MYSQLConnection.getConn();
+						Connection conn = DBConnection.getConn();
 						PreparedStatement statement2 = conn.prepareStatement(sqlstmt2);
 						statement2.setString(1, localityID);
 						statement2.setString(2, Settings.getValue("user"));
@@ -1282,9 +1173,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 			System.out.println("oDistrict lost focus");
 			updateLocalityList();
 		}
-		//uppdate();
 	}
-
 
 	@Override
 	public void nActionPerformed(String a) {
@@ -1333,20 +1222,4 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 	public static boolean isOpen() {
 		return comboenabled;
 	}
-
-	public static void main(String[] args) {
-		//createSpecimenList();
-	/*	Connection h2Conn;
-		try {
-			h2Conn = MYSQLConnection.getH2Conn();
-			String delstr = "Drop table tempspecimens";
-			PreparedStatement statement9 = h2Conn.prepareStatement(delstr);
-			statement9.executeUpdate();
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
-		
-	}
-
 }

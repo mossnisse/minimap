@@ -70,7 +70,7 @@ public class Locality implements Layer {
 			
 			//String sqlstmt = "SELECT RT90N, RT90E, locality FROM locality where RT90N > " +bounds.getY1()+" and RT90N < " + bounds.getY2()+ " and RT90E > "+bounds.getX1()+ " and RT90E < "+bounds.getX2()+";" ;
 			String sqlstmt = "SELECT SWTMN, SWTME, locality, Coordinateprecision, zoomLevel FROM locality where SWTMN > ? and SWTMN < ? and SWTME > ? and SWTME < ?;" ;
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			statement.setInt(1, bounds.getY1());
@@ -134,7 +134,7 @@ public class Locality implements Layer {
 		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where Country = \"Sweden\"";
 		Connection conn;
 		try {
-			conn = MYSQLConnection.getConn();
+			conn = DBConnection.getConn();
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			ResultSet result = statement.executeQuery();
 	    
@@ -164,7 +164,7 @@ public class Locality implements Layer {
 		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN > ? and SWTMN < ? and SWTME > ? and SWTME < ?;";
 		Connection conn;
 		try {
-			conn = MYSQLConnection.getConn();
+			conn = DBConnection.getConn();
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			statement.setInt(1, p.getY()-limit);
 			statement.setInt(2, p.getY()+limit);

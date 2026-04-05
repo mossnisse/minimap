@@ -141,7 +141,7 @@ public class CreateLocalityD extends JDialog implements ActionListener, Property
 
 	    //System.out.println(sqlstmt + " - " + localityName);
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			PreparedStatement pstmt = conn.prepareStatement(sqlstmt);
 			pstmt.setString (1, localityName);
 			pstmt.setString (2, districtName);

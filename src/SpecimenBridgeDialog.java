@@ -1,0 +1,416 @@
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
+
+public class SpecimenBridgeDialog extends JDialog {
+    private final SpecimenService service;
+    private int totalCount;
+    private int currentIndex = 0;
+    private Specimen targetSpecimen;
+
+    // Specimen Info Fields (Selectable)
+    private JTextField idField, nameField, collectorField, dateField;
+    private JTextArea origTextField; // JTextArea for long descriptions
+    private JTextField locField, rubinField, rt90Field, swerefField, latLongField;
+
+    // Specimen Info Labels
+    //private JLabel idLabel, nameLabel, collectorLabel, dateLabel, origTextLabel;
+    //private JLabel locLabel, rubinLabel, rt90Label, swerefLabel, latLongLabel;
+
+    // Editable Bridge Fields
+    private JComboBox<LocalityRecord> localityCombo;
+    private JTextField overrideDistField, overrideProvField;
+    private JTextField distanceField;
+    private JComboBox<String> directionCombo;
+
+    private JButton prevBtn, nextBtn, linkBtn, deleteBtn;
+    JButton openSearchBtn = new JButton("Search & Cache...");
+    private boolean isAdjusting = false;
+
+    private final String[] directions = {
+            "", "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
+    };
+
+    public SpecimenBridgeDialog(Frame owner, SpecimenService service) {
+        super(owner, "Link Specimen to Locality", false);
+        this.service = service;
+        this.totalCount = service.getCacheCount(); // Only get the number, not the data
+
+        initUI();
+        loadSpecimen(0); // Fetch the first one
+        this.pack();
+        this.setLocationRelativeTo(owner);
+    }
+
+    private void initUI() {
+        setLayout(new BorderLayout(10, 10));
+
+        JRootPane rootPane = this.getRootPane();
+        InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
+        ActionMap actionMap = rootPane.getActionMap();
+
+        // --- RIGHT ARROW: NEXT ---
+        inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "nextSpecimen");
+        actionMap.put("nextSpecimen", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (currentIndex < totalCount - 1) {
+                    loadSpecimen(currentIndex + 1);
+                }
+            }
+        });
+
+        // --- LEFT ARROW: PREVIOUS ---
+        inputMap.put(KeyStroke.getKeyStroke("LEFT"), "prevSpecimen");
+        actionMap.put("prevSpecimen", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (currentIndex > 0) {
+                    loadSpecimen(currentIndex - 1);
+                }
+            }
+        });
+
+        // --- TOP: NAVIGATION & SPECIMEN INFO ---
+        JPanel topPanel = new JPanel(new BorderLayout());
+
+        // Navigation Bar
+        JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        prevBtn = new JButton("<< Previous");
+        nextBtn = new JButton("Next >>");
+        navPanel.add(prevBtn);
+        navPanel.add(nextBtn);
+        topPanel.add(navPanel, BorderLayout.NORTH);
+
+        // Specimen Data Display
+        JPanel infoPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(2, 10, 2, 10);
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1.0;
+        c.gridx = 0;
+
+        // Initialize fields as plain, selectable text
+        idField = createPlainField();
+        nameField = createPlainField();
+        collectorField = createPlainField();
+        dateField = createPlainField();
+        locField = createPlainField();
+        rubinField = createPlainField();
+
+        // Original Text Area
+        origTextField = new JTextArea(3, 20);
+        origTextField.setEditable(false);
+        origTextField.setLineWrap(true);
+        origTextField.setWrapStyleWord(true);
+        origTextField.setBackground(null);
+        origTextField.setBorder(null);
+
+        // Add to panel in vertical order
+        c.gridy = 0; infoPanel.add(idField, c);
+        c.gridy = 1; infoPanel.add(nameField, c);
+        c.gridy = 2; infoPanel.add(new JScrollPane(origTextField), c);
+        c.gridy = 3; infoPanel.add(collectorField, c);
+        c.gridy = 4; infoPanel.add(dateField, c);
+        c.gridy = 5; infoPanel.add(locField, c);
+        c.gridy = 6; infoPanel.add(rubinField, c);
+
+        topPanel.add(infoPanel, BorderLayout.CENTER);
+        add(topPanel, BorderLayout.NORTH);
+
+        // --- CENTER: BRIDGE / EDITABLE FIELDS ---
+        JPanel bridgePanel = new JPanel(new GridBagLayout());
+        bridgePanel.setBorder(BorderFactory.createTitledBorder("Create Bridge to Locality"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        // Locality Picker
+        gbc.gridx = 0; gbc.gridy = 0;
+        bridgePanel.add(new JLabel("Target Locality:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        localityCombo = new JComboBox<>(); // This will need to be populated based on district
+        bridgePanel.add(localityCombo, gbc);
+
+        // Overrides
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
+        bridgePanel.add(new JLabel("Override District:"), gbc);
+        gbc.gridx = 1;
+        overrideDistField = new JTextField();
+        bridgePanel.add(overrideDistField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2;
+        bridgePanel.add(new JLabel("Override Province:"), gbc);
+        gbc.gridx = 1;
+        overrideProvField = new JTextField();
+        bridgePanel.add(overrideProvField, gbc);
+
+        // Distance / Direction
+        JPanel distDirPanel = new JPanel(new GridLayout(1, 4, 5, 5));
+        distDirPanel.add(new JLabel("Distance (m):"));
+        distanceField = new JTextField();
+        distDirPanel.add(distanceField);
+        distDirPanel.add(new JLabel("Direction:"));
+        directionCombo = new JComboBox<>(directions);
+        distDirPanel.add(directionCombo);
+
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+        bridgePanel.add(distDirPanel, gbc);
+
+        add(bridgePanel, BorderLayout.CENTER);
+
+        // --- BOTTOM: ACTION BUTTONS ---
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        linkBtn = new JButton("Create Link (Save to MySQL)");
+        linkBtn.addActionListener(e -> saveBridge());
+
+        deleteBtn = new JButton("Delete Link");
+        deleteBtn.setForeground(Color.RED);
+        deleteBtn.addActionListener(e -> deleteBridge());
+        actionPanel.add(deleteBtn);
+
+        JButton closeBtn = new JButton("Close");
+        closeBtn.addActionListener(e -> dispose());
+
+        actionPanel.add(linkBtn);
+        actionPanel.add(closeBtn);
+        add(actionPanel, BorderLayout.SOUTH);
+
+        openSearchBtn.addActionListener(e -> {
+            SpecimenSearchDialog searchDlg = new SpecimenSearchDialog(this, service);
+            searchDlg.setModal(true); // Make it modal so we wait for it to finish
+            searchDlg.setVisible(true);
+
+            // After searchDlg is closed, refresh this dialog
+            refreshFromCache();
+        });
+        navPanel.add(openSearchBtn);
+
+        // Navigation Actions
+        prevBtn.addActionListener(e -> loadSpecimen(currentIndex - 1));
+        nextBtn.addActionListener(e -> loadSpecimen(currentIndex + 1));
+
+        javax.swing.event.DocumentListener overrideListener = new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
+
+            private void checkUpdate() {
+                // Only trigger if the user is typing, not when loadSpecimen() is running
+                if (!isAdjusting && targetSpecimen != null) {
+                    updateLocalityList();
+                }
+            }
+        };
+
+        // enter button to create link and advance
+        this.getRootPane().setDefaultButton(linkBtn);
+
+        overrideDistField.getDocument().addDocumentListener(overrideListener);
+        overrideProvField.getDocument().addDocumentListener(overrideListener);
+    }
+
+    private JTextField createPlainField() {
+        JTextField f = new JTextField();
+        f.setEditable(false);
+        f.setBorder(null);      // No border/clutter
+        f.setOpaque(false);     // Blend into background
+        f.setBackground(new Color(0,0,0,0));
+        // Set a font that looks clear for data entry
+        f.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        return f;
+    }
+
+    private void refreshFromCache() {
+        isAdjusting = true;
+        this.totalCount = service.getCacheCount();
+        if (totalCount > 0) {
+            loadSpecimen(0);
+        } else {
+            // Reset fields if cache was cleared but no new hits found
+            targetSpecimen = null;
+            currentIndex = 0;
+            // ... clear your labels/fields here ...
+            setTitle("Bridge Tool - Cache Empty");
+        }
+    }
+
+    private void loadSpecimen(int index) {
+        if (index < 0 || index >= totalCount) return;
+
+        // Show a small loading indicator if you want, but H2 is local and very fast
+        Specimen s = service.getSpecimenAt(index);
+        if (s != null) {
+            this.targetSpecimen = s;
+            this.currentIndex = index;
+            updateUIFields(s);
+        }
+    }
+
+    private void updateUIFields(Specimen s) {
+        isAdjusting = true;
+
+        idField.setText(s.getInstitutionCode() + " " + s.getAccessionNo());
+        nameField.setText(s.getGenus() + " " + s.getSpecies());
+        origTextField.setText(s.getOriginalText());
+        collectorField.setText(s.getCollector() + " (" + s.getCollectionCode() + ")");
+        dateField.setText(String.format("%d-%02d-%02d", s.getYear(), s.getMonth(), s.getDay()));
+        locField.setText(s.getLocalityName());
+        rubinField.setText(s.getRubin() + " | N:" + s.getRiketsN() + " O:" + s.getRiketsO());
+
+        // Coordinates (Assuming s.getRiketsN() etc return Strings or numbers)
+        //rt90Label.setText("N: " + s.getRiketsN() + " O: " + s.getRiketsO());
+
+        // If you have a coordinate conversion utility, use it here:
+        // swerefLabel.setText(CoordinateConverter.toSweref(s.getRiketsN(), s.getRiketsO()));
+        // latLongLabel.setText(s.getLatDegrees() + "° " + s.getLatMinutes() + "'...");
+
+        // Clear/Update Bridge fields
+        overrideDistField.setText(s.getODistrict() != null ? s.getODistrict() : "");
+        overrideProvField.setText(s.getOProvince() != null ? s.getOProvince() : "");
+        distanceField.setText(s.getDistance() > 0 ? String.valueOf(s.getDistance()) : "");
+        directionCombo.setSelectedItem(s.getDirection() != null ? s.getDirection() : "");
+
+        isAdjusting = false;
+
+        // Update the Locality ComboBox based on current specimen's district
+        updateLocalityList();
+
+        // Update Navigation state
+        prevBtn.setEnabled(currentIndex > 0);
+        nextBtn.setEnabled(currentIndex < totalCount - 1);
+
+        deleteBtn.setEnabled(s.getLocalityId() > 0);
+        setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
+    }
+
+    private void addInfoRow(JPanel panel, String labelText, JLabel valueLabel) {
+        JLabel l = new JLabel(labelText);
+        l.setFont(l.getFont().deriveFont(Font.BOLD));
+        panel.add(l);
+        panel.add(valueLabel);
+    }
+
+    private void updateLocalityList() {
+        String targetDistrict = targetSpecimen.getDistrict();
+        String overrideDist = overrideDistField.getText().trim();
+        if (!overrideDist.isEmpty()) {
+            targetDistrict = overrideDist;
+        }
+
+        String targetProvince = targetSpecimen.getProvince();
+        String overrideProv = overrideProvField.getText().trim();
+        if (!overrideProv.isEmpty()) {
+            targetProvince = overrideProv;
+        }
+
+        System.out.println("update Locality List: " + targetDistrict + ", " + targetProvince);
+        // Clear old items
+        localityCombo.removeAllItems();
+
+        localityCombo.addItem(new LocalityRecord(-1, "-- Select a Locality --"));
+        // Fetch localities from MySQL for this district
+        List<LocalityRecord> localities = service.getLocalitiesInDistrict(targetDistrict, targetProvince);
+
+        // Populate
+        for (LocalityRecord l : localities) {
+            localityCombo.addItem(l);
+            if (l.getId() == targetSpecimen.getLocalityId()) {
+                localityCombo.setSelectedItem(l);
+            }
+        }
+    }
+
+    private void saveBridge() {
+        if (targetSpecimen == null) return;
+
+        LocalityRecord selectedLoc = (LocalityRecord) localityCombo.getSelectedItem();
+        if (selectedLoc == null) {
+            JOptionPane.showMessageDialog(this, "Please select a target locality.");
+            return;
+        }
+
+        // --- Distance and direction Validation ---
+        // Extract and Validate Distance
+        int dist = 0;
+        String distText = distanceField.getText().trim();
+        boolean hasDistance = !distText.isEmpty();
+
+        if (hasDistance) {
+            try {
+                dist = Integer.parseInt(distText);
+                if (dist < 0) throw new NumberFormatException();
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this,
+                        "Distance must be a positive whole number (meters).",
+                        "Invalid Distance", JOptionPane.ERROR_MESSAGE);
+                distanceField.requestFocus();
+                return;
+            }
+        }
+
+        // Extract Direction
+        String dir = (String) directionCombo.getSelectedItem();
+        boolean hasDirection = (dir != null && !dir.isEmpty());
+
+        // Co-dependency Check (Both or Neither)
+        if (hasDistance != hasDirection) {
+            String msg = hasDistance ?
+                    "You provided a distance. Please select a Direction." :
+                    "You selected a direction. Please provide a Distance (in meters).";
+
+            JOptionPane.showMessageDialog(this, msg, "Incomplete Offset", JOptionPane.WARNING_MESSAGE);
+
+            if (!hasDistance) distanceField.requestFocus();
+            else directionCombo.requestFocus();
+            return;
+        }
+
+        // Collect bridge data
+        int specimenId = targetSpecimen.getId();
+        int localityId = selectedLoc.getId();
+        String oDist = overrideDistField.getText().trim();
+        String oProv = overrideProvField.getText().trim();
+
+        // Save to MySQL
+        boolean success = service.linkSpecimenToLocality(specimenId, localityId, oDist, oProv, dist, dir);
+
+        if (success) {
+            // Auto-advance to next specimen for high-speed workflow
+            if (currentIndex < totalCount - 1) {
+                loadSpecimen(currentIndex + 1);
+            } else {
+                JOptionPane.showMessageDialog(this, "All specimens processed!");
+                dispose();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Error saving link to database.");
+        }
+    }
+
+    private void deleteBridge() {
+        if (targetSpecimen == null) return;
+
+        int result = JOptionPane.showConfirmDialog(this,
+                "Are you sure you want to delete the link for this specimen?",
+                "Confirm Delete", JOptionPane.YES_NO_OPTION);
+
+        if (result == JOptionPane.YES_OPTION) {
+            boolean success = service.deleteSpecimenLink(targetSpecimen.getId());
+            if (success) {
+                // Update the local object state so the UI reflects the change
+                targetSpecimen.setLocalityId(0);
+                targetSpecimen.setODistrict("");
+                targetSpecimen.setOProvince("");
+                targetSpecimen.setDistance(0);
+                targetSpecimen.setDirection("");
+
+                updateUIFields(targetSpecimen);
+                JOptionPane.showMessageDialog(this, "Link removed.");
+            } else {
+                JOptionPane.showMessageDialog(this, "Error: Could not delete link from MySQL.");
+            }
+        }
+    }
+}

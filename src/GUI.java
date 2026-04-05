@@ -1,22 +1,9 @@
-import geometry.BoundingBox;
 import geometry.Point;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Cursor;
-import java.awt.Window;
+import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
-import javax.swing.Box;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.KeyStroke;
+import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
@@ -27,7 +14,6 @@ public class GUI implements NActionListener {
 	static JFrame frame;
 	public static Canvas canvas;
 	static Point coord;
-	static JFrame sframe;
 	static SpecimenList sList;
 
 	public GUI() {
@@ -194,7 +180,7 @@ public class GUI implements NActionListener {
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F,
 				ActionEvent.CTRL_MASK));
-		menuItem7.addActionListener(e->search());
+		menuItem7.addActionListener(e->searchLocality());
 		menu2.add(menuItem7);
 
 		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
@@ -360,13 +346,12 @@ public class GUI implements NActionListener {
 		}
 	}
 
-	public void search() {
-		
+	public void searchLocality() {
 		if (sList == null) {
-			SearchDialog d = new SearchDialog(frame, "");
+			SearchLocalityDialog d = new SearchLocalityDialog(frame, "");
 			d.setVisible(true);
 		} else {
-			SearchDialog d = new SearchDialog(frame, sList.getSelectedText());
+			SearchLocalityDialog d = new SearchLocalityDialog(frame, sList.getSelectedText());
 			d.setVisible(true);
 		}
 	}
@@ -434,30 +419,6 @@ public class GUI implements NActionListener {
 		JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
 	}
 
-	public void search(int prNr, String socken, String lokal) {
-		H2Table od = (H2Table) canvas.getLayer("Ortnamnsdb");
-		TNGPointFile ans = od.find(prNr, lokal);
-		if (ans.size() != 0) {
-			ans.setColor(Color.blue);
-			// System.out.println(ans);
-			BoundingBox b = ans.getBounds();
-
-			if (b.getWidth() < 5000) {
-				Point middle = b.getMidlePoint();
-				b.setX1(middle.getX() - 2500);
-				b.setY1(middle.getY() - 2500);
-				b.setX2(middle.getX() + 2500);
-				b.setY2(middle.getY() + 2500);
-			}
-			// System.out.println(b);
-			canvas.setBounds(b);
-			canvas.delLayer("ans");
-			canvas.addLayerTop(ans);
-		} else {
-			System.out.println("no hits");
-		}
-	}
-
 	public Container createContentPane() {
 		// Create the content-pane-to-be.
 		JPanel contentPane = new JPanel(new BorderLayout());
@@ -482,10 +443,7 @@ public class GUI implements NActionListener {
 	public void showRubin(MouseEvent arg0) {
 		System.out.print("show RUBIN: ");
 		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
-		 String s = Coordinates.getRUBINfromSweref99TM(p);
-		//Coordinates sweref99TM = new Coordinates(p);
-		//System.out.print(" sweref99tm "+sweref99TM+" ");
-		//String s =  sweref99TM.getRUBINfromSweref99TM();
+		String s = Coordinates.getRUBINfromSweref99TM(p);
 		System.out.println(s);
 		Rubin r = new Rubin(s, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
@@ -554,34 +512,32 @@ public class GUI implements NActionListener {
 		diag.cancel.requestFocusInWindow();
 		//canvas.repaint();
 	}
-	
+
 	public static void searchSpecimens() {
-		sframe = new JFrame("Specimens");
-		//sframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		sframe.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-		sframe.addWindowListener(new WindowAdapter() {
-	        @Override
-	        public void windowClosing(WindowEvent event) {
-	        	try {
+		SpecimenService service = new SpecimenService();
+
+		// Open the Bridge Dialog first
+		SpecimenBridgeDialog bridgeDialog = new SpecimenBridgeDialog(frame, service);
+
+		// Standard settings management
+		bridgeDialog.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				try {
 					Settings.setValue("specimen dialog", "closed");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
+				} catch (IOException ex) {
+					ex.printStackTrace();
 				}
-	        	sframe.setVisible(false);
-	        	sframe.dispose();
-	        }
-	    });
-		sList = new SpecimenList();
-		sframe.add(sList);
-		sframe.setSize(400, 1000);
+			}
+		});
+
 		try {
 			Settings.setValue("specimen dialog", "open");
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		sframe.setVisible(true);
+
+		bridgeDialog.setVisible(true);
 	}
 
 	private void createLocalityDialog(MouseEvent me) {
@@ -636,8 +592,6 @@ public class GUI implements NActionListener {
 		    	Coordinates sweref99TM = new Coordinates(point);
 		    	Coordinates wgs84 = sweref99TM.convertToWGS84FromSweref99TM();
 		    	System.out.println("coord: "+wgs84);
-		    	//double latitude = 59.9256;
-		    	//double longitude = 18.1844;
 		    	String uri = "https://kartbild.com/#"+String.valueOf(zoomLevel)+"/"+String.valueOf(wgs84.getNorth())+"/"+String.valueOf(wgs84.getEast())+"/0x"+String.valueOf(map);
 		    	System.out.println("URI: "+uri);
 		    	Desktop.getDesktop().browse(new URI(uri));
@@ -711,7 +665,7 @@ public class GUI implements NActionListener {
 			System.exit(0);
 			break;
 		case "Search":
-			search();
+			searchLocality();
 			break;
 		case "Zoom in":
 			canvas.zoom(0.5);
@@ -745,7 +699,7 @@ public class GUI implements NActionListener {
 			createLokalAtCoord();
 			break;
 		case "Search localities":
-			search();
+			searchLocality();
 			break;
 		case "Search Ortnamnsregistret":
 			SearchOrtReg();

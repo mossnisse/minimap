@@ -58,7 +58,7 @@ public class MYSQLTable implements Layer {
 	                 double yShift, double yScale, BoundingBox bounds) throws SQLException {
 		if (hidden) return;
 
-		Connection conn = MYSQLConnection.getConn();
+		Connection conn = DBConnection.getConn();
 		// Check if the static connection was closed by something else and recover
 		if (conn == null || conn.isClosed()) {
 			// This forces MYSQLConnection to create a new one
@@ -131,7 +131,7 @@ public class MYSQLTable implements Layer {
 		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN > ? and SWTMN < ? and SWTME > ? and SWTME < ?;";
 		Connection conn;
 		try {
-			conn = MYSQLConnection.getConn();
+			conn = DBConnection.getConn();
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			statement.setInt(1, p.getY()-limit);
 			statement.setInt(2, p.getY()+limit);
@@ -175,7 +175,7 @@ public class MYSQLTable implements Layer {
 		String sql1 = "SELECT lat, `long`, id FROM locality where country = 'Sweden' limit ?,1";
 		String sql2 = "update locality set SWTMN = ?, SWTME = ? where id =?";
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			PreparedStatement statmt1= conn.prepareStatement(sql1);
 			PreparedStatement statmt2= conn.prepareStatement(sql2);
 		

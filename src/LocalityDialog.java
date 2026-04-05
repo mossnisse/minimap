@@ -172,8 +172,8 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 				"coordinate_source, lcomments, created, createdBy, modified, modifiedBy, " +
 				"Coordinateprecision, category, zoomLevel, isPlace FROM locality WHERE ID = ?";
 
-		try (Connection conn = MYSQLConnection.getConn();
-		     PreparedStatement stmt = conn.prepareStatement(sql)) {
+		try (Connection conn = DBConnection.getConn();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
 
 			stmt.setInt(1, localityID);
 			try (ResultSet rs = stmt.executeQuery()) {
@@ -212,7 +212,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 		int dialogResult = JOptionPane.showConfirmDialog (null, "Do you realy want to delete the local?","Warning",JOptionPane.YES_NO_OPTION);
 		if(dialogResult == JOptionPane.YES_OPTION){
 			try {
-				Connection conn = MYSQLConnection.getConn();
+				Connection conn = DBConnection.getConn();
 				String sqlstmt = "DELETE FROM locality WHERE ID =?";
 				System.out.println(sqlstmt);
 				PreparedStatement statement = conn.prepareStatement(sqlstmt);
@@ -231,7 +231,7 @@ public class LocalityDialog  extends JPanel implements ActionListener{
 	
 	private void updateLokal() {
 		try {
-			Connection conn = MYSQLConnection.getConn();
+			Connection conn = DBConnection.getConn();
 			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, RT90N = ?, RT90E = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?, category = ?, zoomLevel =?, isPlace =?  WHERE ID =?";
 			System.out.println(sqlstmt);
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
