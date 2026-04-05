@@ -1,3 +1,5 @@
+import coords.Coordinates;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
@@ -12,9 +14,10 @@ public class SpecimenBridgeDialog extends JDialog {
     private JLabel totalLabel;
 
     // Specimen Info Fields (Selectable)
-    private JTextField idField, nameField, collectorField, dateField;
+    private JTextField idField, nameField, collectorField;
     private JTextArea origTextField; // JTextArea for long descriptions
     private JTextField locField, rubinField, rt90Field, swerefField, latLongField;
+    private JTextField provinceDistrField;
 
     // Editable Bridge Fields
     private JComboBox<LocalityRecord> localityCombo;
@@ -145,9 +148,12 @@ public class SpecimenBridgeDialog extends JDialog {
         idField = createPlainField();
         nameField = createPlainField();
         collectorField = createPlainField();
-        dateField = createPlainField();
         locField = createPlainField();
         rubinField = createPlainField();
+        rt90Field = createPlainField();
+        swerefField = createPlainField();
+        latLongField = createPlainField();
+        provinceDistrField = createPlainField();
 
         // Original Text Area
         origTextField = new JTextArea(4, 20);
@@ -156,7 +162,7 @@ public class SpecimenBridgeDialog extends JDialog {
         origTextField.setWrapStyleWord(true);
         origTextField.setOpaque(false); // Let the white panel show through
         origTextField.setBorder(null);
-        origTextField.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 13));
+        origTextField.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 15));
 
         // Create a scroll pane that is also transparent/borderless
         JScrollPane origScroll = new JScrollPane(origTextField);
@@ -175,9 +181,12 @@ public class SpecimenBridgeDialog extends JDialog {
         // Reset weights for the rest
         c.weighty = 0; c.fill = GridBagConstraints.HORIZONTAL;
         c.gridy = 3; infoPanel.add(collectorField, c);
-        c.gridy = 4; infoPanel.add(dateField, c);
-        c.gridy = 5; infoPanel.add(locField, c);
+        c.gridy = 4; infoPanel.add(locField, c);
+        c.gridy = 5; infoPanel.add(provinceDistrField, c);
         c.gridy = 6; infoPanel.add(rubinField, c);
+        c.gridy = 7; infoPanel.add(rt90Field, c);
+        c.gridy = 8; infoPanel.add(swerefField, c);
+        c.gridy = 9; infoPanel.add(latLongField, c);
 
         topPanel.add(infoPanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
@@ -308,9 +317,12 @@ public class SpecimenBridgeDialog extends JDialog {
         nameField.setText("");
         origTextField.setText("");
         collectorField.setText("");
-        dateField.setText("");
         locField.setText("");
+        provinceDistrField.setText("");
         rubinField.setText("");
+        rt90Field.setText("");
+        swerefField.setText("");
+        latLongField.setText("");
 
         // Bridge Input Fields
         overrideDistField.setText("");
@@ -350,17 +362,13 @@ public class SpecimenBridgeDialog extends JDialog {
         idField.setText(s.getInstitutionCode() + " " + s.getAccessionNo());
         nameField.setText(s.getGenus() + " " + s.getSpecies());
         origTextField.setText(s.getOriginalText());
-        collectorField.setText(s.getCollector() + " (" + s.getCollectionCode() + ")");
-        dateField.setText(String.format("%d-%02d-%02d", s.getYear(), s.getMonth(), s.getDay()));
-        locField.setText(s.getLocalityName());
-        rubinField.setText(s.getRubin() + " | N:" + s.getRiketsN() + " O:" + s.getRiketsO());
-
-        // Coordinates (Assuming s.getRiketsN() etc return Strings or numbers)
-        //rt90Label.setText("N: " + s.getRiketsN() + " O: " + s.getRiketsO());
-
-        // If you have a coordinate conversion utility, use it here:
-        // swerefLabel.setText(CoordinateConverter.toSweref(s.getRiketsN(), s.getRiketsO()));
-        // latLongLabel.setText(s.getLatDegrees() + "° " + s.getLatMinutes() + "'...");
+        collectorField.setText(s.getCollector() + " (" + s.getCollectionCode() + ")      " + String.format("%d-%02d-%02d", s.getYear(), s.getMonth(), s.getDay()));
+        locField.setText(s.getSpecimenLocality());
+        provinceDistrField.setText(s.getProvince() +", "+ s.getDistrict());
+        rubinField.setText(s.getRubin());
+        rt90Field.setText("N: " + s.getRiketsN() + " O: " + s.getRiketsO());
+        swerefField.setText(s.getSweref());
+        latLongField.setText(Coordinates.formatDMS(s.getLatDeg(), s.getLatMin(), s.getLatSec(), s.getLatDir(), s.getLongDeg(), s.getLongMin(), s.getLongSec(), s.getLongDir()));
 
         // Clear/Update Bridge fields
         overrideDistField.setText(s.getODistrict() != null ? s.getODistrict() : "");
@@ -398,7 +406,7 @@ public class SpecimenBridgeDialog extends JDialog {
             targetProvince = overrideProv;
         }
 
-        System.out.println("update Locality List: " + targetDistrict + ", " + targetProvince);
+        System.out.println("update Locality List: " + targetDistrict + ", " + targetProvince + ", ");
         // Clear old items
         localityCombo.removeAllItems();
 

@@ -15,15 +15,15 @@ import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 public class GPX {
-	static TNGPointFile.Locality[] localities;
-	static TNGPolygonFile.Province[] provinces;
-	static TNGPolygonFile.Province[] district;
+	static TNGPointFileLayer.Locality[] localities;
+	static TNGPolygonFileLayer.Province[] provinces;
+	static TNGPolygonFileLayer.Province[] district;
 	private static boolean wPressed = false;
 	
-	public static TNGPointFile.Locality NearestLoc(int x, int y) {
+	public static TNGPointFileLayer.Locality NearestLoc(int x, int y) {
 		double shortest = 1E16;
-		TNGPointFile.Locality nearest = null;
-		for (TNGPointFile.Locality lokal : localities) {
+		TNGPointFileLayer.Locality nearest = null;
+		for (TNGPointFileLayer.Locality lokal : localities) {
 			double distp = Math.pow(x - lokal.getX(), 2) + Math.pow(y - lokal.getY(), 2);
 			if (distp < shortest) {
 				shortest = distp;
@@ -35,14 +35,14 @@ public class GPX {
 	}
 	
 	public static String inProvince(Point p) {
-		for (TNGPolygonFile.Province pr: provinces) {
+		for (TNGPolygonFileLayer.Province pr: provinces) {
 			if(pr.isInside(p)) return pr.getName();
 		}
 		return "outside shapefile";
 	}
 	
 	public static String inDistrict(Point p) {
-		for (TNGPolygonFile.Province di: district) {
+		for (TNGPolygonFileLayer.Province di: district) {
 			if(di.isInside(p)) return di.getName();
 		}
 		return "outside shapefile";
@@ -55,14 +55,14 @@ public class GPX {
 		Boolean writeheader;
 
 		try {
-			TNGPointFile or = new TNGPointFile("..\\orter.tng");
+			TNGPointFileLayer or = new TNGPointFileLayer("..\\orter.tng");
 			localities = or.getLocalities();
 			System.out.println("Loaded provinces..");
-			TNGPolygonFile pr = new TNGPolygonFile("..\\provinser.tng");
+			TNGPolygonFileLayer pr = new TNGPolygonFileLayer("..\\provinser.tng");
 			provinces = pr.getProvinces();
 			System.out.println("done");
 			System.out.println("Loading district..");
-			TNGPolygonFile so = new TNGPolygonFile("..\\socknar.tng");
+			TNGPolygonFileLayer so = new TNGPolygonFileLayer("..\\socknar.tng");
 			district = so.getProvinces();
 			System.out.println("done");
 		} catch (IOException e1) {
@@ -154,7 +154,7 @@ public class GPX {
 					//System.out.println("");
 					//System.out.println(name);
 					
-					TNGPointFile.Locality nearest = NearestLoc((int) c.getEast(),
+					TNGPointFileLayer.Locality nearest = NearestLoc((int) c.getEast(),
 							(int) c.getNorth());
 					double dist = nearest.dist((int)c.getEast(), (int)c.getNorth());
 					String riktning = nearest.riktning(c.getEast(),

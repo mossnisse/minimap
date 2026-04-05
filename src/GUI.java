@@ -280,7 +280,7 @@ public class GUI implements NActionListener {
 			
 			try {
 				
-				RasterFil rFile = new RasterFil(file.getPath());
+				RasterFilLayer rFile = new RasterFilLayer(file.getPath());
 				canvas.addLayerBotom(rFile);
 				
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
@@ -310,8 +310,8 @@ public class GUI implements NActionListener {
 			System.out.println("Open: " + file.getName());
 
 			try {
-				GPXFile l;
-				l = new GPXFile(file.getCanonicalPath());
+				GPXFileLayer l;
+				l = new GPXFileLayer(file.getCanonicalPath());
 				l.setColor(Color.ORANGE);
 				l.setName(file.getName());
 				canvas.addLayerTop(l);
@@ -359,8 +359,8 @@ public class GUI implements NActionListener {
 
 	public void viewCoordinate() {
 		CoordinateDialog d = new CoordinateDialog(frame, canvas.getCoordinate(),
-				(TNGPolygonFile) canvas.getLayer("provinser"),
-				(TNGPolygonFile) canvas.getLayer("socknar"));
+				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
+				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
 		d.setVisible(true);
 		coord = d.getCoordinateSweref99TM();
 		canvas.focus(coord);
@@ -371,7 +371,7 @@ public class GUI implements NActionListener {
 		String s = (String) JOptionPane.showInputDialog(frame, "Enter RUBIN (e.g. 12H5j):",
 				"Search Grid Square", JOptionPane.PLAIN_MESSAGE, null, null, "");
 		if (s != null && !s.trim().isEmpty()) {
-			Rubin r = new Rubin(s.trim(), "Rubin", Color.green);
+			RubinLayer r = new RubinLayer(s.trim(), "Rubin", Color.green);
 			canvas.delLayer("Rubin");
 			canvas.addLayerTop(r);
 			Point p = r.getMiddle();
@@ -394,7 +394,7 @@ public class GUI implements NActionListener {
 
 			try {
 				int distVal = Integer.parseInt(distStr);
-				Distance dist = new Distance("dist", canvas.getCoordinate(), distVal, direction, CoordSystem.SWEREF99TM);
+				DistanceLayer dist = new DistanceLayer("dist", canvas.getCoordinate(), distVal, direction, CoordSystem.SWEREF99TM);
 				dist.setColor(Color.red);
 				dist.setHidden(false);
 				canvas.delLayer("dist");
@@ -410,7 +410,7 @@ public class GUI implements NActionListener {
 	}
 
 	public void userDialog() {
-		SettUserDialog l = new SettUserDialog();
+		SetUserDialog l = new SetUserDialog();
 		l.setVisible(true);
 	}
 
@@ -431,8 +431,8 @@ public class GUI implements NActionListener {
 		coord = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
 		canvas.setCoordinate(coord);
 		CoordinateDialog d = new CoordinateDialog(frame, coord,
-				(TNGPolygonFile) canvas.getLayer("provinser"),
-				(TNGPolygonFile) canvas.getLayer("socknar"));
+				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
+				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
 		d.cancel.requestFocusInWindow();
 		d.setVisible(true);
 		d.cancel.requestFocusInWindow();
@@ -447,7 +447,7 @@ public class GUI implements NActionListener {
 		Coordinates c = new Coordinates(p.getY(), p.getX());
 		String s = c.toRUBIN(true);
 		System.out.println(s);
-		Rubin r = new Rubin(s, "Rubin", Color.green);
+		RubinLayer r = new RubinLayer(s, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
 		canvas.addLayerTop(r);
 		//Point p2 = r.getMiddle();
@@ -456,13 +456,13 @@ public class GUI implements NActionListener {
 
 	public void showLokal(MouseEvent arg0) {
 		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
-		MYSQLTable ldb = (MYSQLTable) canvas.getLayer("LokalDB");
+		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
 		int localityID = ldb.findNearest(p, 1000);
 
 		if (localityID != -1) {
 			JFrame lframe = new JFrame("Locality");
 			lframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-			LocalityDialog diag = new LocalityDialog(localityID, lframe);
+			EditLocalityDialog diag = new EditLocalityDialog(localityID, lframe);
 			lframe.add(diag);
 			lframe.pack();
 			lframe.setLocationRelativeTo(frame);
@@ -475,12 +475,12 @@ public class GUI implements NActionListener {
 		//Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
 		Point p = canvas.getCoordinate();
 
-		MYSQLTable ldb = (MYSQLTable) canvas.getLayer("LokalDB");
+		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
 		int localityID = ldb.findNearest(p,1000);
 		if (localityID != -1) {
 
 			JFrame lframe = new JFrame("Locality");
-			LocalityDialog diag = new LocalityDialog(localityID,lframe);
+			EditLocalityDialog diag = new EditLocalityDialog(localityID,lframe);
 			//lframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			lframe.add(diag);
 			diag.cancel.requestFocusInWindow();
@@ -493,15 +493,15 @@ public class GUI implements NActionListener {
 
 		coord =  canvas.getCoordinate();
 		String provins = "", socken = "";
-		TNGPolygonFile provinces = (TNGPolygonFile)canvas.getLayer("provinser");
-		TNGPolygonFile districts = (TNGPolygonFile)canvas.getLayer("socknar");
-		TNGPolygonFile.Province pr = provinces.inPolygon(coord);
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer)canvas.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer)canvas.getLayer("socknar");
+		TNGPolygonFileLayer.Province pr = provinces.inPolygon(coord);
 		if (pr != null) {
 			provins = pr.getName();
 		} else {
 			provins ="utanför lager";
 		}
-		TNGPolygonFile.Province so = districts.inPolygon(coord);
+		TNGPolygonFileLayer.Province so = districts.inPolygon(coord);
 		if (so != null) {
 			socken = so.getName();
 		} else {
@@ -551,16 +551,16 @@ public class GUI implements NActionListener {
 
 		// Fetch Province and District info
 		String provins = "utanför lager", socken = "utanför lager";
-		TNGPolygonFile provinces = (TNGPolygonFile)canvas.getLayer("provinser");
-		TNGPolygonFile districts = (TNGPolygonFile)canvas.getLayer("socknar");
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer)canvas.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer)canvas.getLayer("socknar");
 
 		if (provinces != null) {
-			TNGPolygonFile.Province pr = provinces.inPolygon(coord);
+			TNGPolygonFileLayer.Province pr = provinces.inPolygon(coord);
 			if (pr != null) provins = pr.getName();
 		}
 
 		if (districts != null) {
-			TNGPolygonFile.Province so = districts.inPolygon(coord);
+			TNGPolygonFileLayer.Province so = districts.inPolygon(coord);
 			if (so != null) socken = so.getName();
 		}
 
@@ -631,8 +631,8 @@ public class GUI implements NActionListener {
 		//canvas.setCoordinate(coord);
 		System.out.println("MarkDialog");
 		MarkDialog d = new MarkDialog(frame, canvas, coord,
-				(TNGPolygonFile) canvas.getLayer("provinser"),
-				(TNGPolygonFile) canvas.getLayer("socknar"));
+				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
+				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
 		//d.cancel.requestFocusInWindow();
 		d.setVisible(true);
 		//d.cancel.requestFocusInWindow();

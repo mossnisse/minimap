@@ -18,11 +18,11 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 	private static final long serialVersionUID = 1L;
 	private final JTextField north, east, coordinateSys, swerefF, rt90F, wgs84F, provinceF, districtF, rubinF;
 	private final JOptionPane optionPane;
-	private TNGPolygonFile provinces, district;
+	private TNGPolygonFileLayer provinces, district;
 	private Frame aFrame;
 	private Canvas canvas;
 	
-	public MarkDialog(Frame aFrame, Canvas canvas, Point p, TNGPolygonFile provinces, TNGPolygonFile district) {
+	public MarkDialog(Frame aFrame, Canvas canvas, Point p, TNGPolygonFileLayer provinces, TNGPolygonFileLayer district) {
         super(aFrame, true);
         setTitle("Mark Coordinate");
         this.aFrame = aFrame;
@@ -133,7 +133,7 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 			rt90.setFromRUBIN(rubin, false);
 			wgs84 = rt90.toWGS84(CoordSystem.RT90);
 			sweref =wgs84.toProjected(CoordSystem.SWEREF99TM);
-			Rubin r = new Rubin(rubin, "Rubin", Color.green);
+			RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
 			canvas.delLayer("Rubin");
 			canvas.addLayerTop(r);
 		}
@@ -144,13 +144,13 @@ public class MarkDialog extends JDialog implements PropertyChangeListener{
 		Point p = new Point((int) sweref.getEast(), (int) sweref.getNorth());
 		canvas.focus(p);
 		canvas.setCoordinate(p);
-		TNGPolygonFile.Province pr = provinces.inPolygon(p);
+		TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
     	if (pr != null) {
     		provinceF.setText(pr.getName());
     	} else {
     		provinceF.setText("utanför lager");
     	}
-    	TNGPolygonFile.Province so = district.inPolygon(p);
+    	TNGPolygonFileLayer.Province so = district.inPolygon(p);
     	if (so != null) {
     		districtF.setText(so.getName());
     	} else {

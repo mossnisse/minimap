@@ -32,32 +32,32 @@ public class Canvas extends JPanel {
 		layers = new ArrayList<Layer>();
 		try {
 			
-			TNGPolygonFile prFile = new TNGPolygonFile("provinserSWEREF99TM.tng");
+			TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng");
 			prFile.setColor(Color.black);
 			prFile.setName("provinser");
 			addLayerBotom(prFile);
 
-			TNGPolygonFile socFile = new TNGPolygonFile("socknarSWEREF99TM.tng");
+			TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng");
 			socFile.setColor(Color.red);
 			socFile.setName("socknar");
 			socFile.setHidden(false);
 			addLayerBotom(socFile);
 
-			H2Table od = new H2Table("ortnamnSWTM");
+			H2TableLayer od = new H2TableLayer("ortnamnSWTM");
 			od.setColor(Color.green);
 			od.setName("Ortnamnsdb");
 			od.setHidden(false);
 			od.setMaxZoomL(5);
 			addLayerBotom(od);
 			
-			MYSQLTable md = new MYSQLTable();
+			MYSQLTableLayer md = new MYSQLTableLayer();
 			md.setColor(Color.red);
 			md.setName("LokalDB");
 			md.setHidden(false);
 			md.setMaxZoomL(40);
 			addLayerBotom(md);
 			
-			Topoweb tb = new Topoweb();
+			TopowebLayer tb = new TopowebLayer();
 			tb.setName("TopoWeb");
 			md.setHidden(false);
 			addLayerBotom(tb);

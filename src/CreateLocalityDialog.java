@@ -10,7 +10,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.*;
 
-public class CreateLocalityDialog extends JPanel implements ActionListener{
+public class CreateLocalityDialog extends JPanel implements ActionListener {
 	@Serial
 	private static final long serialVersionUID = 5999128550024317489L;
 	private final JFrame localFrame;
@@ -38,7 +38,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener{
 
 		// Suggest Name from DB
 		String suggestName = "";
-		H2Table odb = (H2Table) GUI.canvas.getLayer("Ortnamnsdb");
+		H2TableLayer odb = (H2TableLayer) GUI.canvas.getLayer("Ortnamnsdb");
 		if (odb != null) {
 			Point p = new Point(Integer.parseInt(SWTMN), Integer.parseInt(SWTME));
 			suggestName = odb.findNearest(p, 1000);

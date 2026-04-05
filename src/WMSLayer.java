@@ -30,7 +30,6 @@ public class WMSLayer implements Layer{
 	@Override
 	public void setMinZoomL(int zoomLevel) {
 		this.minZoomL = zoomLevel;
-		
 	}
 
 	@Override
@@ -78,7 +77,5 @@ public class WMSLayer implements Layer{
 		// maps size in pixel
 		// bounding box in Sweref99TM
 		//cs.getSRS();
-		
 	}
-
 }

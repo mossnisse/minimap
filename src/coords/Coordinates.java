@@ -191,6 +191,11 @@ public class Coordinates {
         );
     }
 
+    public static String formatDMS(String latD, String latM, String latS, String latDir,
+                          String lonD, String lonM, String lonS, String lonDir) {
+        return String.format(Locale.US, "%s\u00B0 %s' %s\" %s %s\u00B0 %s' %s\" %s", latD, latM, latS, latDir, lonD, lonM, lonS, lonDir);
+    }
+
     /**
      * Core logic to convert Degrees Minutes Seconds to Decimal Degrees.
      */
@@ -245,7 +250,6 @@ public class Coordinates {
         int minutes = (int) remainderMinutes;
         double seconds = (remainderMinutes - minutes) * 60.0;
 
-        // We use String.format to control the precision of the seconds (e.g., 1 decimal place)
         // The \u00B0 is the unicode for the degree symbol °
         return String.format(Locale.US, "%d\u00B0 %d' %.2f\" %s", degrees, minutes, seconds, direction);
     }

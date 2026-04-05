@@ -2,7 +2,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-
 public class Table implements Collection<Table.Row>, Iterable<Table.Row> {
 	private String name;
 	private Field[] fields;
@@ -78,8 +77,6 @@ public class Table implements Collection<Table.Row>, Iterable<Table.Row> {
 		// TODO Auto-generated method stub
 		return null;
 	}
-
-	
 
 	@Override
 	public boolean addAll(Collection<? extends Row> c) {

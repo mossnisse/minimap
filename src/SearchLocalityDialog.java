@@ -36,7 +36,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	private SpringLayout layout;
 	private JPanel resultPanel;
 	private JScrollPane scrollPane;
-	private TNGPointFile lastResults; // Store reference for zooming
+	private TNGPointFileLayer lastResults; // Store reference for zooming
 
 	public SearchLocalityDialog(Frame aFrame, String text) {
 		super(aFrame, false);
@@ -194,10 +194,10 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		} catch (SQLException ex) { ex.printStackTrace(); }
 
 		// --- H2 ---
-		H2Table od = (H2Table) GUI.canvas.getLayer("Ortnamnsdb");
+		H2TableLayer od = (H2TableLayer) GUI.canvas.getLayer("Ortnamnsdb");
 		if (od != null) {
-			TNGPointFile h2Results = od.find(getProvinsNr(), searchPattern);
-			for (TNGPointFile.Locality locus : h2Results.getLocalities()) {
+			TNGPointFileLayer h2Results = od.find(getProvinsNr(), searchPattern);
+			for (TNGPointFileLayer.Locality locus : h2Results.getLocalities()) {
 				allPoints.add(locus.getPoint());
 				allNames.add(locus.getName() + " (Local)");
 			}
@@ -205,13 +205,13 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 		// --- Result Handling ---
 		if (!allPoints.isEmpty()) {
-			lastResults = new TNGPointFile(allPoints, allNames, "Search Results");
+			lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
 			lastResults.setColor(Color.RED);
 
 			GUI.canvas.delLayer("Search Results");
 			GUI.canvas.addLayerTop(lastResults);
 
-			for (TNGPointFile.Locality locus : lastResults.getLocalities()) {
+			for (TNGPointFileLayer.Locality locus : lastResults.getLocalities()) {
 				addResultButton(locus);
 			}
 			zoomb.setEnabled(true);
@@ -226,7 +226,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		GUI.canvas.repaint();
 	}
 
-	private void addResultButton(TNGPointFile.Locality locus) {
+	private void addResultButton(TNGPointFileLayer.Locality locus) {
 		NButton btn = new NButton(locus.getName(), locus.getPoint());
 		btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 		btn.addActionListener(e -> {

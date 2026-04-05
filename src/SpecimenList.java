@@ -812,7 +812,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 		String rubin = rubinD.getText();
 		if (!rubin.equals("")) {
 			System.out.println("click RUBIN: "+rubin);
-			Rubin r = new Rubin(rubin, "Rubin", Color.green);
+			RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
 			GUI.canvas.delLayer("Rubin");
 			GUI.canvas.addLayerTop(r);
 			Point p = r.getMiddle();
@@ -904,7 +904,7 @@ public class SpecimenList extends JPanel implements ActionListener, ItemListener
 						System.out.println(distanceI);
 						System.out.println(directionS);
 						GUI.canvas.delLayer("distance");
-						GUI.canvas.addLayerTop(new Distance("distance",p ,distanceI ,directionS, CoordSystem.SWEREF99TM));
+						GUI.canvas.addLayerTop(new DistanceLayer("distance",p ,distanceI ,directionS, CoordSystem.SWEREF99TM));
 					}
 				}
 			} catch (SQLException e1) {

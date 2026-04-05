@@ -12,18 +12,23 @@ public class SpecimenService {
         int count = 0;
 
         String mysqlSql = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, Collector, "
-                + "specimens.InstitutionCode, locality.ID, specimens.locality, specimens.district, specimens.province, specimens.ID as specimen_ID, RUBIN, RiketsN, RiketsO, "
-                + "Lat_dir, Lat_deg, Lat_min, Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, "
-                + "distance, direction, oDistrict, oProvince "
+                + "specimens.InstitutionCode, specimens.locality as specimen_locality, specimens.district, specimens.province, specimens.ID as specimen_ID, "
+                + "RUBIN, RiketsN, RiketsO, Sweref99TMN as SwerefN, Sweref99TME as SwerefE, Lat_dir, Lat_deg, Lat_min, "
+                + "Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, "
+                + "specimen_locality.locality_ID, distance, direction, oDistrict, oProvince "
                 + "FROM specimens "
                 + "LEFT JOIN specimen_locality ON specimens.ID = specimen_locality.specimen_ID "
-                + "LEFT JOIN locality ON specimen_locality.locality_ID = locality.ID "
-                + "WHERE specimens.Province = ? AND specimens.district = ?";
+                + "WHERE specimens.Province = ? AND specimens.district = ? "
+                + "ORDER BY Year ASC, Month ASC, Day ASC";
+
+        //     + "LEFT JOIN locality ON specimen_locality.locality_ID = locality.ID "
 
         String h2Insert = "INSERT INTO tempspecimens (AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
-                + "InstitutionCode, locality_ID, locality, district, province, specimens_ID, RUBIN, RiketsN, RiketsO, Lat_dir, Lat_deg, Lat_min, "
-                + "Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, CollectionCode, distance, direction, oDistrict, oProvince) "
-                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+                + "InstitutionCode, specimen_locality, district, province, specimens_ID, "
+                + "RUBIN, RiketsN, RiketsO, SwerefN, SwerefE, Lat_dir, Lat_deg, Lat_min, "
+                + "Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, CollectionCode, "
+                + "locality_ID,  distance, direction, oDistrict, oProvince) "
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
         try (Connection mysqlConn = DBConnection.getConn();
              Connection h2Conn = DBConnection.getH2Conn();
@@ -33,8 +38,8 @@ public class SpecimenService {
             prepareH2Table(h2Conn);
 
             // Fetch from MySQL
-           selectStmt.setString(1, province);
-           selectStmt.setString(2, district);
+            selectStmt.setString(1, province);
+            selectStmt.setString(2, district);
 
             try (ResultSet rs = selectStmt.executeQuery();
                  PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
@@ -42,7 +47,7 @@ public class SpecimenService {
                 h2Conn.setAutoCommit(false); // Enable batching
 
                 while (rs.next()) {
-                    for (int i = 1; i <= 30; i++) {
+                    for (int i = 1; i <= 32; i++) {
                         insertStmt.setString(i, rs.getString(i));
                     }
                     insertStmt.addBatch();
@@ -79,13 +84,15 @@ public class SpecimenService {
                 + "Collector TEXT, "
                 + "InstitutionCode VARCHAR(3), "
                 + "locality_ID INT, "
-                + "locality TEXT, "
+                + "specimen_locality TEXT, "
                 + "district TEXT, "
                 + "province TEXT, "
                 + "specimens_ID INT, "
                 + "RUBIN VARCHAR(16), "
                 + "RiketsN VARCHAR(9), "
                 + "RiketsO VARCHAR(9), "
+                + "SwerefN INT, "
+                + "SwerefE INT, "
                 + "Lat_dir VARCHAR(1), "
                 + "Lat_deg VARCHAR(32), "
                 + "Lat_min VARCHAR(16), "
@@ -137,7 +144,7 @@ public class SpecimenService {
 
         // Identifiers
         s.setId(rs.getInt("specimens_ID"));
-        s.setLocalityId(rs.getInt("locality_ID"));
+
 
         // Strings & Taxonomic Info
         s.setAccessionNo(rs.getString("AccessionNo"));
@@ -147,7 +154,7 @@ public class SpecimenService {
         s.setSpecies(rs.getString("Species"));
         s.setCollector(rs.getString("Collector"));
         s.setOriginalText(rs.getString("original_text"));
-        s.setLocalityName(rs.getString("locality"));
+        s.setSpecimenLocality(rs.getString("specimen_locality"));
         s.setDistrict(rs.getString("district"));
         s.setProvince(rs.getString("province"));
 
@@ -160,6 +167,8 @@ public class SpecimenService {
         s.setRubin(rs.getString("RUBIN"));
         s.setRiketsN(rs.getString("RiketsN"));
         s.setRiketsO(rs.getString("RiketsO"));
+        s.setSwerefN(rs.getString("SwerefN"));
+        s.setSwerefE(rs.getString("SwerefE"));
 
         // DMS (Degrees, Minutes, Seconds)
         s.setLatDir(rs.getString("Lat_dir"));
@@ -173,6 +182,7 @@ public class SpecimenService {
         s.setLongSec(rs.getString("Long_sec"));
 
         // Bridge / Override Data
+        s.setLocalityId(rs.getInt("locality_ID"));
         s.setDistance(rs.getInt("distance"));
         s.setDirection(rs.getString("direction"));
         s.setODistrict(rs.getString("oDistrict"));

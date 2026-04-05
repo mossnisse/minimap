@@ -9,14 +9,14 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class Locality implements Layer {
+public class LocalityLayer implements Layer {
 	private String name, tableName;
 	private Color color;
 	private boolean hidden;
 	private int maxZoom, minZoom;
 	private CoordSystem cs = CoordSystem.RT90;
 	
-	Locality() {
+	LocalityLayer() {
 		//this.tableName = tableName;
 		//createConnection();
 		//this.conn = conn;

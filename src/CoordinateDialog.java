@@ -21,7 +21,7 @@ class CoordinateDialog extends JDialog
 	private static final long serialVersionUID = -4511067776450458493L;
 	private JTextField rt90north, rt90east, wgs84north, wgs84east, sweref99TMnorth, sweref99TMeast, socken, provins, rubin;
     public JOptionPane optionPane;
-    private TNGPolygonFile provinces, district;
+    private TNGPolygonFileLayer provinces, district;
     private Point p;
     private Frame aFrame;
     public JButton cancel;
@@ -33,7 +33,7 @@ class CoordinateDialog extends JDialog
     }
 
     /** Creates the reusable dialog. */
-    public CoordinateDialog(Frame aFrame, Point p, TNGPolygonFile provinces, TNGPolygonFile district) { //DialogDemo parent
+    public CoordinateDialog(Frame aFrame, Point p, TNGPolygonFileLayer provinces, TNGPolygonFileLayer district) { //DialogDemo parent
         super(aFrame, true);
         setTitle("Coordinate");
         this.aFrame = aFrame;
@@ -102,23 +102,7 @@ class CoordinateDialog extends JDialog
         //Register an event handler that reacts to option pane state changes.
         optionPane.addPropertyChangeListener(this);
     }
-    
-    private void createLocalityDialog() {
-    	System.out.println("skapa lokal");
-    	setVisible(false);
-    	//CreateLocalityD d = new CreateLocalityD(aFrame);
-    	
-    	String sweref99TMN = sweref99TMnorth.getText();
-    	String sweref99TME = sweref99TMeast.getText();
-    	String province = provins.getText();
-    	String district = socken.getText();
-    			
-    	CreateLocalityD d = new CreateLocalityD(aFrame, sweref99TMN, sweref99TME, province, district, CoordSystem.SWEREF99TM);
-		d.setVisible(true);
-    	dispose();
-    }
 
-    
     private void update() {
     	sweref99TMnorth.setText(String.valueOf(p.getY()));
     	sweref99TMeast.setText(String.valueOf(p.getX()));
@@ -130,13 +114,13 @@ class CoordinateDialog extends JDialog
     	rt90north.setText(String.valueOf(RT90.getNorth()));
     	rt90east.setText(String.valueOf(RT90.getEast()));
     	
-    	TNGPolygonFile.Province pr = provinces.inPolygon(p);
+    	TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
     	if (pr != null) {
     		provins.setText(pr.getName());
     	} else {
     		provins.setText("utanför lager");
     	}
-    	TNGPolygonFile.Province so = district.inPolygon(p);
+    	TNGPolygonFileLayer.Province so = district.inPolygon(p);
     	if (so != null) {
     		socken.setText(so.getName());
     	} else {
