@@ -10,6 +10,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.xml.sax.SAXException;
 import java.awt.Desktop;
 import java.net.URI;
+import java.util.Locale;
 
 public class GUI  {
 	private JFrame frame;
@@ -114,7 +115,7 @@ public class GUI  {
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem0.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
 		menuItem0.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		menuItem0.addActionListener(e -> openFile());
+		menuItem0.addActionListener(_->openFile());
 		menu.add(menuItem0);
 
 		menuItem1 = new JMenuItem("Open .gpx File", KeyEvent.VK_G);
@@ -122,28 +123,28 @@ public class GUI  {
 		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
 		menuItem1.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem1.addActionListener(e->openGPXFile());
+		menuItem1.addActionListener(_->openGPXFile());
 		menu.add(menuItem1);
 
 		menuItem2 = new JMenuItem("Save as .csv", KeyEvent.VK_S);
 		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem2.addActionListener(e->saveCSV());
+		menuItem2.addActionListener(_->saveCSV());
 		menu.add(menuItem2);
 
 		menuItem2 = new JMenuItem("Set user", KeyEvent.VK_I);
 		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"It sets the name for the registrator");
-		menuItem2.addActionListener(e->userDialog());
+		menuItem2.addActionListener(_->userDialog());
 		menu.add(menuItem2);
 
 		menuItem3 = new JMenuItem("Exit", KeyEvent.VK_Q);
 		menuItem3.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK));
 		menuItem3.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem3.addActionListener(e->System.exit(0));
+		menuItem3.addActionListener(_->System.exit(0));
 		menu.add(menuItem3);
 
 		menu2 = new JMenu("View");
@@ -151,62 +152,62 @@ public class GUI  {
 		menuItem4 = new JMenuItem("Zoom in", KeyEvent.VK_P);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
-		menuItem4.addActionListener(e->canvas.zoom(0.5));
+		menuItem4.addActionListener(_->canvas.zoom(0.5));
 		menu2.add(menuItem4);
 
 		menuItem5 = new JMenuItem("Zoom out", KeyEvent.VK_M);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK));
-		menuItem5.addActionListener(e->canvas.zoom(2));
+		menuItem5.addActionListener(_->canvas.zoom(2));
 		menu2.add(menuItem5);
 
 		
 		menuItem12 = new JMenuItem("Mark/Find Coordinate", KeyEvent.VK_U);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK));
-		menuItem12.addActionListener(e->MarkCoordDialog());
+		menuItem12.addActionListener(_->MarkCoordDialog());
 		menu2.add(menuItem12);
 		
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K, InputEvent.CTRL_DOWN_MASK));
-		menuItem6.addActionListener(e->viewCoordinate());
+		menuItem6.addActionListener(_->viewCoordinate());
 		menu2.add(menuItem6);
 
 		menuItem8 = new JMenuItem("View Rubin", KeyEvent.VK_R);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK));
-		menuItem8.addActionListener(e->viewRubin());
+		menuItem8.addActionListener(_->viewRubin());
 		menu2.add(menuItem8);
 
 		menuItem7 = new JMenuItem("Search localities", KeyEvent.VK_F);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK));
-		menuItem7.addActionListener(e->searchLocality());
+		menuItem7.addActionListener(_->searchLocality());
 		menu2.add(menuItem7);
 
 		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK));
-		menuItem8.addActionListener(e->distance());
+		menuItem8.addActionListener(_->distance());
 		menu2.add(menuItem8);
 		
 		menuItem9 = new JMenuItem("Search specimens", KeyEvent.VK_E);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem9.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK));
-		menuItem9.addActionListener(e->searchSpecimens());
+		menuItem9.addActionListener(_->searchSpecimens());
 		menu2.add(menuItem9);
 
 		menuItem10 = new JMenuItem("Edit locality at marker", KeyEvent.VK_T);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
-		menuItem10.addActionListener(e->showLocalityAtCoord());
+		menuItem10.addActionListener(_->showLocalityAtCoord());
 		menu2.add(menuItem10);
 		
 		menuItem11 = new JMenuItem("Create locality at marker", KeyEvent.VK_Y);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem11.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
-		menuItem11.addActionListener(e->createLokalAtCoord());
+		menuItem11.addActionListener(_->createLocalityAtCoord());
 		menu2.add(menuItem11);
 
 		menuBar.add(Box.createHorizontalGlue());
@@ -216,11 +217,11 @@ public class GUI  {
 
 		menuItem9 = new JMenuItem("About");
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem9.addActionListener(e->JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013"));
+		menuItem9.addActionListener(_->JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013"));
 		menu3.add(menuItem9);
 		
 		menuItem11 = new JMenuItem("Shortcuts");
-		menuItem11.addActionListener(e->showShortcuts());
+		menuItem11.addActionListener(_->showShortcuts());
 		menu3.add(menuItem11);
 
 		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_L);
@@ -308,8 +309,6 @@ public class GUI  {
 				e.printStackTrace();
 			}
 
-		} else {
-			System.out.println("Open cancelled");
 		}
 	}
 
@@ -441,69 +440,42 @@ public class GUI  {
 		//canvas.repaint();
 	}
 
-	private void createLokalAtCoord() {
-		System.out.println("create Locality at");  // TODO trace print
-
-		coord =  canvas.getCoordinate();
-		String provins, socken;
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer)canvas.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer)canvas.getLayer("socknar");
-		TNGPolygonFileLayer.Province pr = provinces.inPolygon(coord);
-		if (pr != null) {
-			provins = pr.getName();
-		} else {
-			provins ="utanför lager";
-		}
-		TNGPolygonFileLayer.Province so = districts.inPolygon(coord);
-		if (so != null) {
-			socken = so.getName();
-		} else {
-			socken = "utanför lager";
-		}
-
-		JFrame lframe = new JFrame();
-		CreateLocalityDialog diag = new CreateLocalityDialog(this, canvas, bridgeDialog, lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
-			diag.cancel.requestFocusInWindow();
-		//canvas.repaint();
+	private void createLocalityAtCoord() {
+		coord = canvas.getCoordinate();
+		openCreateLocality(coord);
 	}
 
 	private void createLocalityDialog(MouseEvent me) {
-		System.out.println("skapa lokal");
-
-		// Get coordinates and update canvas marker
 		coord = canvas.translatePoint(new Point(me.getX(), me.getY()));
-		canvas.setCoordinate(coord);
+		canvas.setCoordinate(coord); // Update the visual marker on the map
+		openCreateLocality(coord);
+	}
 
-		// Fetch Province and District info
-		String provins = "utanför lager", socken = "utanför lager";
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer)canvas.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer)canvas.getLayer("socknar");
+	private void openCreateLocality(Point p) {
+		String province = "outside layer";
+		String district = "outside layer";
+
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.getLayer("socknar");
 
 		if (provinces != null) {
-			TNGPolygonFileLayer.Province pr = provinces.inPolygon(coord);
-			if (pr != null) provins = pr.getName();
+			TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
+			if (pr != null) province = pr.getName();
 		}
 
 		if (districts != null) {
-			TNGPolygonFileLayer.Province so = districts.inPolygon(coord);
-			if (so != null) socken = so.getName();
+			TNGPolygonFileLayer.Province so = districts.inPolygon(p);
+			if (so != null) district = so.getName();
 		}
 
-		// Initialize the Frame
-		JFrame lframe = new JFrame("Create new Locality");
-		lframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-		// Create the Dialog
-		CreateLocalityDialog diag = new CreateLocalityDialog(this, canvas, bridgeDialog, lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
-
-		// Focus the cancel button (or OK button)
-		diag.cancel.requestFocusInWindow();
+		new CreateLocalityDialog(frame, this, canvas, bridgeDialog,
+				Integer.toString(p.getY()), Integer.toString(p.getX()), province, district);
 
 		canvas.repaint();
 	}
 
 	public void searchSpecimens() {
-		// 1. Check if the dialog is already open
+		// Check if the dialog is already open
 		if (bridgeDialog != null && bridgeDialog.isVisible()) {
 			bridgeDialog.toFront(); // Bring the existing window to the top
 			bridgeDialog.requestFocus();
@@ -533,42 +505,68 @@ public class GUI  {
 
 		bridgeDialog.setVisible(true);
 	}
-	
+
 	private void OpenKartbildcom(MouseEvent arg0) {
-		System.out.println("Open Kartbild.com");
-		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-		    try {
-		    	int map = 40000;
-		    	int zoomLevel = 12;
-		    	Point point = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
-		    	
-		    	Coordinates sweref99TM = new Coordinates(point.getY(), point.getX());
-		    	Coordinates wgs84 = sweref99TM.toWGS84(CoordSystem.SWEREF99TM);
-		    	System.out.println("coord: "+wgs84);
-		    	String uri = "https://kartbild.com/#"+String.valueOf(zoomLevel)+"/"+String.valueOf(wgs84.getNorth())+"/"+String.valueOf(wgs84.getEast())+"/0x"+String.valueOf(map);
-		    	System.out.println("URI: "+uri);
-		    	Desktop.getDesktop().browse(new URI(uri));
-		    } catch(Exception e) {
-		    		
-		    }
-		} else {
-			System.out.println("open browser not supported");
+		if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+			System.err.println("Opening a browser is not supported on this system.");
+			return;
+		}
+
+		try {
+			int mapType = 20; // Specific layer ID for Kartbild  = generalkarta1
+			int zoomLevel = 12;
+
+			// Translate screen click to map coordinates
+			Point point = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
+
+			// Convert SWEREF99TM (Projected) to WGS84 (Geographic)
+			Coordinates sweref = new Coordinates(point.getY(), point.getX());
+			Coordinates wgs84 = sweref.toWGS84(CoordSystem.SWEREF99TM);
+
+			// Format the URI string. Format: #zoom/lat/lon/type  //https://kartbild.com/?marker=58.88545,11.02363#14/58.88545/11.02363+/0x20"
+			String uriString = String.format(Locale.US, "https://kartbild.com/?marker=%f,%f#%d/%f/%f/0x%d",
+					wgs84.getNorth(), wgs84.getEast(),
+					zoomLevel,
+					wgs84.getNorth(), wgs84.getEast(),
+					mapType);
+
+			Desktop.getDesktop().browse(new URI(uriString));
+
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(frame,
+					"Could not open the browser: " + e.getMessage(),
+					"Browser Error", JOptionPane.ERROR_MESSAGE);
+			e.printStackTrace();
 		}
 	}
-	
+
 	public void MarkCoordDialog() {
-		//coord = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
-		//canvas.setCoordinate(coord);
-		System.out.println("MarkDialog");
-		MarkDialog d = new MarkDialog(frame, canvas, coord,
-				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
-				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
-		//d.cancel.requestFocusInWindow();
+		System.out.println("Opening MarkCoordinateDialog...");
+
+		// Safely fetch layers with null checks
+		TNGPolygonFileLayer provLayer = null;
+		TNGPolygonFileLayer sockenLayer = null;
+
+		Object p = canvas.getLayer("provinser");
+		if (p instanceof TNGPolygonFileLayer) {
+			provLayer = (TNGPolygonFileLayer) p;
+		}
+
+		Object s = canvas.getLayer("socknar");
+		if (s instanceof TNGPolygonFileLayer) {
+			sockenLayer = (s instanceof TNGPolygonFileLayer) ? (TNGPolygonFileLayer) s : null;
+		}
+
+		// Initialize and show
+		MarkCoordinateDialog d = new MarkCoordinateDialog(frame, canvas, provLayer, sockenLayer);
+
+		// Position it relative to the main window so it doesn't pop up on a different monitor
+		d.setLocationRelativeTo(frame);
+
 		d.setVisible(true);
-		//d.cancel.requestFocusInWindow();
-		//coord = d.getCoordinate();
-		//canvas.focus(coord);
-		//canvas.setCoordinate(coord);
+
+		// Note: Because d is modal, the code pauses here until d.dispose() is called.
+		canvas.repaint();
 	}
 
 	public static void main(String[] args) {

@@ -1,7 +1,11 @@
 import geometry.Point;
 import coords.*;
+
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.IOException;
 import java.io.Serial;
 import java.sql.Connection;
@@ -10,39 +14,48 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.*;
 
-public class CreateLocalityDialog extends JPanel implements ActionListener {
+public class CreateLocalityDialog extends JDialog implements ActionListener {
 	@Serial
 	private static final long serialVersionUID = 5999128550024317489L;
 	private final GUI gui;
-	private final JFrame localFrame;
 	private final Canvas canvas;
 	private SpecimenBridgeDialog bridgeDialog;
 	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;
 	private JScrollPane commentScroll;
-	JButton cancel, ok;
+	private JButton cancel, ok;
 
-	public CreateLocalityDialog(GUI gui, Canvas canvas, SpecimenBridgeDialog bridge, JFrame localFrame, String SWTMN, String SWTME, String province, String district) {
-		this.localFrame = localFrame;
+	public CreateLocalityDialog(Frame owner, GUI gui, Canvas canvas, SpecimenBridgeDialog bridge, String SWTMN, String SWTME, String province, String district) {
+		super(owner, "Create New Locality", true); // Set to true for Modal behavior
 		this.gui = gui;
 		this.canvas = canvas;
-		this.bridgeDialog = bridge; // Store reference
-		setLayout(new SpringLayout());
+		this.bridgeDialog = bridge;
 
-		initComponents(SWTMN, SWTME, province, district);
+		// Use Content Pane for Layout
+		Container content = this.getContentPane();
+		content.setLayout(new SpringLayout());
 
-		// Frame setup
-		localFrame.add(this);
-		localFrame.pack();
-		localFrame.setLocationRelativeTo(null);
-		localFrame.setVisible(true);
+		initComponents(content, SWTMN, SWTME, province, district);
+
+		addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentShown(ComponentEvent ce) {
+				// Request focus on the cancel button to swallow stray keystrokes
+				cancel.requestFocusInWindow();
+			}
+		});
+
+		this.pack();
+		this.setLocationRelativeTo(owner);
+		this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		this.setVisible(true);
 	}
 
-	private void initComponents(String SWTMN, String SWTME, String province, String district) {
-		SpringLayout layout = (SpringLayout) getLayout();
+	private void initComponents(Container content, String SWTMN, String SWTME, String province, String district) {
+		SpringLayout layout = (SpringLayout) content.getLayout();
 
-		// Suggest Name from DB
+		// 1. Logic for Suggesting Name
 		String suggestName = "";
 		H2TableLayer odb = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
 		if (odb != null) {
@@ -50,71 +63,67 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 			suggestName = odb.findNearest(p, 1000);
 		}
 
-		// Initialize Components
+		// 2. Initialize Components
 		localityT = new JTextField(suggestName, 20);
 		alternativeT = new JTextField(20);
 		coordsourceT = new JTextField(20);
-
 		commentsT = new JTextArea(4, 35);
 		commentsT.setLineWrap(true);
 		commentsT.setWrapStyleWord(true);
 		commentScroll = new JScrollPane(commentsT);
-
 		SWTMNT = new JTextField(SWTMN, 10);
 		SWTMET = new JTextField(SWTME, 10);
 		locSizeT = new JTextField(10);
 		categoryT = new JTextField(15);
 		zoomLevelT = new JTextField(5);
 		isPlaceT = new JCheckBox("Is Place");
-
 		continentT = new JTextField("Europe", 15);
 		countryT = new JTextField("Sweden", 15);
 		provinceT = new JTextField(province, 15);
 		districtT = new JTextField(district, 15);
-
 		cancel = new JButton("Cancel");
 		ok = new JButton("OK");
 
-		// Layout Flow
-		JLabel lLoc = addField("Locality:", localityT, this, layout, 10);
-		JLabel lAlt = addField("Alt Names:", alternativeT, lLoc, layout, 10);
-		JLabel lSrc = addField("Coord Source:", coordsourceT, lAlt, layout, 10);
+		// 3. Layout Flow using the addField helper
+		JLabel lLoc = addField("Locality:", localityT, content, layout, 10, content);
+		JLabel lAlt = addField("Alt Names:", alternativeT, content, layout, 10, lLoc);
+		JLabel lSrc = addField("Coord Source:", coordsourceT, content, layout, 10, lAlt);
 
-		// Manual Comment Layout
+		// Comments Manual Layout
 		JLabel lComm = new JLabel("Comments:");
-		add(lComm);
-		add(commentScroll);
-		layout.putConstraint(SpringLayout.WEST, lComm, 10, SpringLayout.WEST, this);
+		content.add(lComm);
+		content.add(commentScroll);
+		layout.putConstraint(SpringLayout.WEST, lComm, 10, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, lComm, 10, SpringLayout.SOUTH, lSrc);
-		layout.putConstraint(SpringLayout.WEST, commentScroll, 120, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, commentScroll, 120, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, commentScroll, 0, SpringLayout.NORTH, lComm);
 
-		JLabel lN = addField("Sweref99TM N:", SWTMNT, commentScroll, layout, 10);
-		JLabel lE = addField("E:", SWTMET, lN, layout, 10);
-		JLabel lSize = addField("Size:", locSizeT, lE, layout, 10);
-		JLabel lCat = addField("Category:", categoryT, lSize, layout, 10);
-		JLabel lZoom = addField("Zoom Level:", zoomLevelT, lCat, layout, 10);
+		JLabel lN = addField("Sweref99TM N:", SWTMNT, content, layout, 10, commentScroll);
+		JLabel lE = addField("E:", SWTMET, content, layout, 10, lN);
+		JLabel lSize = addField("Size:", locSizeT, content, layout, 10, lE);
+		JLabel lCat = addField("Category:", categoryT, content, layout, 10, lSize);
+		JLabel lZoom = addField("Zoom Level:", zoomLevelT, content, layout, 10, lCat);
 
-		add(isPlaceT);
-		layout.putConstraint(SpringLayout.WEST, isPlaceT, 120, SpringLayout.WEST, this);
+		content.add(isPlaceT);
+		layout.putConstraint(SpringLayout.WEST, isPlaceT, 120, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, isPlaceT, 10, SpringLayout.SOUTH, lZoom);
 
-		JLabel lCont = addField("Continent:", continentT, isPlaceT, layout, 10);
-		JLabel lCoun = addField("Country:", countryT, lCont, layout, 10);
-		JLabel lProv = addField("Province:", provinceT, lCoun, layout, 10);
-		JLabel lDist = addField("District:", districtT, lProv, layout, 10);
+		JLabel lCont = addField("Continent:", continentT, content, layout, 10, isPlaceT);
+		JLabel lCoun = addField("Country:", countryT, content, layout, 10, lCont);
+		JLabel lProv = addField("Province:", provinceT, content, layout, 10, lCoun);
+		JLabel lDist = addField("District:", districtT, content, layout, 10, lProv);
 
 		// Buttons
-		add(cancel);
-		add(ok);
-		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, this);
+		content.add(cancel);
+		content.add(ok);
+		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, cancel, 20, SpringLayout.SOUTH, lDist);
 		layout.putConstraint(SpringLayout.WEST, ok, 10, SpringLayout.EAST, cancel);
 		layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
 
-		// Anchors for pack()
-		layout.putConstraint(SpringLayout.EAST, this, 10, SpringLayout.EAST, commentScroll);
-		layout.putConstraint(SpringLayout.SOUTH, this, 10, SpringLayout.SOUTH, cancel);
+		// Final Anchors
+		layout.putConstraint(SpringLayout.EAST, content, 20, SpringLayout.EAST, commentScroll);
+		layout.putConstraint(SpringLayout.SOUTH, content, 10, SpringLayout.SOUTH, cancel);
 
 		// Listeners
 		cancel.addActionListener(this);
@@ -123,30 +132,25 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 		ok.setActionCommand("ok");
 	}
 
-	private JLabel addField(String labelText, JComponent field, Object topAnchor, SpringLayout layout, int margin) {
+	private JLabel addField(String labelText, JComponent field, Container container, SpringLayout layout, int margin, Component topAnchor) {
 		JLabel label = new JLabel(labelText);
-		add(label);
-		add(field);
+		container.add(label);
+		container.add(field);
 
-		// Label Constraints
-		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, this);
-
-		if (topAnchor == this) {
-			// If this is the very first field, anchor it to the top of the Panel
-			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.NORTH, this);
+		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, container);
+		if (topAnchor == container) {
+			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.NORTH, container);
 		} else {
-			// Otherwise, anchor it to the bottom of the previous component
-			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.SOUTH, (java.awt.Component) topAnchor);
+			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.SOUTH, topAnchor);
 		}
 
-		// Field Constraints (Align to a fixed column at x=120)
-		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, container);
 		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
 
 		return label;
 	}
 	
-	private boolean createLokal() {
+	private boolean createLocality() {
 		gui.setCursorWait();
 		System.out.println("Skapar lokal");  // TODO trace print
 		String localityName = localityT.getText();
@@ -253,11 +257,11 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent ev) {
 		if ("ok".equals(ev.getActionCommand())) {
-			if (createLokal()) {
-				localFrame.dispose();
+			if (createLocality()) {
+				this.dispose();
 			}
 		} else if ("cancel".equals(ev.getActionCommand())) {
-			localFrame.dispose();
+			this.dispose();
 		}
 	}
 }
