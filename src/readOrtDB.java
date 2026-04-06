@@ -8,17 +8,14 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Vector;
-
 import org.h2.jdbcx.JdbcDataSource;
-
 import shapeFile.DataInputStreamSE;
 import shapeFile.FieldDescriptor;
 import shapeFile.PointESRI;
 import shapeFile.dbfRecord;
 
-
 public class readOrtDB {
-		private String fileName;
+		private final String fileName;
 		private int shapeType, nrRecords, nrFields;
 		Vector<FieldDescriptor> descriptors;
 		double minX, minY, maxX, maxY, minZ, maxZ, minM, maxM;

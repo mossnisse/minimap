@@ -1,8 +1,6 @@
 import geometry.BoundingBox;
-import geometry.Point;
 import coords.*;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;

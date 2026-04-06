@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 
 public class convCountries {
 
-public static void main(String[] args) {
+static void main(String[] args) {
 	try {
 		Scanner scan = new Scanner(new File("C:/Users/nisern99/Documents/sockenkartor/gadm_v36/Countries_simpl01.geojson"), "UTF-8");
 		String line;

@@ -1,10 +1,11 @@
 package geometry;
 
+import java.awt.*;
 import java.util.Iterator;
 
 public class Polygon implements Iterable<Line> {
-	private int[] parts;
-	private Point[] points;
+	private final int[] parts;
+	private final Point[] points;
 	
 	public Polygon(int[] parts, Point[] points) {
 		this.parts = parts;

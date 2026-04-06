@@ -8,7 +8,7 @@ import javax.imageio.ImageIO;
 import geometry.BoundingBox;
 
 public class TopowebLayer implements Layer {
-	private Canvas canvas;
+	private final Canvas canvas;
 	//private final String key = "007d0995-da35-38ed-81b6-2a11e9c29d10";
 	//private final String url = "https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/";
 	private final String url = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";

@@ -1,5 +1,7 @@
 package geometry;
 
+import java.awt.*;
+
 public class Line {
 	private Point p1, p2;
 

@@ -1,9 +1,6 @@
 import geometry.BoundingBox;
-import geometry.Point;
 import coords.*;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,12 +15,12 @@ import shapeFile.DataInputStreamSE;
 public class RasterFilLayer implements Layer {
 	private String name;
 	private Color color;
-	private String fileName;
+	private final String fileName;
 	private Image img;
 	private BoundingBox box;
 	private int maxZoom, minZoom;
 	private boolean hidden;
-	private CoordSystem cs;
+	private final CoordSystem cs;
 
 	public RasterFilLayer(String fileName) throws IOException {
 		this.fileName = fileName;

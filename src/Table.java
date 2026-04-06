@@ -3,7 +3,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 public class Table implements Collection<Table.Row>, Iterable<Table.Row> {
-	private String name;
+	private final String name;
 	private Field[] fields;
 	private ArrayList<Row> rows;
 

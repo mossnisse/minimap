@@ -1,14 +1,13 @@
 package db;
 
 public interface Table {
+	void  setName(String name);
+	String getName();
 	
-	public void  setName(String name);
-	public String getName();
+	void adField(String name);
+	void adPost(Object[] data);
 	
-	public void adField(String name);
-	public void adPost(Object[] data);
-	
-	public String[] getFieldNames();
-	public String getFieldName(int i);
-	public Object[] getPost(int i);
+	String[] getFieldNames();
+	String getFieldName(int i);
+	Object[] getPost(int i);
 }

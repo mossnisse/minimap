@@ -3,23 +3,15 @@ package db;
 import java.awt.Dimension;
 import java.awt.GridLayout;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import java.sql.Connection;
 import org.h2.jdbcx.JdbcDataSource;
 
 public class TableH2 extends JPanel implements Table  {
 	private String name;
 	private Connection conn;
-	//private JTable jTable;
-	//private JScrollPane scrollPane;
 	
 	TableH2(String tableName) {
 		super(new GridLayout(1,0));
@@ -127,8 +119,7 @@ public class TableH2 extends JPanel implements Table  {
 	        frame.setVisible(true);
 	    }
 	
-	public static void main(String[] args) {
-		
+	static void main(String[] args) {
 		 javax.swing.SwingUtilities.invokeLater(new Runnable() {
 	            public void run() {
 	                createAndShowGUI();

@@ -1,5 +1,4 @@
 import geometry.BoundingBox;
-import geometry.Point;
 import coords.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -22,7 +21,7 @@ import javax.swing.*;
 public class SearchLocalityDialog extends JDialog implements ActionListener, ItemListener {
 	@Serial
 	private static final long serialVersionUID = 5830869660497471486L;
-	private Canvas canvas;
+	private final Canvas canvas;
 	private JButton searchb, closeb, zoomb;
 	private JTextField lokal;
 	private JComboBox<String> provins;
@@ -232,7 +231,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 		btn.addActionListener(e -> {
 			Point p = locus.getPoint();
-			canvas.setBounds(new BoundingBox(p.getX()-2500, p.getY()-2500, p.getX()+2500, p.getY()+2500));
+			canvas.setBounds(new BoundingBox(p.x-2500, p.y-2500, p.x+2500, p.y+2500));
 		});
 		resultPanel.add(btn);
 	}

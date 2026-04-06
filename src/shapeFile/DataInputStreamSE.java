@@ -5,7 +5,6 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-
 public class DataInputStreamSE extends DataInputStream {
 
 	public DataInputStreamSE(InputStream in) {

@@ -1,10 +1,6 @@
 import coords.*;
 import geometry.BoundingBox;
-import geometry.Point;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
+import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
@@ -21,7 +17,7 @@ public class TNGPointFileLayer implements Layer{
 	private CoordSystem cs;
 	private int nameLength;
 	
-	public class Locality extends Point{
+	public class Locality extends Point {
 		public String name;
 		
 		public Locality(int x, int y, String name) {
@@ -33,10 +29,11 @@ public class TNGPointFileLayer implements Layer{
 			super(p);
 			this.name = name;
 		}
-		
+
+		/*
 		private double distance(double x, double y) {
-			return Math.sqrt(Math.pow(getX()-x,2) + Math.pow(getY()-y,2));
-		}
+			return Math.sqrt(Math.pow(this.x-x,2) + Math.pow(this.y-y,2));
+		}*/
 		
 		public double dist(int x, int y) {
 			return  Math.round(distance(x, y)/100)/10.0; //Math.round(
@@ -61,13 +58,13 @@ public class TNGPointFileLayer implements Layer{
 		}
 		
 		public String toString() {
-			String xs = Integer.toString(getX());
-			String ys = Integer.toString(getY());
-			return new String("("+xs+", "+ys+", "+name+")");
+			String xs = Integer.toString(this.x);
+			String ys = Integer.toString(this.y);
+			return "("+xs+", "+ys+", "+name+")";
 		}
 		
 		public Point getPoint() {
-			return new Point(this.getX(), this.getY());
+			return new Point(this.x, this.y);
 		}
 	}
 	
@@ -185,17 +182,17 @@ public class TNGPointFileLayer implements Layer{
 		int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
 
 		for (Locality koord : localities) {
-			if (koord.getX() < minX) minX = koord.getX();
-			if (koord.getX() > maxX) maxX = koord.getX();
-			if (koord.getY() < minY) minY = koord.getY();
-			if (koord.getY() > maxY) maxY = koord.getY();
+			if (koord.x < minX) minX = koord.x;
+			if (koord.x > maxX) maxX = koord.x;
+			if (koord.y < minY) minY = koord.y;
+			if (koord.y > maxY) maxY = koord.y;
 		}
 		// Order: minX, minY, maxX, maxY
 		return new BoundingBox(minX, minY, maxX, maxY);
 	}
 	
 	public String toString() {
-		String ans = new String(name+": ");
+		String ans = name+": ";
 		for(Locality koord:localities) {
 			ans=ans+koord.toString();
 		}
@@ -226,8 +223,8 @@ public class TNGPointFileLayer implements Layer{
 			for(Locality koord:localities) {
 				out.writeBytes(koord.name);
 				// System.out.println(record.getField(nameField));
-				out.writeInt(koord.getX());
-				out.writeInt(koord.getY());
+				out.writeInt(koord.x);
+				out.writeInt(koord.y);
 			}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -236,7 +233,7 @@ public class TNGPointFileLayer implements Layer{
 		
 	}
 	
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		TNGPointFileLayer pf;
 		try {
 			pf = new TNGPointFileLayer("orter.tng");

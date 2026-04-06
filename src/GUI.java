@@ -1,4 +1,3 @@
-import geometry.Point;
 import coords.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -115,7 +114,7 @@ public class GUI  {
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem0.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
 		menuItem0.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		menuItem0.addActionListener(_->openFile());
+		menuItem0.addActionListener(e->openFile());
 		menu.add(menuItem0);
 
 		menuItem1 = new JMenuItem("Open .gpx File", KeyEvent.VK_G);
@@ -123,28 +122,28 @@ public class GUI  {
 		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
 		menuItem1.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem1.addActionListener(_->openGPXFile());
+		menuItem1.addActionListener(e->openGPXFile());
 		menu.add(menuItem1);
 
 		menuItem2 = new JMenuItem("Save as .csv", KeyEvent.VK_S);
 		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem2.addActionListener(_->saveCSV());
+		menuItem2.addActionListener(e->saveCSV());
 		menu.add(menuItem2);
 
 		menuItem2 = new JMenuItem("Set user", KeyEvent.VK_I);
 		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"It sets the name for the registrator");
-		menuItem2.addActionListener(_->userDialog());
+		menuItem2.addActionListener(e->userDialog());
 		menu.add(menuItem2);
 
 		menuItem3 = new JMenuItem("Exit", KeyEvent.VK_Q);
 		menuItem3.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK));
 		menuItem3.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem3.addActionListener(_->System.exit(0));
+		menuItem3.addActionListener(e->System.exit(0));
 		menu.add(menuItem3);
 
 		menu2 = new JMenu("View");
@@ -152,62 +151,62 @@ public class GUI  {
 		menuItem4 = new JMenuItem("Zoom in", KeyEvent.VK_P);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
-		menuItem4.addActionListener(_->canvas.zoom(0.5));
+		menuItem4.addActionListener(e->canvas.zoom(0.5));
 		menu2.add(menuItem4);
 
 		menuItem5 = new JMenuItem("Zoom out", KeyEvent.VK_M);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK));
-		menuItem5.addActionListener(_->canvas.zoom(2));
+		menuItem5.addActionListener(e->canvas.zoom(2));
 		menu2.add(menuItem5);
 
 		
 		menuItem12 = new JMenuItem("Mark/Find Coordinate", KeyEvent.VK_U);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK));
-		menuItem12.addActionListener(_->MarkCoordDialog());
+		menuItem12.addActionListener(e->MarkCoordDialog());
 		menu2.add(menuItem12);
 		
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K, InputEvent.CTRL_DOWN_MASK));
-		menuItem6.addActionListener(_->viewCoordinate());
+		menuItem6.addActionListener(e->viewCoordinate());
 		menu2.add(menuItem6);
 
 		menuItem8 = new JMenuItem("View Rubin", KeyEvent.VK_R);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK));
-		menuItem8.addActionListener(_->viewRubin());
+		menuItem8.addActionListener(e->viewRubin());
 		menu2.add(menuItem8);
 
 		menuItem7 = new JMenuItem("Search localities", KeyEvent.VK_F);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK));
-		menuItem7.addActionListener(_->searchLocality());
+		menuItem7.addActionListener(e->searchLocality());
 		menu2.add(menuItem7);
 
 		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK));
-		menuItem8.addActionListener(_->distance());
+		menuItem8.addActionListener(e->distance());
 		menu2.add(menuItem8);
 		
 		menuItem9 = new JMenuItem("Search specimens", KeyEvent.VK_E);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem9.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK));
-		menuItem9.addActionListener(_->searchSpecimens());
+		menuItem9.addActionListener(e->searchSpecimens());
 		menu2.add(menuItem9);
 
 		menuItem10 = new JMenuItem("Edit locality at marker", KeyEvent.VK_T);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
-		menuItem10.addActionListener(_->showLocalityAtCoord());
+		menuItem10.addActionListener(e->showLocalityAtCoord());
 		menu2.add(menuItem10);
 		
 		menuItem11 = new JMenuItem("Create locality at marker", KeyEvent.VK_Y);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem11.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
-		menuItem11.addActionListener(_->createLocalityAtCoord());
+		menuItem11.addActionListener(e->createLocalityAtCoord());
 		menu2.add(menuItem11);
 
 		menuBar.add(Box.createHorizontalGlue());
@@ -217,11 +216,11 @@ public class GUI  {
 
 		menuItem9 = new JMenuItem("About");
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem9.addActionListener(_->JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013"));
+		menuItem9.addActionListener(e->JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013"));
 		menu3.add(menuItem9);
 		
 		menuItem11 = new JMenuItem("Shortcuts");
-		menuItem11.addActionListener(_->showShortcuts());
+		menuItem11.addActionListener(e->showShortcuts());
 		menu3.add(menuItem11);
 
 		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_L);
@@ -469,7 +468,7 @@ public class GUI  {
 		}
 
 		new CreateLocalityDialog(frame, this, canvas, bridgeDialog,
-				Integer.toString(p.getY()), Integer.toString(p.getX()), province, district);
+				Integer.toString(p.y), Integer.toString(p.x), province, district);
 
 		canvas.repaint();
 	}

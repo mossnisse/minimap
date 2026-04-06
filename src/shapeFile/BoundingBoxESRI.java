@@ -39,5 +39,4 @@ public class BoundingBoxESRI {
 	public void print() {
 		System.out.println("Bounding box ("+x1+", "+y1+") ("+x2+", "+y2+")");
 	}
-	
 }

@@ -1,17 +1,13 @@
 import geometry.BoundingBox;
-import geometry.Point;
 import coords.*;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
+import java.awt.*;
 
 public class DistanceWGS implements Layer {
 	private Color color;
 	private String name, direction;
 	private boolean hidden;
-	private Point c;
-	private int dist;
+	private final Point c;
+	private final int dist;
 	private CoordSystem cs;
 
 	DistanceWGS(String name, Point c, int dist, String direction, CoordSystem cs) {

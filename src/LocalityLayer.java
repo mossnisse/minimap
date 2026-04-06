@@ -1,25 +1,20 @@
 import coords.*;
 import geometry.BoundingBox;
-import geometry.Point;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
+
+import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class LocalityLayer implements Layer {
-	private String name, tableName;
 	private Color color;
 	private boolean hidden;
 	private int maxZoom, minZoom;
 	private CoordSystem cs = CoordSystem.RT90;
+	private String name;
 	
 	LocalityLayer() {
-		//this.tableName = tableName;
-		//createConnection();
-		//this.conn = conn;
 	}
 
 	@Override
@@ -65,11 +60,6 @@ public class LocalityLayer implements Layer {
 		Font old = g2d.getFont();
 		Font stringFont = new Font( "SansSerif", Font.PLAIN, 20 );
 		g2d.setFont(stringFont);
-		
-		//System.out.println(sqlstmt);
-
-			
-			//String sqlstmt = "SELECT RT90N, RT90E, locality FROM locality where RT90N > " +bounds.getY1()+" and RT90N < " + bounds.getY2()+ " and RT90E > "+bounds.getX1()+ " and RT90E < "+bounds.getX2()+";" ;
 			String sqlstmt = "SELECT SWTMN, SWTME, locality, Coordinateprecision, zoomLevel FROM locality where SWTMN > ? and SWTMN < ? and SWTME > ? and SWTME < ?;" ;
 			Connection conn = DBConnection.getConn();
 			
@@ -77,8 +67,6 @@ public class LocalityLayer implements Layer {
 			statement.setInt(1, bounds.getY1());
 			statement.setInt(2, bounds.getY2());
 			statement.setInt(3, bounds.getX1());
-			statement.setInt(4, bounds.getX2());
-			//Statement select = conn.createStatement();
 			ResultSet result = statement.executeQuery();
         
 			while (result.next()) { // process results one row at a time
@@ -167,10 +155,10 @@ public class LocalityLayer implements Layer {
 		try {
 			conn = DBConnection.getConn();
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
-			statement.setInt(1, p.getY()-limit);
-			statement.setInt(2, p.getY()+limit);
-			statement.setInt(3, p.getX()-limit);
-			statement.setInt(4, p.getX()+limit);
+			statement.setInt(1, p.y-limit);
+			statement.setInt(2, p.y+limit);
+			statement.setInt(3, p.x-limit);
+			statement.setInt(4, p.x+limit);
 			ResultSet result = statement.executeQuery();
 	    
 			double ndist = 700000000;

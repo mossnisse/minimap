@@ -1,12 +1,8 @@
 import coords.*;
 import geometry.BoundingBox;
 import geometry.Line;
-import geometry.Point;
 import geometry.Polygon;
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics2D;
-import java.awt.Stroke;
+import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.DataOutputStream;
 import java.io.FileInputStream;
@@ -127,8 +123,8 @@ public class TNGPolygonFileLayer implements Layer{
 				out.writeInt(part);
 			}
 			for (Point point : prov.getPoints()) {
-				out.writeInt(point.getX());
-				out.writeInt(point.getY());
+				out.writeInt(point.x);
+				out.writeInt(point.y);
 			}
 		}
 		out.close();
@@ -241,14 +237,14 @@ public class TNGPolygonFileLayer implements Layer{
 			for(Line ln:pr) {
 				Point p1 = ln.getPoint1();
 				Point p2 = ln.getPoint2();
-				if (xmax<p1.getX()) xmax = p1.getX();
-				if (xmax<p2.getX()) xmax = p2.getX();
-				if (ymax<p1.getY()) ymax = p1.getY();
-				if (ymax<p2.getY()) ymax = p2.getY();
-				if (xmin>p1.getX()) xmin = p1.getX();
-				if (xmin>p2.getX()) xmin = p2.getX();
-				if (ymin>p1.getY()) ymin = p1.getY();
-				if (ymin>p2.getY()) ymin = p2.getY();
+				if (xmax<p1.getX()) xmax = p1.x;
+				if (xmax<p2.getX()) xmax = p2.x;
+				if (ymax<p1.getY()) ymax = p1.y;
+				if (ymax<p2.getY()) ymax = p2.y;
+				if (xmin>p1.getX()) xmin = p1.x;
+				if (xmin>p2.getX()) xmin = p2.x;
+				if (ymin>p1.getY()) ymin = p1.y;
+				if (ymin>p2.getY()) ymin = p2.y;
 			}
 			System.out.println(pr.getName()+" x("+xmin+"-"+xmax+") y("+ymin+"-"+ymax+")");
 		}
@@ -292,10 +288,10 @@ public class TNGPolygonFileLayer implements Layer{
 			Coordinates c2 = new Coordinates(p2.getY(), p2.getX());
 			Coordinates sweref99TM_2 = c2.convertToSweref99TMFromRT90();
 			Point ps2 = new Point((int)Math.round(sweref99TM_2.getEast()), (int)Math.round(sweref99TM_2.getNorth()));
-			out.writeInt(ps1.getX());
-			out.writeInt(ps1.getY());
-			out.writeInt(ps2.getX());
-			out.writeInt(ps2.getY());
+			out.writeInt(ps1.x);
+			out.writeInt(ps1.y);
+			out.writeInt(ps2.x);
+			out.writeInt(ps2.y);
 			out.writeInt(prov.getNumParts());
 			out.writeInt(prov.getNumPoints());
 			for (int part : prov.getParts()) {
@@ -305,8 +301,8 @@ public class TNGPolygonFileLayer implements Layer{
 				Coordinates c = new Coordinates(p.getY(), p.getX());
 				Coordinates sweref99TM= c.convertToSweref99TMFromRT90();
 				Point ps = new Point((int)Math.round(sweref99TM.getEast()),(int)Math.round(sweref99TM.getNorth()));
-				out.writeInt(ps.getX());
-				out.writeInt(ps.getY());
+				out.writeInt(ps.x);
+				out.writeInt(ps.y);
 			}
 		}
 		System.out.println("Save length: "+provinces.length);

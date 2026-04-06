@@ -1,5 +1,5 @@
-import geometry.Point;
 import coords.*;
+import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -18,7 +18,7 @@ public class GPX {
 	static TNGPointFileLayer.Locality[] localities;
 	static TNGPolygonFileLayer.Province[] provinces;
 	static TNGPolygonFileLayer.Province[] district;
-	private static boolean wPressed = false;
+	private final static boolean wPressed = false;
 	
 	public static TNGPointFileLayer.Locality NearestLoc(int x, int y) {
 		double shortest = 1E16;
@@ -52,7 +52,7 @@ public class GPX {
 		String GPXfile;
 		String CSVfile;
 		String separator;
-		Boolean writeheader;
+		boolean writeheader;
 
 		try {
 			TNGPointFileLayer or = new TNGPointFileLayer("..\\orter.tng");

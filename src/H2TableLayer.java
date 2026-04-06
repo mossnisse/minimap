@@ -1,8 +1,6 @@
 import coords.*;
 import geometry.BoundingBox;
-import geometry.Point;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -20,8 +18,6 @@ public class H2TableLayer implements Layer {
 	private Connection conn;
 	private int maxZoom, minZoom;
 	private CoordSystem cs = CoordSystem.RT90;
-	private BoundingBox lastBounds;
-	private ArrayList<LocalityLayer> cachedPoints = new ArrayList<>();
 	
 	H2TableLayer(String tableName) {
 		this.tableName = tableName;
@@ -173,8 +169,8 @@ public class H2TableLayer implements Layer {
 	}
 
 	public String findNearest(Point p, int limit) {
-		int eastVal = p.getY();
-		int northVal = p.getX();
+		int eastVal = p.y;
+		int northVal = p.x;
 
 		String sqlstmt = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
 				" WHERE NORTH > " + (northVal - limit) +

@@ -9,7 +9,7 @@ import shapeFile.dbfRecord;
 import shapeFile.shapeReader;
 
 public class felMarginalMem {
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		try {
 			
 			//District Sverige
@@ -125,8 +125,7 @@ public class felMarginalMem {
 		    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
 		    Math.sin(dLon/2) * Math.sin(dLon/2); 
 		  double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-		  double d = R * c; // Distance in m
-		  return d;
+		  return R * c; // Distance in m
 	}
 	
 	private static double deg2rad(double deg) {

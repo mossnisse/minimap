@@ -9,7 +9,6 @@ import java.util.Map.Entry;
 
 public class Settings {
 	private static HashMap<String,String> store;
-	//= new HashMap<String, String> 
 	private static final String filename = "settings.txt";
 
 	public static String getValue(String key) throws IOException {
@@ -24,7 +23,6 @@ public class Settings {
 		Iterator<Entry<String,String>> it = store.entrySet().iterator();
 		while (it.hasNext()) {
 			Entry<String, String> e = it.next();
-			//System.out.println("key: "+e.getKey()+" value: "+e.getValue());
 			writer.println(e.getKey()+": "+e.getValue());
 		}
 		writer.close();

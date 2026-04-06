@@ -24,10 +24,8 @@ public class Datum {
 		formatter.setTimeZone(TimeZone.getTimeZone("Europe/Stockholm"));
 		return formatter.format(date);
 	}
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) {
+
+	static void main(String[] args) {
 		
 		/*
 	    String[] timeZones = TimeZone.getAvailableIDs();

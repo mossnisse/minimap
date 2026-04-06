@@ -1,7 +1,5 @@
-import geometry.Point;
 import coords.*;
-import java.awt.Color;
-import java.awt.Frame;
+import java.awt.*;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.beans.PropertyChangeEvent;

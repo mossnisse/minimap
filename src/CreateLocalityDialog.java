@@ -1,4 +1,3 @@
-import geometry.Point;
 import coords.*;
 
 import java.awt.*;
@@ -19,7 +18,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private static final long serialVersionUID = 5999128550024317489L;
 	private final GUI gui;
 	private final Canvas canvas;
-	private SpecimenBridgeDialog bridgeDialog;
+	private final SpecimenBridgeDialog bridgeDialog;
 	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;

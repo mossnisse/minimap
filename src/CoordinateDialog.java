@@ -1,12 +1,6 @@
-import geometry.Point;
 import coords.*;
-import java.awt.Frame;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.*;
+import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener; //property change stuff
 import java.io.Serial;
@@ -124,14 +118,14 @@ class CoordinateDialog extends JDialog
     }
     
     private void updateFromRubin() {
-    	if (rubin.getText().equals("")) {
+    	if (rubin.getText().isEmpty()) {
     		System.out.println("empty");
     	} else {
     		System.out.println("full gubbe");
     		Coordinates c = new Coordinates(0,0);
 			c.setFromRUBIN(rubin.getText(), true);
-    		p.setX((int) c.getEast());
-    		p.setY((int) c.getNorth());
+    		p.x = (int) c.getEast();
+    		p.y = (int) c.getNorth();
     		update();
     	}
     }

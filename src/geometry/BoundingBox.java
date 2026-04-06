@@ -1,5 +1,7 @@
 package geometry;
 
+import java.awt.*;
+
 public class BoundingBox {
 	protected Point p1;
 	protected Point p2;
@@ -26,31 +28,31 @@ public class BoundingBox {
 	}
 	
 	public Point getMidlePoint() {
-		return new Point(p1.getX()+(p2.getX()-p1.getX())/2,p1.getY()+(p2.getY()-p1.getY())/2);
+		return new Point(p1.x+(p2.x-p1.x)/2,p1.y+(p2.y-p1.y)/2);
 	}
 	
 	public int getX1() {
-		return p1.getX();
+		return p1.x;
 	}
 	
 	public int getY1() {
-		return p1.getY();
+		return p1.y;
 	}
 	
 	public int getX2() {
-		return p2.getX();
+		return p2.x;
 	}
 	
 	public int getY2() {
-		return p2.getY();
+		return p2.y;
 	}
 	
 	public int getHeight() {
-		return p2.getY() - p1.getY();
+		return p2.y - p1.y;
 	}
 	
 	public int getWidth() {
-		return p2.getX() - p1.getX(); 
+		return p2.x - p1.x;
 	}
 
 	public boolean isInside(Point p) {
@@ -66,45 +68,36 @@ public class BoundingBox {
 	public boolean intersects(BoundingBox b) {
 		return (Math.abs(2* (getX1() - b.getX1())+(getWidth() - b.getWidth()))  < (getWidth() + b.getWidth())) &&
 		         (Math.abs(2* (getY1() - b.getY1())+(getHeight() - b.getHeight())) < (getHeight() + b.getHeight()));
-		
-		
-		/*ABS(2*(x1 - x2) + (w1-w2) ) < (w1+w2)) &&
-		ABS(2*(y1 - y2) + (h1-h2) ) < (h1+h2));*/
-		 
-		/*return !(b.getX1() > getX2()
-			        || b.getX2() < getX1()
-			        || b.getY2() > getY1()
-			        || b.getY1() < getY2());*/
 	}
 	
 	public void setX1(int x1) {
-		p1.setX(x1);
+		p1.x = x1;
 	}
 	
 	public void setX2(int x2) {
-		p2.setX(x2);
+		p2.x =x2;
 	}
 	
 	public void setY1(int y1) {
-		p1.setY(y1);
+		p1.y = y1;
 	}
 	
 	public void setY2(int y2) {
-		p2.setY(y2);
+		p2.y = y2;
 	}
 	
 	public void focus(Point coord) {
 		Point m = getMidlePoint();
-		int sx = m.getX()-coord.getX();
-		int sy = m.getY()-coord.getY();
+		int sx = m.x-coord.x;
+		int sy = m.y-coord.y;
 		int x1 = getX1();
 		int y1 = getY1();
 		int x2 = getX2();
 		int y2 = getY2();
-		p1.setX(x1-sx);
-		p1.setY(y1-sy);
-		p2.setX(x2-sx);
-		p2.setY(y2-sy);
+		p1.x = x1-sx;
+		p1.y = y1-sy;
+		p2.x = x2-sx;
+		p2.y = y2-sy;
 	}
 
 	public BoundingBox expand(int amount) {

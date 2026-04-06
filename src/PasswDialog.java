@@ -2,23 +2,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
+import java.io.Serial;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 public class PasswDialog extends JDialog implements ActionListener, PropertyChangeListener {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 385404689327110960L;
-	/**
-	 * 
-	 */
 
-	private JTextField passw;
-	private JOptionPane optionPane;
-	
-	
+	@Serial
+	private static final long serialVersionUID = 385404689327110960L;
+	private final JTextField passw;
+	private final JOptionPane optionPane;
 	
 	public PasswDialog() {
 		setTitle("Password to the VH db server");
@@ -49,7 +43,6 @@ public class PasswDialog extends JDialog implements ActionListener, PropertyChan
 		
 	}
 
-	
 	String open() {
 		setModal(true);
 		this.setVisible(true);

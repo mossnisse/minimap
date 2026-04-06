@@ -36,10 +36,10 @@ public class Keyboard {
 			}
 		});
 		
-		addAccelerator(new Key(KeyEvent.VK_F, KeyEvent.CTRL_MASK), "Search" );
+		addAccelerator(new Key(KeyEvent.VK_F, KeyEvent.CTRL_DOWN_MASK), "Search" );
 		addAccelerator(new Key(KeyEvent.VK_RIGHT), "Next" );
 		addAccelerator(new Key(KeyEvent.VK_LEFT), "Prev" );
-		addAccelerator(new Key(KeyEvent.VK_L, KeyEvent.CTRL_MASK), "copyLastB" );
+		addAccelerator(new Key(KeyEvent.VK_L, KeyEvent.CTRL_DOWN_MASK), "copyLastB" );
 	}
 	
 	public static boolean isKeyDown(int keyCode) {

@@ -1,10 +1,11 @@
 package geometry;
 
+import java.awt.*;
 import java.util.Iterator;
 
 public class PolyIterator implements Iterator<Line> {
-	private int[] parts;
-	private Point[] points;
+	private final int[] parts;
+	private final Point[] points;
 	private int curPart;
 	private int curPoint;
 

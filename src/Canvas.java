@@ -1,10 +1,6 @@
 import coords.*;
 import geometry.BoundingBox;
-import geometry.Point;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.io.IOException;
 import java.io.Serial;
 import java.util.ArrayList;

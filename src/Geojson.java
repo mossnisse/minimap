@@ -9,7 +9,7 @@ import java.util.Scanner;
 import java.util.regex.Pattern;
 
 public class Geojson {
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		try {
 			
 			//BufferedReader br = new BufferedReader(new FileReader("C:/Users/nisern99/Documents/sockenkartor/Provinces.geojson"));

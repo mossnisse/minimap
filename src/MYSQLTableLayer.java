@@ -1,9 +1,7 @@
 import coords.*;
 import geometry.BoundingBox;
-import geometry.Point;
-import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics2D;
+
+import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -134,10 +132,10 @@ public class MYSQLTableLayer implements Layer {
 		try {
 			conn = DBConnection.getConn();
 			PreparedStatement statement = conn.prepareStatement(sqlstmt);
-			statement.setInt(1, p.getY()-limit);
-			statement.setInt(2, p.getY()+limit);
-			statement.setInt(3, p.getX()-limit);
-			statement.setInt(4, p.getX()+limit);
+			statement.setInt(1, p.y-limit);
+			statement.setInt(2, p.y+limit);
+			statement.setInt(3, p.x-limit);
+			statement.setInt(4, p.x+limit);
 			ResultSet result = statement.executeQuery();
 	    
 			double ndist = 700000000;

@@ -2,7 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public class SpecimenSearchDialog extends JDialog {
-    private SpecimenService service;
+    private final SpecimenService service;
 
     // UI Components
     private JComboBox<String> provinceCombo;
