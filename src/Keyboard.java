@@ -38,7 +38,6 @@ public class Keyboard {
 				// Focus left the app entirely - clear all keys!
 				synchronized (Keyboard.class) {
 					java.util.Arrays.fill(key_down, false);
-					System.out.println("Focus lost: Clearing all keys.");
 				}
 			}
 		});

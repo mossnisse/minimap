@@ -209,6 +209,7 @@ public class SpecimenService {
 
     // Handles the bridging and coordinate calculation
     public boolean linkSpecimenToLocality(int sId, int lId, String oDist, String oProv, int dist, String dir) {
+        System.out.println("linkSpecimenToLocality() method called");
         // Update the specimen_locality bridge table
         // Note: You may also need to update the 'specimens' table directly if
         // distance/direction/overrides are stored there.
@@ -232,6 +233,7 @@ public class SpecimenService {
     }
 
     public boolean deleteSpecimenLink(int specimenId) {
+        System.out.println("deleteSpecimenLink() method called");
         /*
         String sql = "DELETE FROM specimen_locality WHERE specimen_ID = ?";
         try (Connection conn = MYSQLConnection.getConn();

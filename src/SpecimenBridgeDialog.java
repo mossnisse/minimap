@@ -1,7 +1,12 @@
+import coords.CoordSystem;
 import coords.Coordinates;
-
+import geometry.Point;
 import javax.swing.*;
 import java.awt.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 
 public class SpecimenBridgeDialog extends JDialog {
@@ -9,6 +14,8 @@ public class SpecimenBridgeDialog extends JDialog {
     private int totalCount;
     private int currentIndex = 0;
     private Specimen targetSpecimen;
+    private BridgeData originalBridge; // What we loaded from DB
+    private BridgeData lastSavedBridge; // For the F1 "Copy Last" feature
 
     private JTextField indexField; // For jumping to specific records
     private JLabel totalLabel;
@@ -34,13 +41,6 @@ public class SpecimenBridgeDialog extends JDialog {
             "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
     };
 
-    // Memory for the "Copy Last" feature
-    private LocalityRecord lastLocality = null;
-    private String lastDist = "";
-    private String lastDir = "";
-    private String lastODist = "";
-    private String lastOProv = "";
-
     public SpecimenBridgeDialog(Frame owner, SpecimenService service) {
         super(owner, "Link Specimen to Locality", false);
         this.service = service;
@@ -65,7 +65,7 @@ public class SpecimenBridgeDialog extends JDialog {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 if (currentIndex < totalCount - 1) {
-                    loadSpecimen(currentIndex + 1);
+                    handleNavigation(currentIndex + 1);
                 }
             }
         });
@@ -76,7 +76,7 @@ public class SpecimenBridgeDialog extends JDialog {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 if (currentIndex > 0) {
-                    loadSpecimen(currentIndex - 1);
+                    handleNavigation(currentIndex - 1);
                 }
             }
         });
@@ -86,7 +86,7 @@ public class SpecimenBridgeDialog extends JDialog {
         actionMap.put("copyLast", new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                applyLastBridge();
+                applyLastSaved();
             }
         });
 
@@ -201,11 +201,20 @@ public class SpecimenBridgeDialog extends JDialog {
         // Locality Picker
         gbc.gridx = 0; gbc.gridy = 0;
         bridgePanel.add(new JLabel("Target Locality:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        localityCombo = new JComboBox<>(); // This will need to be populated based on district
-        bridgePanel.add(localityCombo, gbc);
+        // Create a sub-panel for the combo + focus button
+        JPanel locPickerPanel = new JPanel(new BorderLayout(5, 0));
+        localityCombo = new JComboBox<>();
+        JButton focusBtn = new JButton("Focus");
+        focusBtn.setToolTipText("Focus map on this locality");
 
-        // Overrides
+        locPickerPanel.add(localityCombo, BorderLayout.CENTER);
+        locPickerPanel.add(focusBtn, BorderLayout.EAST);
+
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        bridgePanel.add(locPickerPanel, gbc);
+        focusBtn.addActionListener(e -> focusLocality());
+
+        // Override fields
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
         bridgePanel.add(new JLabel("Override District:"), gbc);
         gbc.gridx = 1;
@@ -260,8 +269,8 @@ public class SpecimenBridgeDialog extends JDialog {
         navPanel.add(openSearchBtn);
 
         // Navigation Actions
-        prevBtn.addActionListener(e -> loadSpecimen(currentIndex - 1));
-        nextBtn.addActionListener(e -> loadSpecimen(currentIndex + 1));
+        prevBtn.addActionListener(e -> handleNavigation(currentIndex - 1));
+        nextBtn.addActionListener(e -> handleNavigation(currentIndex + 1));
 
         javax.swing.event.DocumentListener overrideListener = new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
@@ -356,6 +365,32 @@ public class SpecimenBridgeDialog extends JDialog {
         }
     }
 
+    private void handleNavigation(int nextIndex) {
+        if (isDirty()) {
+            LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
+
+            // Scenario A: User set a locality and changed something -> Auto Save
+            if (selected != null && selected.getId() > 0) {
+                saveBridge(); // This validates and saves
+                return; // saveBridge will call handleNavigation again once clean, so stop here!
+            }
+            // Scenario B: User cleared the locality -> Ask if they want to delete the link
+            else if (targetSpecimen.getLocalityId() > 0 && (selected == null || selected.getId() <= 0)) {
+                int resp = JOptionPane.showConfirmDialog(this,
+                        "Locality cleared. Delete existing link?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
+
+                if (resp == JOptionPane.YES_OPTION) {
+                    deleteBridge();
+                } else if (resp == JOptionPane.CANCEL_OPTION) {
+                    return; // Stop navigation, let user fix it
+                }
+            }
+        }
+
+        // If clean, or if we ignored changes, proceed to load
+        loadSpecimen(nextIndex);
+    }
+
     private void updateUIFields(Specimen s) {
         isAdjusting = true;
 
@@ -376,10 +411,18 @@ public class SpecimenBridgeDialog extends JDialog {
         distanceField.setText(s.getDistance() > 0 ? String.valueOf(s.getDistance()) : "");
         directionCombo.setSelectedItem(s.getDirection() != null ? s.getDirection() : "");
 
-        isAdjusting = false;
+        originalBridge = new BridgeData(
+                s.getLocalityId(),
+                s.getDistance() > 0 ? String.valueOf(s.getDistance()) : "",
+                s.getDirection() != null ? s.getDirection() : "",
+                s.getODistrict() != null ? s.getODistrict() : "",
+                s.getOProvince() != null ? s.getOProvince() : ""
+        );
 
-        // Update the Locality ComboBox based on current specimen's district
-        updateLocalityList();
+        // Apply to UI
+        applyBridgeToUI(originalBridge);
+
+        isAdjusting = false;
 
         // Update Navigation UI
         indexField.setText(String.valueOf(currentIndex + 1));
@@ -390,6 +433,8 @@ public class SpecimenBridgeDialog extends JDialog {
         nextBtn.setEnabled(currentIndex < totalCount - 1);
 
         deleteBtn.setEnabled(s.getLocalityId() > 0);
+
+
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
     }
 
@@ -406,7 +451,6 @@ public class SpecimenBridgeDialog extends JDialog {
             targetProvince = overrideProv;
         }
 
-        System.out.println("update Locality List: " + targetDistrict + ", " + targetProvince + ", ");
         // Clear old items
         localityCombo.removeAllItems();
 
@@ -427,12 +471,12 @@ public class SpecimenBridgeDialog extends JDialog {
         if (targetSpecimen == null) return;
 
         LocalityRecord selectedLoc = (LocalityRecord) localityCombo.getSelectedItem();
-        if (selectedLoc == null) {
+        // Check if a valid locality is selected (ignoring the "-- Select --" placeholder)
+        if (selectedLoc == null || selectedLoc.getId() <= 0) {
             JOptionPane.showMessageDialog(this, "Please select a target locality.");
             return;
         }
 
-        // --- Distance and direction Validation ---
         // Extract and Validate Distance
         int dist = 0;
         String distText = distanceField.getText().trim();
@@ -443,8 +487,7 @@ public class SpecimenBridgeDialog extends JDialog {
                 dist = Integer.parseInt(distText);
                 if (dist < 0) throw new NumberFormatException();
             } catch (NumberFormatException e) {
-                JOptionPane.showMessageDialog(this,
-                        "Distance must be a positive whole number (meters).",
+                JOptionPane.showMessageDialog(this, "Distance must be a positive whole number (meters).",
                         "Invalid Distance", JOptionPane.ERROR_MESSAGE);
                 distanceField.requestFocus();
                 return;
@@ -460,15 +503,13 @@ public class SpecimenBridgeDialog extends JDialog {
             String msg = hasDistance ?
                     "You provided a distance. Please select a Direction." :
                     "You selected a direction. Please provide a Distance (in meters).";
-
             JOptionPane.showMessageDialog(this, msg, "Incomplete Offset", JOptionPane.WARNING_MESSAGE);
-
             if (!hasDistance) distanceField.requestFocus();
             else directionCombo.requestFocus();
             return;
         }
 
-        // Collect bridge data
+        // Collect bridge data for MySQL
         int specimenId = targetSpecimen.getId();
         int localityId = selectedLoc.getId();
         String oDist = overrideDistField.getText().trim();
@@ -478,14 +519,27 @@ public class SpecimenBridgeDialog extends JDialog {
         boolean success = service.linkSpecimenToLocality(specimenId, localityId, oDist, oProv, dist, dir);
 
         if (success) {
-            lastLocality = (LocalityRecord) localityCombo.getSelectedItem();
-            lastDist = distanceField.getText().trim();
-            lastDir = (String) directionCombo.getSelectedItem();
-            lastODist = overrideDistField.getText().trim();
-            lastOProv = overrideProvField.getText().trim();
-            // Auto-advance to next specimen for high-speed workflow
+            // --- UPDATE STATE FOR WORKFLOW ---
+
+            // Capture the current UI state into our BridgeData objects
+            BridgeData currentUI = getBridgeFromUI();
+
+            // Memory for the F1 "Copy Last" feature
+            lastSavedBridge = currentUI;
+
+            // Update originalBridge so the Dirty Check knows we are now in sync with DB
+            originalBridge = currentUI;
+
+            // Update the actual specimen object so the UI stays consistent if we don't move
+            targetSpecimen.setLocalityId(localityId);
+            targetSpecimen.setDistance(dist);
+            targetSpecimen.setDirection(dir);
+            targetSpecimen.setODistrict(oDist);
+            targetSpecimen.setOProvince(oProv);
+
+            // Auto-advance logic
             if (currentIndex < totalCount - 1) {
-                loadSpecimen(currentIndex + 1);
+                handleNavigation(currentIndex + 1); // Use handleNavigation to ensure clean transitions
             } else {
                 JOptionPane.showMessageDialog(this, "All specimens processed!");
                 dispose();
@@ -520,23 +574,104 @@ public class SpecimenBridgeDialog extends JDialog {
         }
     }
 
-    private void applyLastBridge() {
-        if (lastLocality == null) return;
-        System.out.println("copy from last bridge");
+    private void applyLastSaved() {
+        if (lastSavedBridge != null) {
+            applyBridgeToUI(lastSavedBridge);
+            // Note: originalBridge stays the same, so isDirty()
+            // will correctly become true now.
+        }
+    }
 
-        isAdjusting = true; // Prevent triggering database refreshes mid-paste
+    public void focusLocality() {
+        LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
+        if (selected == null || selected.getId() == -1) return;
+        // Use your existing wait cursor utility
+        // GUI.setCursorWait();
+        try {
 
-        overrideDistField.setText(lastODist);
-        overrideProvField.setText(lastOProv);
-        distanceField.setText(lastDist);
-        directionCombo.setSelectedItem(lastDir);
+            // Note: Using Sweref99TMN/E to match your DistanceLayer requirement
+            String query = "SELECT SWTMN, SWTME FROM locality WHERE ID = ?";
 
-        // Refresh the list based on the pasted overrides
+            try (Connection conn = DBConnection.getConn();
+                 PreparedStatement ps = conn.prepareStatement(query)) {
+
+                ps.setInt(1, selected.getId());
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.next()) {
+                    int swN = rs.getInt("SWTMN");
+                    int swE = rs.getInt("SWTME");
+                    Point p = new Point(swE, swN);
+
+                    // Center the map canvas
+                    GUI.canvas.focus(p);
+                    GUI.canvas.setCoordinate(p);
+
+                    // Handle Distance/Direction Visualization
+                    String distText = distanceField.getText().trim();
+                    String directionS = (String) directionCombo.getSelectedItem();
+
+                    // Clear old distance layer regardless
+                    GUI.canvas.delLayer("distance");
+
+                    if (!distText.isEmpty() && directionS != null && !directionS.isEmpty()) {
+                        try {
+                            int distanceI = Integer.parseInt(distText);
+                            if (distanceI > 0) {
+                                // Add the visual vector layer
+                                GUI.canvas.addLayerTop(new DistanceLayer(
+                                        "distance", p, distanceI, directionS, CoordSystem.SWEREF99TM
+                                ));
+                            }
+                        } catch (NumberFormatException e) {
+                            // Silent fail for visualization if number is garbled
+                        }
+                    }
+
+                    // Repaint to show changes
+                    GUI.canvas.repaint();
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            // GUI.setCursorDefault();
+        }
+    }
+
+    private boolean isDirty() {
+        BridgeData currentUI = getBridgeFromUI();
+        return !currentUI.equals(originalBridge);
+    }
+
+    private BridgeData getBridgeFromUI() {
+        LocalityRecord sel = (LocalityRecord) localityCombo.getSelectedItem();
+        return new BridgeData(
+                (sel != null) ? sel.getId() : -1,
+                distanceField.getText().trim(),
+                (String) directionCombo.getSelectedItem(),
+                overrideDistField.getText().trim(),
+                overrideProvField.getText().trim()
+        );
+    }
+
+    private void applyBridgeToUI(BridgeData data) {
+        isAdjusting = true;
+        distanceField.setText(data.distance);
+        directionCombo.setSelectedItem(data.direction);
+        overrideDistField.setText(data.oDistrict);
+        overrideProvField.setText(data.oProvince);
+
+        // This triggers the locality list reload based on overrides
         updateLocalityList();
 
-        // Select the correct locality in the newly populated list
-        localityCombo.setSelectedItem(lastLocality);
-
+        // Find the right ID in the newly loaded list
+        for (int i = 0; i < localityCombo.getItemCount(); i++) {
+            if (localityCombo.getItemAt(i).getId() == data.localityId) {
+                localityCombo.setSelectedIndex(i);
+                break;
+            }
+        }
         isAdjusting = false;
     }
 }
