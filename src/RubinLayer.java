@@ -54,12 +54,10 @@ public class RubinLayer implements Layer {
 	}
 
 	@Override
-	public void setMinZoomL(int zoomLevel) {
-	}
+	public void setMinZoomL(int zoomLevel) {}
 
 	@Override
-	public void setMaxZoomL(int zoomLevel) {
-	}
+	public void setMaxZoomL(int zoomLevel) {}
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {

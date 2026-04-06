@@ -1,26 +1,26 @@
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.Serial;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
-public class SetUserDialog extends JDialog implements ActionListener, PropertyChangeListener{
-
+public class SetUserDialog extends JDialog implements PropertyChangeListener {
+	@Serial
 	private static final long serialVersionUID = 7541165558448469861L;
-	private JTextField user;
-	private JOptionPane optionPane;
+	private final JTextField user;
+	private final JOptionPane optionPane;
 
 	public SetUserDialog() {
-		this.user = new JTextField();
-		Object[] array = {"User Name", user};
+		super((java.awt.Frame)null, "Set User", true); // Make it modal!
 
+		String current = "";
+		try { current = Settings.getValue("user"); } catch (Exception e) {}
 
-		Object[] options = {"Cancel", "OK"};
+		this.user = new JTextField(current, 20);
+		Object[] array = {"Enter Registrator Name:", user};
+		Object[] options = {"OK", "Cancel"};
 
 		optionPane = new JOptionPane(array,
 				JOptionPane.QUESTION_MESSAGE,
@@ -29,47 +29,41 @@ public class SetUserDialog extends JDialog implements ActionListener, PropertyCh
 				options,
 				options[0]);
 
-		//Make this dialog display it.
 		setContentPane(optionPane);
 		pack();
-		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+		setLocationRelativeTo(null);
+		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 		optionPane.addPropertyChangeListener(this);
 	}
+
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
-		// TODO Auto-generated method stub
-		if(isVisible()){
-    		System.out.println(e.getNewValue());
-    		if (e.getNewValue()=="OK") {
-    			setUser();
-    			setVisible(false);
-            	dispose();
-    		} else if (e.getNewValue()=="Cancel") {
-    			System.out.println("Stänger dialog");
-    			setVisible(false);
-            	dispose();
-    		} 
-    	}
-	}
-	
-	public void setUser() {
-		System.out.println("set user name");
-		try {
-			Settings.setValue("user",user.getText());
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		String prop = e.getPropertyName();
+
+		if (isVisible() && (e.getSource() == optionPane) &&
+				(JOptionPane.VALUE_PROPERTY.equals(prop))) {
+
+			Object value = optionPane.getValue();
+
+			if (value == JOptionPane.UNINITIALIZED_VALUE) return;
+			// Reset so next click works
+			optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
+
+			if ("OK".equals(value)) {
+				saveUser();
+				dispose();
+			} else {
+				dispose();
+			}
 		}
 	}
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		
+
+	private void saveUser() {
+		try {
+			Settings.setValue("user", user.getText().trim());
+		} catch (IOException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error saving settings.");
+		}
 	}
 }

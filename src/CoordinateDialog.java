@@ -9,6 +9,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener; //property change stuff
+import java.io.Serial;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
@@ -16,14 +17,13 @@ import javax.swing.JTextField;
 
 /* 1.4 example used by DialogDemo.java. */
 class CoordinateDialog extends JDialog
-                   implements ActionListener,
-                              PropertyChangeListener {
+                   implements ActionListener, PropertyChangeListener {
+	@Serial
 	private static final long serialVersionUID = -4511067776450458493L;
-	private JTextField rt90north, rt90east, wgs84north, wgs84east, sweref99TMnorth, sweref99TMeast, socken, provins, rubin;
+	private final JTextField rt90north, rt90east, wgs84north, wgs84east, sweref99TMnorth, sweref99TMeast, socken, provins, rubin;
     public JOptionPane optionPane;
-    private TNGPolygonFileLayer provinces, district;
-    private Point p;
-    private Frame aFrame;
+    private final TNGPolygonFileLayer provinces, district;
+    private final Point p;
     public JButton cancel;
 
     public Point getCoordinateSweref99TM() {
@@ -35,12 +35,11 @@ class CoordinateDialog extends JDialog
     /** Creates the reusable dialog. */
     public CoordinateDialog(Frame aFrame, Point p, TNGPolygonFileLayer provinces, TNGPolygonFileLayer district) { //DialogDemo parent
         super(aFrame, true);
-        setTitle("Coordinate");
-        this.aFrame = aFrame;
+        setTitle("View Coordinate");
         this.provinces = provinces;
         this.district = district;
         this.p = p;
-        //hidden = false;
+
         sweref99TMnorth = new JTextField(10);
         sweref99TMeast = new JTextField(10);
         wgs84north = new JTextField(10);
@@ -69,7 +68,7 @@ class CoordinateDialog extends JDialog
                                     JOptionPane.YES_NO_OPTION,
                                     null,
                                     options,
-                                    options[0]);
+                                    cancel);
 
         //Make this dialog display it.
         setContentPane(optionPane);
@@ -78,23 +77,18 @@ class CoordinateDialog extends JDialog
         //Handle window closing correctly.
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
-                public void windowClosing(WindowEvent we) {
-                /*
-                 * Instead of directly closing the window,
-                 * we're going to change the JOptionPane's
-                 * value property.
-                 */
-                    /*optionPane.setValue(new Integer(
-                                        JOptionPane.CLOSED_OPTION));*/
+			@Override
+			public void windowClosing(WindowEvent we) {
             }
         });
 
-        //Ensure the text field always gets the first focus.
-        addComponentListener(new ComponentAdapter() {
-            public void componentShown(ComponentEvent ce) {
-            	sweref99TMnorth.requestFocusInWindow();
-            }
-        });
+		addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentShown(ComponentEvent ce) {
+				// Request focus on the cancel button to swallow stray keystrokes
+				cancel.requestFocusInWindow();
+			}
+		});
 
         //Register an event handler that puts the text into the option pane.
         sweref99TMnorth.addActionListener(this);
@@ -111,8 +105,8 @@ class CoordinateDialog extends JDialog
     	Coordinates RT90 = wgs84.toProjected(CoordSystem.RT90);
     	wgs84north.setText(String.valueOf(wgs84.getNorth()));
     	wgs84east.setText(String.valueOf(wgs84.getEast()));
-    	rt90north.setText(String.valueOf(RT90.getNorth()));
-    	rt90east.setText(String.valueOf(RT90.getEast()));
+    	rt90north.setText(String.valueOf(Math.round(RT90.getNorth())));
+    	rt90east.setText(String.valueOf(Math.round(RT90.getEast())));
     	
     	TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
     	if (pr != null) {
@@ -150,34 +144,36 @@ class CoordinateDialog extends JDialog
 
     /** This method reacts to state changes in the option pane. */
 	public void propertyChange(PropertyChangeEvent e) {
-		// Only care about the "Value" property of the JOptionPane
 		if (!"value".equals(e.getPropertyName()) || !isVisible()) return;
 
 		Object value = e.getNewValue();
 		if (value == null || value == JOptionPane.UNINITIALIZED_VALUE) return;
 
-		// Reset the value so the next click triggers a change again
 		optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
 
-		// Modern Switch (Java 21)
-		switch (value.toString()) {
-			case "Update" -> {
-				System.out.println("Updating from RUBIN...");
-				updateFromRubin();
-			}
-			case "Enter" -> {
-				// Logic for 'Enter'
-				setVisible(false);
+		String valStr = value.toString();
+
+		// Logic separation: Update vs Commit
+		if ("Update".equals(valStr)) {
+			updateFromRubin();
+		} else if ("Enter".equals(valStr)) {
+			if (validateInputs()) {
 				dispose();
 			}
-			case "Cancel", "Hide" -> {
-				setVisible(false);
-				dispose();
-			}
-			default -> {
-				setVisible(false);
-				dispose();
-			}
+		} else {
+			// Cancel or Hide
+			dispose();
+		}
+	}
+
+	private boolean validateInputs() {
+		try {
+			Integer.parseInt(sweref99TMnorth.getText());
+			Integer.parseInt(sweref99TMeast.getText());
+			return true;
+		} catch (NumberFormatException e) {
+			JOptionPane.showMessageDialog(this, "Please enter valid numeric coordinates.", "Input Error", JOptionPane.ERROR_MESSAGE);
+			return false;
 		}
 	}
 }

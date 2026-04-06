@@ -52,7 +52,7 @@ public class GUI  {
 			public void mouseClicked(MouseEvent e) {
 				// Use 'GUI.this' to call instance methods from inside the anonymous listener
 				if (Keyboard.isKeyDown(KeyEvent.VK_A)) {
-					showLokal(e);
+					showLocality(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_R)) {
 					showRubin(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_C)) {
@@ -91,6 +91,13 @@ public class GUI  {
 		Keyboard.activate();
 	}
 
+	public Container createContentPane() {
+		// Create the content-pane-to-be.
+		JPanel contentPane = new JPanel(new BorderLayout());
+		contentPane.setOpaque(true);
+		return contentPane;
+	}
+
 	public JMenuBar createMenuBar() {
 		JMenuBar menuBar;
 		JMenu menu, menu2, menu3;
@@ -105,39 +112,35 @@ public class GUI  {
 
 		menuItem0 = new JMenuItem("Open File", KeyEvent.VK_O);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem0.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.CTRL_MASK));
+		menuItem0.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
 		menuItem0.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
 		menuItem0.addActionListener(e -> openFile());
 		menu.add(menuItem0);
 
 		menuItem1 = new JMenuItem("Open .gpx File", KeyEvent.VK_G);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G,
-				ActionEvent.CTRL_MASK));
+		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
 		menuItem1.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
 		menuItem1.addActionListener(e->openGPXFile());
 		menu.add(menuItem1);
 
 		menuItem2 = new JMenuItem("Save as .csv", KeyEvent.VK_S);
-		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S,
-				ActionEvent.CTRL_MASK));
+		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
 		menuItem2.addActionListener(e->saveCSV());
 		menu.add(menuItem2);
 
 		menuItem2 = new JMenuItem("Set user", KeyEvent.VK_I);
-		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I,
-				ActionEvent.CTRL_MASK));
+		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
 				"It sets the name for the registrator");
 		menuItem2.addActionListener(e->userDialog());
 		menu.add(menuItem2);
 
 		menuItem3 = new JMenuItem("Exit", KeyEvent.VK_Q);
-		menuItem3.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q,
-				ActionEvent.CTRL_MASK));
+		menuItem3.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK));
 		menuItem3.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
 		menuItem3.addActionListener(e->System.exit(0));
@@ -147,72 +150,62 @@ public class GUI  {
 		menuBar.add(menu2);
 		menuItem4 = new JMenuItem("Zoom in", KeyEvent.VK_P);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
-				ActionEvent.CTRL_MASK));
+		menuItem4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
 		menuItem4.addActionListener(e->canvas.zoom(0.5));
 		menu2.add(menuItem4);
 
 		menuItem5 = new JMenuItem("Zoom out", KeyEvent.VK_M);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M,
-				ActionEvent.CTRL_MASK));
+		menuItem5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK));
 		menuItem5.addActionListener(e->canvas.zoom(2));
 		menu2.add(menuItem5);
 
 		
 		menuItem12 = new JMenuItem("Mark/Find Coordinate", KeyEvent.VK_U);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U,
-				ActionEvent.CTRL_MASK));
+		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK));
 		menuItem12.addActionListener(e->MarkCoordDialog());
 		menu2.add(menuItem12);
 		
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K,
-				ActionEvent.CTRL_MASK));
+		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K, InputEvent.CTRL_DOWN_MASK));
 		menuItem6.addActionListener(e->viewCoordinate());
 		menu2.add(menuItem6);
 
 		menuItem8 = new JMenuItem("View Rubin", KeyEvent.VK_R);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,
-				ActionEvent.CTRL_MASK));
+		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK));
 		menuItem8.addActionListener(e->viewRubin());
 		menu2.add(menuItem8);
 
 		menuItem7 = new JMenuItem("Search localities", KeyEvent.VK_F);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F,
-				ActionEvent.CTRL_MASK));
+		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK));
 		menuItem7.addActionListener(e->searchLocality());
 		menu2.add(menuItem7);
 
 		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D,
-				ActionEvent.CTRL_MASK));
+		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK));
 		menuItem8.addActionListener(e->distance());
 		menu2.add(menuItem8);
 		
 		menuItem9 = new JMenuItem("Search specimens", KeyEvent.VK_E);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem9.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E,
-				ActionEvent.CTRL_MASK));
+		menuItem9.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK));
 		menuItem9.addActionListener(e->searchSpecimens());
 		menu2.add(menuItem9);
 
-		menuItem10 = new JMenuItem("Show lokality at marker", KeyEvent.VK_T);
+		menuItem10 = new JMenuItem("Edit locality at marker", KeyEvent.VK_T);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
-				ActionEvent.CTRL_MASK));
-		menuItem10.addActionListener(e->showLokalAtCoord());
+		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
+		menuItem10.addActionListener(e->showLocalityAtCoord());
 		menu2.add(menuItem10);
 		
-		menuItem11 = new JMenuItem("Create lokality at marker", KeyEvent.VK_Y);
+		menuItem11 = new JMenuItem("Create locality at marker", KeyEvent.VK_Y);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem11.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y,
-				ActionEvent.CTRL_MASK));
+		menuItem11.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
 		menuItem11.addActionListener(e->createLokalAtCoord());
 		menu2.add(menuItem11);
 
@@ -232,9 +225,7 @@ public class GUI  {
 
 		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_L);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L,
-				ActionEvent.CTRL_MASK));
-		//menuItem10.addActionListener(this);
+		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK));
 		menu2.add(menuItem10);
 
 		return menuBar;
@@ -259,7 +250,6 @@ public class GUI  {
 	}
 	
 	private void openFile() {
-		//System.out.println("Open File");
 		final JFileChooser fc = new JFileChooser();
 
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(
@@ -353,21 +343,48 @@ public class GUI  {
 		canvas.setCoordinate(coord);
 	}
 
+	public void showCoordDialog(MouseEvent e) {
+		coord = canvas.translatePoint(new Point(e.getX(), e.getY()));
+		canvas.setCoordinate(coord);
+		CoordinateDialog d = new CoordinateDialog(frame, coord,
+				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
+				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
+		d.setVisible(true);
+		coord = d.getCoordinateSweref99TM();
+		canvas.focus(coord);
+		canvas.setCoordinate(coord);
+	}
+
 	public void viewRubin() {
 		String s = (String) JOptionPane.showInputDialog(frame, "Enter RUBIN (e.g. 12H5j):",
 				"Search Grid Square", JOptionPane.PLAIN_MESSAGE, null, null, "");
+
 		if (s != null && !s.trim().isEmpty()) {
 			RubinLayer r = new RubinLayer(s.trim(), "Rubin", Color.green);
-			canvas.delLayer("Rubin");
-			canvas.addLayerTop(r);
 			Point p = r.getMiddle();
 			if (p != null) {
+				canvas.delLayer("Rubin");
+				canvas.addLayerTop(r);
 				canvas.focus(p);
-				canvas.repaint(); // Ensure the green box appears immediately
+				canvas.repaint();
 			} else {
-				JOptionPane.showMessageDialog(frame, "Invalid RUBIN format.", "Error", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame,
+						"'" + s + "' is not a valid RUBIN coordinate.\nExample format: 12H5j",
+						"Invalid Format", JOptionPane.ERROR_MESSAGE);
 			}
 		}
+	}
+
+	public void showRubin(MouseEvent e) {
+		System.out.print("show RUBIN: ");
+		Point p = canvas.translatePoint(new Point(e.getX(), e.getY()));
+		Coordinates c = new Coordinates(p.getY(), p.getX());
+		String s = c.toRUBIN(true);
+		RubinLayer r = new RubinLayer(s, "Rubin", Color.green);
+		canvas.delLayer("Rubin");
+		canvas.addLayerTop(r);
+		//Point p2 = r.getMiddle();
+		//canvas.focus(p2);
 	}
 
 	public void distance() {
@@ -389,8 +406,6 @@ public class GUI  {
 			} catch (NumberFormatException e) {
 				JOptionPane.showMessageDialog(frame, "Please enter a valid numeric distance.");
 			}
-		} else {
-			System.out.println("User cancelled.");
 		}
 		dlg.dispose();
 	}
@@ -406,69 +421,22 @@ public class GUI  {
 		JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
 	}
 
-	public Container createContentPane() {
-		// Create the content-pane-to-be.
-		JPanel contentPane = new JPanel(new BorderLayout());
-		contentPane.setOpaque(true);
-		return contentPane;
-	}
-
-	public void showCoordDialog(MouseEvent arg0) {
-		coord = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
-		canvas.setCoordinate(coord);
-		CoordinateDialog d = new CoordinateDialog(frame, coord,
-				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
-				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
-		d.cancel.requestFocusInWindow();
-		d.setVisible(true);
-		d.cancel.requestFocusInWindow();
-		coord = d.getCoordinateSweref99TM();
-		canvas.focus(coord);
-		canvas.setCoordinate(coord);
-	}
-
-	public void showRubin(MouseEvent arg0) {
-		System.out.print("show RUBIN: ");
-		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
-		Coordinates c = new Coordinates(p.getY(), p.getX());
-		String s = c.toRUBIN(true);
-		RubinLayer r = new RubinLayer(s, "Rubin", Color.green);
-		canvas.delLayer("Rubin");
-		canvas.addLayerTop(r);
-		//Point p2 = r.getMiddle();
-		//canvas.focus(p2);
-	}
-
-	public void showLokal(MouseEvent arg0) {
-		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
+	public void showLocality(MouseEvent e) {
+		Point p = canvas.translatePoint(new Point(e.getX(), e.getY()));
 		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
 		int localityID = ldb.findNearest(p, 1000);
 
 		if (localityID != -1) {
-			JFrame lframe = new JFrame("Locality");
-			lframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-			EditLocalityDialog diag = new EditLocalityDialog(localityID, lframe, bridgeDialog, canvas);
-			lframe.add(diag);
-			lframe.pack();
-			lframe.setLocationRelativeTo(frame);
-			lframe.setVisible(true);
+			new EditLocalityDialog(frame, localityID, bridgeDialog, canvas);
 		}
 	}
 	
-	public void showLokalAtCoord() {
-		System.out.println("show Locality at");
-		//Point p = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
+	public void showLocalityAtCoord() {
 		Point p = canvas.getCoordinate();
-
 		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
 		int localityID = ldb.findNearest(p,1000);
 		if (localityID != -1) {
-
-			JFrame lframe = new JFrame("Locality");
-			EditLocalityDialog diag = new EditLocalityDialog(localityID, lframe, bridgeDialog, canvas);
-			//lframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			lframe.add(diag);
-			diag.cancel.requestFocusInWindow();
+			new EditLocalityDialog(frame, localityID, bridgeDialog, canvas);
 		}
 		//canvas.repaint();
 	}
@@ -497,34 +465,6 @@ public class GUI  {
 		CreateLocalityDialog diag = new CreateLocalityDialog(this, canvas, bridgeDialog, lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
 			diag.cancel.requestFocusInWindow();
 		//canvas.repaint();
-	}
-
-	public void searchSpecimens() {
-		SpecimenService service = new SpecimenService();
-
-		// Assign to the CLASS FIELD instead of a local variable
-		bridgeDialog = new SpecimenBridgeDialog(frame, service, canvas);
-
-		bridgeDialog.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				try {
-					Settings.setValue("specimen dialog", "closed");
-					// Clear the reference when closed to prevent memory leaks
-					bridgeDialog = null;
-				} catch (IOException ex) {
-					ex.printStackTrace();
-				}
-			}
-		});
-
-		try {
-			Settings.setValue("specimen dialog", "open");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		bridgeDialog.setVisible(true);
 	}
 
 	private void createLocalityDialog(MouseEvent me) {
@@ -560,6 +500,38 @@ public class GUI  {
 		diag.cancel.requestFocusInWindow();
 
 		canvas.repaint();
+	}
+
+	public void searchSpecimens() {
+		// 1. Check if the dialog is already open
+		if (bridgeDialog != null && bridgeDialog.isVisible()) {
+			bridgeDialog.toFront(); // Bring the existing window to the top
+			bridgeDialog.requestFocus();
+			return; // Exit the method so we don't create a duplicate
+		}
+
+		SpecimenService service = new SpecimenService();
+		bridgeDialog = new SpecimenBridgeDialog(frame, service, canvas);
+
+		bridgeDialog.addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowClosing(WindowEvent e) {
+				try {
+					Settings.setValue("specimen dialog", "closed");
+					bridgeDialog = null; // Important for the "if" check above to work later
+				} catch (IOException ex) {
+					ex.printStackTrace();
+				}
+			}
+		});
+
+		try {
+			Settings.setValue("specimen dialog", "open");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		bridgeDialog.setVisible(true);
 	}
 	
 	private void OpenKartbildcom(MouseEvent arg0) {

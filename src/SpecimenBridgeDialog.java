@@ -54,6 +54,7 @@ public class SpecimenBridgeDialog extends JDialog {
         loadSpecimen(0); // Fetch the first one
         this.pack();
         this.setLocationRelativeTo(owner);
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
     }
 
     private void initUI() {

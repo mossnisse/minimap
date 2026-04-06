@@ -1,61 +1,59 @@
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.IOException;
-import java.io.Serial;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SpringLayout;
+import javax.swing.*;
 
 /* Dialog for viewing and editing already existing Localities in the db */
 
-public class EditLocalityDialog extends JPanel implements ActionListener{
-	@Serial
-	private static final long serialVersionUID = -6495783408904343790L;
-	private Canvas canvas;
-	public JButton cancel, delete, ok;
+public class EditLocalityDialog extends JDialog implements ActionListener {
+	private final Canvas canvas;
 	private final int localityID;
 	private final SpecimenBridgeDialog bridgeDialog;
-	JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, localitySize, zoomLevel, category;
-	JTextArea comments;
-	JCheckBox isPlace;
-	JLabel labelCreated, labelModified;
-	JFrame localFrame;
 
-	public EditLocalityDialog(int localityID, JFrame localFrame, SpecimenBridgeDialog bridge, Canvas canvas) {
+	// Components
+	private JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, localitySize, zoomLevel, category;
+	private JTextArea comments;
+	private JCheckBox isPlace;
+	private JLabel labelCreated, labelModified;
+	public JButton cancel, delete, ok;
+
+	public EditLocalityDialog(Frame owner, int localityID, SpecimenBridgeDialog bridge, Canvas canvas) {
+		// 'false' makes it non-modal, 'true' would stop interaction with map
+		super(owner, "Edit Locality", false);
+
 		this.canvas = canvas;
-		this.localFrame = localFrame;
 		this.localityID = localityID;
-		this.bridgeDialog = bridge; // Store the reference
-		this.localFrame.setTitle("Loading Locality...");
+		this.bridgeDialog = bridge;
 
-		// Set up Layout
-		SpringLayout layout = new SpringLayout();
-		setLayout(layout);
+		// Set up Layout on the Dialog's content pane
+		this.getContentPane().setLayout(new SpringLayout());
 
-		// Initialize components (but leave them empty)
 		initComponents();
-
-		// Load data from DB
 		loadData();
 
-		//localFrame.setSize(600, 700);
-		localFrame.pack();
-		localFrame.setLocationRelativeTo(null); // Center it!
-		localFrame.setVisible(true);
+		this.pack();
+		this.setLocationRelativeTo(owner);
+		this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		addComponentListener(new ComponentAdapter() {
+			@Override
+			public void componentShown(ComponentEvent ce) {
+				// Request focus on the cancel button to swallow stray keystrokes
+				cancel.requestFocusInWindow();
+			}
+		});
+		this.setVisible(true);
 	}
 
 	private void initComponents() {
-		SpringLayout layout = (SpringLayout) getLayout();
+		Container content = this.getContentPane();
+		SpringLayout layout = (SpringLayout) this.getContentPane().getLayout();
 
 		// Initialize Components
 		name = new JTextField(20);
@@ -86,41 +84,41 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 		ok = new JButton("OK - Change");
 
 		// Add to Layout
-		JLabel lName = addField("Name:", name, this, layout, 10);
-		JLabel lAlt = addField("Alt Names:", altNames, lName, layout, 10);
-		JLabel lNorth = addField("RT90 N:", RT90N, lAlt, layout, 10);
-		JLabel lEast = addField("RT90 E:", RT90E, lNorth, layout, 10);
-		JLabel lProv = addField("Province:", province, lEast, layout, 10);
-		JLabel lSize = addField("Size:", localitySize, lProv, layout, 10);
-		JLabel lDist = addField("District:", district, lSize, layout, 10);
-		JLabel lSrc = addField("Source:", coordinate_source, lDist, layout, 10);
-		//JLabel lComm = addField("Comments:", comments, lSrc, layout, 10);
-		JLabel lComm = new JLabel("Comments:");
-		add(lComm);
-		add(scrollPane); // Add the scrollPane, NOT comments
+		JLabel lName = addField("Name:", name, content, layout, 10, content);
+		JLabel lAlt = addField("Alt Names:", altNames, content, layout, 10, lName);
+		JLabel lNorth = addField("RT90 N:", RT90N, content, layout, 10, lAlt);
+		JLabel lEast = addField("RT90 E:", RT90E, content, layout, 10, lNorth);
+		JLabel lProv = addField("Province:", province, content, layout, 10, lEast);
+		JLabel lSize = addField("Size:", localitySize, content, layout, 10, lProv);
+		JLabel lDist = addField("District:", district, content, layout, 10, lSize);
+		JLabel lSrc = addField("Source:", coordinate_source, content, layout, 10, lDist);
 
-		layout.putConstraint(SpringLayout.WEST, lComm, 10, SpringLayout.WEST, this);
+		JLabel lComm = new JLabel("Comments:");
+		content.add(lComm);
+		content.add(scrollPane);
+
+		layout.putConstraint(SpringLayout.WEST, lComm, 10, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, lComm, 10, SpringLayout.SOUTH, lSrc);
 
-		layout.putConstraint(SpringLayout.WEST, scrollPane, 120, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, scrollPane, 120, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, scrollPane, 0, SpringLayout.NORTH, lComm);
 
 		// Comments is a JTextArea, so the next field needs a bigger gap (70-80px)
-		JLabel lCat = addField("Category:", category, scrollPane, layout, 80);
-		JLabel lZoom = addField("Zoom:", zoomLevel, lCat, layout, 10);
+		JLabel lCat = addField("Category:", category, content, layout, 80, scrollPane);
+		JLabel lZoom = addField("Zoom:", zoomLevel, content, layout, 10, lCat);
 
 		// Metadata Labels
 		add(labelCreated);
-		layout.putConstraint(SpringLayout.WEST, labelCreated, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, labelCreated, 10, SpringLayout.WEST, this.getContentPane());
 		layout.putConstraint(SpringLayout.NORTH, labelCreated, 15, SpringLayout.SOUTH, lZoom);
 
 		add(labelModified);
-		layout.putConstraint(SpringLayout.WEST, labelModified, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, labelModified, 10, SpringLayout.WEST, this.getContentPane());
 		layout.putConstraint(SpringLayout.NORTH, labelModified, 5, SpringLayout.SOUTH, labelCreated);
 
 		// Checkbox
 		add(isPlace);
-		layout.putConstraint(SpringLayout.WEST, isPlace, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, isPlace, 10, SpringLayout.WEST, this.getContentPane());
 		layout.putConstraint(SpringLayout.NORTH, isPlace, 10, SpringLayout.SOUTH, labelModified);
 
 		// Buttons
@@ -128,7 +126,7 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 		add(delete);
 		add(ok);
 
-		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, this.getContentPane());
 		layout.putConstraint(SpringLayout.NORTH, cancel, 20, SpringLayout.SOUTH, isPlace);
 
 		layout.putConstraint(SpringLayout.WEST, delete, 10, SpringLayout.EAST, cancel);
@@ -138,13 +136,13 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 		layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
 
 		// Anchor the right edge of the panel to the right edge of the text fields
-		layout.putConstraint(SpringLayout.EAST, this, 10, SpringLayout.EAST, name);
+		layout.putConstraint(SpringLayout.EAST, this.getContentPane(), 10, SpringLayout.EAST, name);
 		// Anchor the bottom edge of the panel to the bottom of the buttons
-		layout.putConstraint(SpringLayout.SOUTH, this, 10, SpringLayout.SOUTH, cancel);
+		layout.putConstraint(SpringLayout.SOUTH, this.getContentPane(), 10, SpringLayout.SOUTH, cancel);
 		// This tells the layout "The width is name.width + 10px"
-		layout.putConstraint(SpringLayout.EAST, this, 20, SpringLayout.EAST, scrollPane);
+		layout.putConstraint(SpringLayout.EAST, this.getContentPane(), 20, SpringLayout.EAST, scrollPane);
 		// This tells the layout "The height is cancel.bottom + 10px"
-		layout.putConstraint(SpringLayout.SOUTH, this, 10, SpringLayout.SOUTH, cancel);
+		layout.putConstraint(SpringLayout.SOUTH, this.getContentPane(), 10, SpringLayout.SOUTH, cancel);
 
 		// Listeners
 		cancel.addActionListener(this);
@@ -155,17 +153,23 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 		ok.setActionCommand("ok");
 	}
 
-	private JLabel addField(String labelText, java.awt.Component field, java.awt.Component topAnchor, SpringLayout layout, int margin) {
+	private JLabel addField(String labelText, Component field, Container container, SpringLayout layout, int margin, Component topAnchor) {
 		JLabel label = new JLabel(labelText);
-		add(label);
-		add(field);
+		container.add(label);
+		container.add(field);
 
-		// Label Constraints
-		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, this);
-		layout.putConstraint(SpringLayout.NORTH, label, margin, (topAnchor == this) ? SpringLayout.NORTH : SpringLayout.SOUTH, topAnchor);
+		// Label Constraints: Use 'container' as the anchor, not 'this'
+		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, container);
+
+		// Logic to handle the very first field vs subsequent fields
+		if (topAnchor == container) {
+			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.NORTH, container);
+		} else {
+			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.SOUTH, topAnchor);
+		}
 
 		// Field Constraints (Align to a fixed column at x=120)
-		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, this);
+		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, container);
 		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
 
 		return label;
@@ -203,7 +207,7 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 
 					isPlace.setSelected(rs.getInt(16) == 1);
 
-					localFrame.setTitle("View Locality: " + rs.getString(1));
+					setTitle("View Locality: " + rs.getString(1));
 				}
 			}
 		} catch (SQLException e) {
@@ -279,21 +283,17 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 
 	@Override
 	public void actionPerformed(ActionEvent ev) {
-		if ("ok".equals(ev.getActionCommand())) {
-			System.out.println("OK");
+		String cmd = ev.getActionCommand();
+		if ("ok".equals(cmd)) {
 			updateLokal();
 			canvas.repaint();
-			localFrame.setVisible(false);
-			localFrame.dispose();
-		} else if ("cancel".equals(ev.getActionCommand())) {
-			System.out.println("Cancel");
-			localFrame.setVisible(false);
-			localFrame.dispose();
-		} else if ("delete".equals(ev.getActionCommand())) {
+			this.dispose();
+		} else if ("cancel".equals(cmd)) {
+			this.dispose();
+		} else if ("delete".equals(cmd)) {
 			deleteLokal();
 			canvas.repaint();
-			localFrame.setVisible(false);
-			localFrame.dispose();
+			this.dispose();
 		}
 	}
 }

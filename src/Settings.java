@@ -7,11 +7,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map.Entry;
 
-
 public class Settings {
 	private static HashMap<String,String> store;
 	//= new HashMap<String, String> 
-	private static String filename = "settings.txt";
+	private static final String filename = "settings.txt";
 
 	public static String getValue(String key) throws IOException {
 		if (store == null) readStore();
@@ -23,7 +22,6 @@ public class Settings {
 		store.put(key, value);
 		PrintWriter writer = new PrintWriter(filename, "UTF-8");
 		Iterator<Entry<String,String>> it = store.entrySet().iterator();
-		//Set<Entry<String,String>> storList = store.entrySet();
 		while (it.hasNext()) {
 			Entry<String, String> e = it.next();
 			//System.out.println("key: "+e.getKey()+" value: "+e.getValue());
@@ -34,7 +32,6 @@ public class Settings {
 
 	private static void readStore() throws IOException {
 		store = new HashMap<String,String>();
-		//BufferedReader br = new BufferedReader(new FileReader(filename, "UTF-8"));
 		BufferedReader br = new BufferedReader(
 				   new InputStreamReader(
 		                      new FileInputStream(filename), "UTF-8"));
