@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -167,8 +168,8 @@ public class SpecimenService {
         s.setRubin(rs.getString("RUBIN"));
         s.setRiketsN(rs.getString("RiketsN"));
         s.setRiketsO(rs.getString("RiketsO"));
-        s.setSwerefN(rs.getString("SwerefN"));
-        s.setSwerefE(rs.getString("SwerefE"));
+        s.setSwerefN(rs.getInt("SwerefN"));
+        s.setSwerefE(rs.getInt("SwerefE"));
 
         // DMS (Degrees, Minutes, Seconds)
         s.setLatDir(rs.getString("Lat_dir"));
@@ -208,42 +209,121 @@ public class SpecimenService {
     }
 
     // Handles the bridging and coordinate calculation
-    public boolean linkSpecimenToLocality(int sId, int lId, String oDist, String oProv, int dist, String dir) {
+    public boolean linkSpecimenToLocality(Specimen s, int localityId, String oDist, String oProv, int dist, String dir) {
         System.out.println("linkSpecimenToLocality() method called");
-        // Update the specimen_locality bridge table
-        // Note: You may also need to update the 'specimens' table directly if
-        // distance/direction/overrides are stored there.
-        /*
-        String sql = "REPLACE INTO specimen_locality (specimen_ID, locality_ID, oDistrict, oProvince, distance, direction) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
-        try (Connection conn = MYSQLConnection.getConn();
+
+        // Assuming Settings.getValue("user") is available in your scope
+        String user = "unknown";
+        try {
+            user = Settings.getValue("user");
+            if (user == null) user = "unknown";
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+
+        String sql = "INSERT INTO specimen_locality "
+                + "(specimen_ID, locality_ID, InstitutionCode, CollectionCode, AccessionNo, "
+                + "distance, direction, oDistrict, oProvince, createdby, modifiedby, modified) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP) "
+                + "ON DUPLICATE KEY UPDATE "
+                + "locality_ID = VALUES(locality_ID), "
+                + "specimen_ID = VALUES(specimen_ID), " // Update to latest specimen_ID just in case
+                + "distance = VALUES(distance), "
+                + "direction = VALUES(direction), "
+                + "oDistrict = VALUES(oDistrict), "
+                + "oProvince = VALUES(oProvince), "
+                + "modifiedby = VALUES(modifiedby), "
+                + "modified = CURRENT_TIMESTAMP;";
+
+        try (Connection conn = DBConnection.getConn();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, sId);
-            ps.setInt(2, lId);
-            ps.setString(3, oDist);
-            ps.setString(4, oProv);
-            ps.setInt(5, dist);
-            ps.setString(6, dir);
-            return ps.executeUpdate() > 0;
+
+            ps.setInt(1, s.getId());
+            ps.setInt(2, localityId);
+            ps.setString(3, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
+            ps.setString(4, s.getCollectionCode() != null ? s.getCollectionCode() : "");
+            ps.setString(5, s.getAccessionNo() != null ? s.getAccessionNo() : "");
+
+            // Handle NULL for distance
+            if (dist > 0) ps.setInt(6, dist);
+            else ps.setNull(6, java.sql.Types.INTEGER);
+
+            // Handle NULL for direction
+            if (dir != null && !dir.isEmpty()) ps.setString(7, dir);
+            else ps.setNull(7, java.sql.Types.VARCHAR);
+
+            ps.setString(8, oDist);
+            ps.setString(9, oProv);
+            ps.setString(10, user); // createdby
+            ps.setString(11, user); // modifiedby
+
+            boolean mysqlSuccess = ps.executeUpdate() > 0;
+
+            // If MySQL updated successfully, update the local H2 Cache!
+            if (mysqlSuccess) {
+                updateH2CacheLink(s.getAccessionNo(), localityId, oDist, oProv, dist, dir);
+            }
+
+            return mysqlSuccess;
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
-        }*/
-        return false;
+        }
     }
 
-    public boolean deleteSpecimenLink(int specimenId) {
+    public boolean deleteSpecimenLink(Specimen s) {
         System.out.println("deleteSpecimenLink() method called");
-        /*
-        String sql = "DELETE FROM specimen_locality WHERE specimen_ID = ?";
-        try (Connection conn = MYSQLConnection.getConn();
+
+        String sql = "DELETE FROM specimen_locality "
+                + "WHERE InstitutionCode = ? AND CollectionCode = ? AND AccessionNo = ?";
+
+        try (Connection conn = DBConnection.getConn();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, specimenId);
-            return ps.executeUpdate() > 0;
+
+            ps.setString(1, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
+            ps.setString(2, s.getCollectionCode() != null ? s.getCollectionCode() : "");
+            ps.setString(3, s.getAccessionNo() != null ? s.getAccessionNo() : "");
+
+            boolean mysqlSuccess = ps.executeUpdate() > 0;
+
+            // Clear it from the local H2 Cache as well
+            if (mysqlSuccess) {
+                updateH2CacheLink(s.getAccessionNo(), -1, "", "", 0, "");
+            }
+
+            return mysqlSuccess;
+
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
-        }*/
-        return false;
+        }
+    }
+
+    private void updateH2CacheLink(String accessionNo, int locId, String oDist, String oProv, int dist, String dir) {
+        String h2Update = "UPDATE tempspecimens SET "
+                + "locality_ID = ?, distance = ?, direction = ?, oDistrict = ?, oProvince = ? "
+                + "WHERE AccessionNo = ?";
+
+        try (Connection h2Conn = DBConnection.getH2Conn();
+             PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
+
+            if (locId > 0) ps.setInt(1, locId);
+            else ps.setNull(1, java.sql.Types.INTEGER);
+
+            if (dist > 0) ps.setInt(2, dist);
+            else ps.setNull(2, java.sql.Types.INTEGER);
+
+            if (dir != null && !dir.isEmpty()) ps.setString(3, dir);
+            else ps.setNull(3, java.sql.Types.VARCHAR);
+
+            ps.setString(4, oDist);
+            ps.setString(5, oProv);
+            ps.setString(6, accessionNo);
+
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 }

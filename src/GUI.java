@@ -90,7 +90,7 @@ public class GUI implements NActionListener {
 	public JMenuBar createMenuBar() {
 		JMenuBar menuBar;
 		JMenu menu, menu2, menu3;
-		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12, menuItem13;
+		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12;
 		menuBar = new JMenuBar();
 
 		// Build the first menu.
@@ -232,13 +232,6 @@ public class GUI implements NActionListener {
 				ActionEvent.CTRL_MASK));
 		//menuItem10.addActionListener(this);
 		menu2.add(menuItem10);
-		
-		menuItem13 = new JMenuItem("Search Ortnamnsregistret", KeyEvent.VK_B);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem13.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_B,
-				ActionEvent.CTRL_MASK));
-		menuItem13.addActionListener(e->SearchOrtReg());
-		menu2.add(menuItem13);
 
 		return menuBar;
 	}
@@ -492,7 +485,7 @@ public class GUI implements NActionListener {
 		System.out.println("create Locality at");  // TODO trace print
 
 		coord =  canvas.getCoordinate();
-		String provins = "", socken = "";
+		String provins, socken;
 		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer)canvas.getLayer("provinser");
 		TNGPolygonFileLayer districts = (TNGPolygonFileLayer)canvas.getLayer("socknar");
 		TNGPolygonFileLayer.Province pr = provinces.inPolygon(coord);
@@ -605,27 +598,6 @@ public class GUI implements NActionListener {
 		}
 	}
 	
-	private void SearchOrtReg() {
-		System.out.println("Try search Ortnamnsregistret");
-		if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-		    try {
-		    	String placeName;
-		    	if (sList == null) {
-		    		placeName = "";
-				} else {
-					placeName = sList.getSelectedText();
-				}
-		    	String url = "https://ortnamnsregistret.isof.se/place-names?place-name="+placeName;
-		    	Desktop.getDesktop().browse(new URI(url));
-		    } catch(Exception e) {
-		    	
-		    }
-		} else {
-		    System.out.println("open browser not supported");
-		}
-		
-	}
-	
 	public void MarkCoordDialog() {
 		//coord = canvas.translatePoint2(new Point(arg0.getX(), arg0.getY()));
 		//canvas.setCoordinate(coord);
@@ -702,9 +674,6 @@ public class GUI implements NActionListener {
 			break;
 		case "Search localities":
 			searchLocality();
-			break;
-		case "Search Ortnamnsregistret":
-			SearchOrtReg();
 			break;
 	}
 	}

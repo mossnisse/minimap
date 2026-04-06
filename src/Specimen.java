@@ -1,6 +1,3 @@
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
 public class Specimen {
     // Database IDs
     private int id;
@@ -26,8 +23,8 @@ public class Specimen {
     private String rubin;
     private String riketsN;
     private String riketsO;
-    private String swerefN;
-    private String swerefE;
+    private int swerefN;
+    private int swerefE;
 
     // DMS Coordinates
     private String latDir, latDeg, latMin, latSec;
@@ -61,8 +58,8 @@ public class Specimen {
     public void setRubin(String rubin) { this.rubin = rubin; }
     public void setRiketsN(String riketsN) { this.riketsN = riketsN; }
     public void setRiketsO(String riketsO) { this.riketsO = riketsO; }
-    public void setSwerefN(String swerefN) { this.swerefN = swerefN; }
-    public void setSwerefE(String swerefE) { this.swerefE = swerefE; }
+    public void setSwerefN(int swerefN) { this.swerefN = swerefN; }
+    public void setSwerefE(int swerefE) { this.swerefE = swerefE; }
     public void setLatDir(String latDir) { this.latDir = latDir; }
     public void setLatDeg(String latDeg) { this.latDeg = latDeg; }
     public void setLatMin(String latMin) { this.latMin = latMin; }
@@ -99,6 +96,8 @@ public class Specimen {
     public String getRiketsO() { return riketsO; }
     public String getRT90() { return riketsN + ", " + riketsO; }
     public String getSweref() { return swerefN + ", " + swerefE; }
+    public int getSwerefN() { return  swerefN; }
+    public int getSwerefE() { return swerefE; }
     public String getLatDeg() { return latDeg; }
     public String getLatMin() { return latMin; }
     public String getLatSec() { return latSec; }

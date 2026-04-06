@@ -3,6 +3,8 @@ import coords.Coordinates;
 import geometry.Point;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.StringSelection;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,6 +18,10 @@ public class SpecimenBridgeDialog extends JDialog {
     private Specimen targetSpecimen;
     private BridgeData originalBridge; // What we loaded from DB
     private BridgeData lastSavedBridge; // For the F1 "Copy Last" feature
+    private final String[] directions = {
+            "", "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
+    };
 
     private JTextField indexField; // For jumping to specific records
     private JLabel totalLabel;
@@ -35,11 +41,7 @@ public class SpecimenBridgeDialog extends JDialog {
     private JButton prevBtn, nextBtn, linkBtn, deleteBtn;
     JButton openSearchBtn = new JButton("Search & Cache...");
     private boolean isAdjusting = false;
-
-    private final String[] directions = {
-            "", "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-            "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
-    };
+    private JButton btnRubin, btnRT90, btnSweref, btnLatLong;
 
     public SpecimenBridgeDialog(Frame owner, SpecimenService service) {
         super(owner, "Link Specimen to Locality", false);
@@ -87,6 +89,23 @@ public class SpecimenBridgeDialog extends JDialog {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 applyLastSaved();
+            }
+        });
+
+        inputMap.put(KeyStroke.getKeyStroke("control F"), "searchLoc");
+        actionMap.put("searchLoc", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                searchLocality();
+            }
+        });
+
+        // --- Ctrl + B: SEARCH ORTNAMNSREGISTRET ---
+        inputMap.put(KeyStroke.getKeyStroke("control B"), "searchOrt");
+        actionMap.put("searchOrt", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                searchOrtReg();
             }
         });
 
@@ -183,10 +202,11 @@ public class SpecimenBridgeDialog extends JDialog {
         c.gridy = 3; infoPanel.add(collectorField, c);
         c.gridy = 4; infoPanel.add(locField, c);
         c.gridy = 5; infoPanel.add(provinceDistrField, c);
-        c.gridy = 6; infoPanel.add(rubinField, c);
-        c.gridy = 7; infoPanel.add(rt90Field, c);
-        c.gridy = 8; infoPanel.add(swerefField, c);
-        c.gridy = 9; infoPanel.add(latLongField, c);
+
+        c.gridy = 6; infoPanel.add(createFocusRow(rubinField, "Focus Rubin", this::focusRubin, "RUBIN"), c);
+        c.gridy = 7; infoPanel.add(createFocusRow(rt90Field, "Focus RT90", this::focusRT90, "RT90"), c);
+        c.gridy = 8; infoPanel.add(createFocusRow(swerefField, "Focus SWEREF", this::focusSweref, "SWEREF"), c);
+        c.gridy = 9; infoPanel.add(createFocusRow(latLongField, "Focus DMS", this::focusLatLong, "DMS"), c);
 
         topPanel.add(infoPanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
@@ -303,6 +323,26 @@ public class SpecimenBridgeDialog extends JDialog {
         return f;
     }
 
+    // Helper to keep UI creation clean
+    private JPanel createFocusRow(JTextField field, String btnText, Runnable action, String type) {
+        JPanel p = new JPanel(new BorderLayout(5, 0));
+        p.setOpaque(false);
+        p.add(field, BorderLayout.CENTER);
+        JButton btn = new JButton(btnText);
+        btn.setMargin(new Insets(1, 4, 1, 4));
+        btn.setFocusable(false);
+        btn.addActionListener(e -> action.run());
+
+        // Assign to class variables so we can toggle them later
+        if (type.equals("RUBIN")) btnRubin = btn;
+        else if (type.equals("RT90")) btnRT90 = btn;
+        else if (type.equals("SWEREF")) btnSweref = btn;
+        else if (type.equals("DMS")) btnLatLong = btn;
+
+        p.add(btn, BorderLayout.EAST);
+        return p;
+    }
+
     private void refreshFromCache() {
         isAdjusting = true;
         this.totalCount = service.getCacheCount();
@@ -376,19 +416,15 @@ public class SpecimenBridgeDialog extends JDialog {
             }
             // Scenario B: User cleared the locality -> Ask if they want to delete the link
             else if (targetSpecimen.getLocalityId() > 0 && (selected == null || selected.getId() <= 0)) {
-                int resp = JOptionPane.showConfirmDialog(this,
-                        "Locality cleared. Delete existing link?", "Confirm", JOptionPane.YES_NO_CANCEL_OPTION);
-
-                if (resp == JOptionPane.YES_OPTION) {
-                    deleteBridge();
-                } else if (resp == JOptionPane.CANCEL_OPTION) {
-                    return; // Stop navigation, let user fix it
-                }
+                deleteBridge();
             }
         }
 
         // If clean, or if we ignored changes, proceed to load
         loadSpecimen(nextIndex);
+        GUI.canvas.delLayer("Rubin");
+        GUI.canvas.delLayer("distance");
+        GUI.canvas.repaint();
     }
 
     private void updateUIFields(Specimen s) {
@@ -433,7 +469,10 @@ public class SpecimenBridgeDialog extends JDialog {
         nextBtn.setEnabled(currentIndex < totalCount - 1);
 
         deleteBtn.setEnabled(s.getLocalityId() > 0);
-
+        btnRubin.setEnabled(s.getRubin() != null && !s.getRubin().isEmpty());
+        btnRT90.setEnabled(s.getRiketsN() != null && !s.getRiketsN().equals("0") && !s.getRiketsN().isEmpty());
+        btnSweref.setEnabled(s.getSwerefN() > 0);
+        btnLatLong.setEnabled(s.getLatDeg() != null && !s.getLatDeg().equals("0") && !s.getLatDeg().isEmpty());
 
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
     }
@@ -510,13 +549,12 @@ public class SpecimenBridgeDialog extends JDialog {
         }
 
         // Collect bridge data for MySQL
-        int specimenId = targetSpecimen.getId();
         int localityId = selectedLoc.getId();
         String oDist = overrideDistField.getText().trim();
         String oProv = overrideProvField.getText().trim();
 
         // Save to MySQL
-        boolean success = service.linkSpecimenToLocality(specimenId, localityId, oDist, oProv, dist, dir);
+        boolean success = service.linkSpecimenToLocality(targetSpecimen, localityId, oDist, oProv, dist, dir);
 
         if (success) {
             // --- UPDATE STATE FOR WORKFLOW ---
@@ -541,7 +579,6 @@ public class SpecimenBridgeDialog extends JDialog {
             if (currentIndex < totalCount - 1) {
                 handleNavigation(currentIndex + 1); // Use handleNavigation to ensure clean transitions
             } else {
-                JOptionPane.showMessageDialog(this, "All specimens processed!");
                 dispose();
             }
         } else {
@@ -557,7 +594,7 @@ public class SpecimenBridgeDialog extends JDialog {
                 "Confirm Delete", JOptionPane.YES_NO_OPTION);
 
         if (result == JOptionPane.YES_OPTION) {
-            boolean success = service.deleteSpecimenLink(targetSpecimen.getId());
+            boolean success = service.deleteSpecimenLink(targetSpecimen);
             if (success) {
                 // Update the local object state so the UI reflects the change
                 targetSpecimen.setLocalityId(0);
@@ -567,7 +604,6 @@ public class SpecimenBridgeDialog extends JDialog {
                 targetSpecimen.setDirection("");
 
                 updateUIFields(targetSpecimen);
-                JOptionPane.showMessageDialog(this, "Link removed.");
             } else {
                 JOptionPane.showMessageDialog(this, "Error: Could not delete link from MySQL.");
             }
@@ -577,8 +613,6 @@ public class SpecimenBridgeDialog extends JDialog {
     private void applyLastSaved() {
         if (lastSavedBridge != null) {
             applyBridgeToUI(lastSavedBridge);
-            // Note: originalBridge stays the same, so isDirty()
-            // will correctly become true now.
         }
     }
 
@@ -639,6 +673,78 @@ public class SpecimenBridgeDialog extends JDialog {
         }
     }
 
+    public void focusRubin() {
+        String rubin = targetSpecimen.getRubin();
+        if (rubin != null && !rubin.isEmpty()) {
+            RubinLayer r = new RubinLayer(rubin, "Rubin", Color.GREEN);
+            GUI.canvas.delLayer("Rubin");
+            GUI.canvas.addLayerTop(r);
+            Point p = r.getMiddle();
+            GUI.canvas.focus(p);
+        }
+    }
+
+    public void focusRT90() {
+        String nStr = targetSpecimen.getRiketsN();
+        String oStr = targetSpecimen.getRiketsO();
+        // Validate that we have strings and they aren't just "0" or empty
+        if (nStr != null && oStr != null && !nStr.equals("0") && !nStr.isEmpty()) {
+            try {
+                double n = Double.parseDouble(nStr);
+                double o = Double.parseDouble(oStr);
+                if (n == 0 || o == 0) return;
+
+                while (n < 1000000) n *= 10;
+                while (o < 1000000) o *= 10;
+
+                Coordinates rt90 = new Coordinates(n, o);
+                Coordinates swtm = rt90.convertToSweref99TMFromRT90();
+                Point p = new Point((int)swtm.getEast(), (int)swtm.getNorth());
+
+                GUI.canvas.focus(p);
+                GUI.canvas.setCoordinate(p);
+            } catch (NumberFormatException e) {
+                System.err.println("Invalid RT90 format");
+            }
+        }
+    }
+
+    public void focusSweref() {
+        int n = targetSpecimen.getSwerefN();
+        int e = targetSpecimen.getSwerefE();
+        // Basic validation for SWEREF99 TM range (approximate Sweden bounds)
+        if (n > 6000000 && e > 200000) {
+            Point p = new Point(e, n);
+            GUI.canvas.focus(p);
+            GUI.canvas.setCoordinate(p);
+        }
+    }
+
+    public void focusLatLong() {
+        if (targetSpecimen == null) return;
+
+        // Check if we actually have degrees set (not just empty or 0)
+        String lat = targetSpecimen.getLatDeg();
+        String lon = targetSpecimen.getLongDeg();
+        if (lat == null || lat.isEmpty() || lat.equals("0")) return;
+
+        try {
+            Coordinates c = new Coordinates(0, 0);
+            c.setFromDMS(
+                    targetSpecimen.getLatDeg(), targetSpecimen.getLatMin(), targetSpecimen.getLatSec(), targetSpecimen.getLatDir(),
+                    targetSpecimen.getLongDeg(), targetSpecimen.getLongMin(), targetSpecimen.getLongSec(), targetSpecimen.getLongDir()
+            );
+
+            Coordinates projected = c.toProjected(CoordSystem.SWEREF99TM);
+            Point p = new Point((int)projected.getEast(), (int)projected.getNorth());
+
+            GUI.canvas.focus(p);
+            GUI.canvas.setCoordinate(p);
+        } catch (Exception e) {
+            System.err.println("Lat/Long conversion failed");
+        }
+    }
+
     private boolean isDirty() {
         BridgeData currentUI = getBridgeFromUI();
         return !currentUI.equals(originalBridge);
@@ -673,5 +779,81 @@ public class SpecimenBridgeDialog extends JDialog {
             }
         }
         isAdjusting = false;
+    }
+
+    public void searchLocality() {
+        // should also catch province and pass to SearchLocalityDialog
+        String selectedText = "";
+
+        // Find which component currently has focus in this dialog
+        Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+
+        if (focusOwner instanceof javax.swing.text.JTextComponent) {
+            javax.swing.text.JTextComponent textComp = (javax.swing.text.JTextComponent) focusOwner;
+            String selection = textComp.getSelectedText();
+            if (selection != null && !selection.trim().isEmpty()) {
+                selectedText = selection.trim();
+            }
+        }
+
+        // If no text was selected, we can fall back to a default (e.g., the specimen's recorded locality)
+        if (selectedText.isEmpty() && targetSpecimen != null) {
+            selectedText = targetSpecimen.getSpecimenLocality();
+        }
+
+        try {
+            StringSelection stringSelection = new StringSelection(selectedText);
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(stringSelection, null);
+        } catch (Exception e) {
+            System.err.println("Clipboard copy failed: " + e.getMessage());
+        }
+
+        // Open the existing dialog (assuming 'frame' is accessible or use 'this')
+        SearchLocalityDialog d = new SearchLocalityDialog(null, selectedText);
+        d.setVisible(true);
+    }
+
+    private void searchOrtReg() {
+        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+            System.out.println("Browser not supported on this system.");
+            return;
+        }
+
+        String placeName = "";
+        Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
+
+        // Get selected text from the focused component
+        if (focusOwner instanceof javax.swing.text.JTextComponent) {
+            String selection = ((javax.swing.text.JTextComponent) focusOwner).getSelectedText();
+            if (selection != null && !selection.trim().isEmpty()) {
+                placeName = selection.trim();
+            }
+        }
+
+        // Fallback to the specimen's locality field if nothing is highlighted
+        if (placeName.isEmpty() && targetSpecimen != null) {
+            placeName = targetSpecimen.getSpecimenLocality();
+        }
+
+        if (placeName == null || placeName.isEmpty()) return;
+
+        try {
+            StringSelection stringSelection = new StringSelection(placeName);
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            clipboard.setContents(stringSelection, null);
+        } catch (Exception e) {
+            System.err.println("Clipboard copy failed: " + e.getMessage());
+        }
+
+        try {
+            // Encode the string for a URL (handles spaces and Swedish characters)
+            String encodedName = java.net.URLEncoder.encode(placeName, "UTF-8");
+            String url = "https://ortnamnsregistret.isof.se/place-names?place-name=" + encodedName;
+
+            Desktop.getDesktop().browse(new java.net.URI(url));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

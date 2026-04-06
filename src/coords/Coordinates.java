@@ -376,7 +376,6 @@ public class Coordinates {
         return zoneStr;
     }
 
-
     private char utmNumToAlpha(int num) {
         int code = num + 66; // 1 -> 'C'
         if (code > 72) code++; // Skip 'I'
