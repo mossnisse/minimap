@@ -13,15 +13,21 @@ import javax.swing.*;
 public class CreateLocalityDialog extends JPanel implements ActionListener {
 	@Serial
 	private static final long serialVersionUID = 5999128550024317489L;
+	private final GUI gui;
 	private final JFrame localFrame;
+	private final Canvas canvas;
+	private SpecimenBridgeDialog bridgeDialog;
 	private JTextField localityT, districtT, provinceT, countryT, continentT, SWTMNT, SWTMET, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;
 	private JScrollPane commentScroll;
 	JButton cancel, ok;
 
-	public CreateLocalityDialog(JFrame localFrame, String SWTMN, String SWTME, String province, String district) {
+	public CreateLocalityDialog(GUI gui, Canvas canvas, SpecimenBridgeDialog bridge, JFrame localFrame, String SWTMN, String SWTME, String province, String district) {
 		this.localFrame = localFrame;
+		this.gui = gui;
+		this.canvas = canvas;
+		this.bridgeDialog = bridge; // Store reference
 		setLayout(new SpringLayout());
 
 		initComponents(SWTMN, SWTME, province, district);
@@ -38,7 +44,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 
 		// Suggest Name from DB
 		String suggestName = "";
-		H2TableLayer odb = (H2TableLayer) GUI.canvas.getLayer("Ortnamnsdb");
+		H2TableLayer odb = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
 		if (odb != null) {
 			Point p = new Point(Integer.parseInt(SWTMN), Integer.parseInt(SWTME));
 			suggestName = odb.findNearest(p, 1000);
@@ -141,7 +147,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 	}
 	
 	private boolean createLokal() {
-		GUI.setCursorWait();
+		gui.setCursorWait();
 		System.out.println("Skapar lokal");  // TODO trace print
 		String localityName = localityT.getText();
 		String districtName = districtT.getText();
@@ -179,14 +185,14 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 		    System.out.println("result"+i);
 		    if (i ==1) {
 		    	JOptionPane.showMessageDialog(null, "There is already a locality with the same name in the district", "InfoBox: "+"Error", JOptionPane.INFORMATION_MESSAGE);
-		    	GUI.setCursorDefault();
+		    	gui.setCursorDefault();
 				return false;
 		    }
 		} catch (SQLException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 			JOptionPane.showMessageDialog(null, "couldnt check if locality already exists", "InfoBox: " + "SQL Error", JOptionPane.INFORMATION_MESSAGE);
-			GUI.setCursorDefault();
+			gui.setCursorDefault();
 			return false;
 		}
 
@@ -195,7 +201,7 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 	        Integer.parseInt(locSizeT.getText());
 		} catch (NumberFormatException nfe) {
 			JOptionPane.showMessageDialog(null, "Size is not an possitive integer", "InfoBox: " + "Error", JOptionPane.INFORMATION_MESSAGE);
-			GUI.setCursorDefault();
+			gui.setCursorDefault();
 			return false;
 		}
 		
@@ -226,18 +232,19 @@ public class CreateLocalityDialog extends JPanel implements ActionListener {
 		    preparedStmt.setInt(19, isPlaceV);
 		    
 		    preparedStmt.execute();
-		    if (SpecimenList.isOpen()) {
-		    	SpecimenList.updateLocalityList();
-		    	SpecimenList.updateSpecimenList();
-		    }
-			GUI.setCursorDefault();
+
+			if (bridgeDialog != null && bridgeDialog.isVisible()) {
+				bridgeDialog.updateLocalityList();
+			}
+
+			gui.setCursorDefault();
 			return true;
 				
 		} catch (SQLException | IOException e1) {
 				// TODO Auto-generated catch block
 			e1.printStackTrace();
 			JOptionPane.showMessageDialog(null, "Couldn't create locality", "InfoBox: " + "SQL Error", JOptionPane.INFORMATION_MESSAGE);
-			GUI.setCursorDefault();
+			gui.setCursorDefault();
 			return false;
 		}
 		

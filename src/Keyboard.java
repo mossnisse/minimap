@@ -1,16 +1,10 @@
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Keyboard {
 	private static final boolean[] key_down = new boolean[256];
-	private static final ArrayList<NActionListener> actionListeners = new ArrayList<NActionListener>();
 	private static final HashMap<Key, String> accelerators = new HashMap<Key, String>();
-	
-	public static void addActionListener(NActionListener al) {
-		actionListeners.add(al);
-	}
 	
 	public static void addAccelerator(Key key, String name) {
 		accelerators.put(key, name);

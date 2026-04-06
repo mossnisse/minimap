@@ -57,7 +57,7 @@ public class Canvas extends JPanel {
 			md.setMaxZoomL(40);
 			addLayerBotom(md);
 			
-			TopowebLayer tb = new TopowebLayer();
+			TopowebLayer tb = new TopowebLayer(this);
 			tb.setName("TopoWeb");
 			md.setHidden(false);
 			addLayerBotom(tb);

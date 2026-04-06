@@ -11,30 +11,32 @@ import org.xml.sax.SAXException;
 import java.awt.Desktop;
 import java.net.URI;
 
-public class GUI implements NActionListener {
-	static JFrame frame;
-	public static Canvas canvas;
-	static Point coord;
-	static SpecimenList sList;
+public class GUI  {
+	private JFrame frame;
+	private Canvas canvas;
+	private Point coord;
+	private SpecimenBridgeDialog bridgeDialog;
 
 	public GUI() {
 	}
 
-	private static void createAndShowGUI() {
-		// Create and set up the window.
-		GUI gui = new GUI();
+	private void createAndShowGUI() {
+		// Setup the frame and canvas
 		frame = new JFrame("Minimap");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setJMenuBar(gui.createMenuBar());
-		frame.setContentPane(gui.createContentPane());
 		canvas = new Canvas();
-		frame.add(canvas);
-		final java.awt.Point pressPt = new java.awt.Point();
 
+		// Setup Menus and Content
+		frame.setJMenuBar(createMenuBar());
+		frame.setContentPane(createContentPane());
+		frame.add(canvas);
+
+		// Mouse Interaction Logic
+		final java.awt.Point pressPt = new java.awt.Point();
 		canvas.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
-				pressPt.setLocation(e.getPoint()); // Store the point in the holder
+				pressPt.setLocation(e.getPoint());
 				canvas.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 			}
 
@@ -47,19 +49,20 @@ public class GUI implements NActionListener {
 			}
 
 			@Override
-			public void mouseClicked(MouseEvent arg0) {
-				if(Keyboard.isKeyDown(KeyEvent.VK_A)) {
-					gui.showLokal(arg0);
+			public void mouseClicked(MouseEvent e) {
+				// Use 'GUI.this' to call instance methods from inside the anonymous listener
+				if (Keyboard.isKeyDown(KeyEvent.VK_A)) {
+					showLokal(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_R)) {
-					gui.showRubin(arg0);
+					showRubin(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_C)) {
-					gui.showCoordDialog(arg0);
+					showCoordDialog(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_S)) {
-					gui.createLocalityDialog(arg0);
-				} else if (Keyboard.isKeyDown(KeyEvent.VK_K)) {  //K
-					gui.OpenKartbildcom(arg0);
+					createLocalityDialog(e);
+				} else if (Keyboard.isKeyDown(KeyEvent.VK_K)) {
+					OpenKartbildcom(e);
 				} else {
-					Point p  = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
+					Point p = canvas.translatePoint(new Point(e.getX(), e.getY()));
 					canvas.setCoordinate(p);
 				}
 			}
@@ -71,20 +74,21 @@ public class GUI implements NActionListener {
 			canvas.zoom(step);
 		});
 
-		// Display the window.
+		// Final Display Setup
 		frame.setSize(1000, 1000);
+		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
-		
+
+		// App State Recovery
 		try {
-			if (Settings.getValue("specimen dialog").equals("open")){
+			if ("open".equals(Settings.getValue("specimen dialog"))) {
 				searchSpecimens();
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
 		Keyboard.activate();
-		Keyboard.addActionListener(gui);
 	}
 
 	public JMenuBar createMenuBar() {
@@ -236,24 +240,22 @@ public class GUI implements NActionListener {
 		return menuBar;
 	}
 
-	public static void setCursorWait() {
+	public void setCursorWait() {
 		frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
-		for( Window window : frame.getOwnedWindows() ){
-            if( window.isVisible() ){
+		for (Window window : frame.getOwnedWindows() ){
+            if (window.isVisible()) {
                 window.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
             }
         }
-		System.out.println("Changing cursor wait");
 	}
 	
-	public static void setCursorDefault() {
+	public void setCursorDefault() {
 		frame.setCursor(Cursor.getDefaultCursor());
-		for( Window window : frame.getOwnedWindows() ){
-            if( window.isVisible() ){
+		for (Window window : frame.getOwnedWindows()) {
+            if (window.isVisible()) {
                 window.setCursor(Cursor.getDefaultCursor());
             }
         }
-		System.out.println("Changing cursor default");
 	}
 	
 	private void openFile() {
@@ -264,26 +266,22 @@ public class GUI implements NActionListener {
 				"Map Files", ".shp", ".SHP", "tif", "TIF", "tng", "TNG",
 				"gpx", "GPX");
 		fc.setFileFilter(filter);
-		int returnVal = fc.showOpenDialog(GUI.canvas);
+		int returnVal = fc.showOpenDialog(canvas);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			setCursorWait();
 			File file = fc.getSelectedFile();
-			System.out.println("Open: " + file.getName());
-			
+			//System.out.println("Open: " + file.getName());
 			try {
-				
 				RasterFilLayer rFile = new RasterFilLayer(file.getPath());
 				canvas.addLayerBotom(rFile);
-				
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(null, "kan inte öppna: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
+			} finally {
+				setCursorDefault();
 			}
-			setCursorDefault();
-
 		} else {
 			System.out.println("Open cancelled");
 		}
@@ -296,7 +294,7 @@ public class GUI implements NActionListener {
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(
 				"Waypoint Files", "gpx", "GPX");
 		fc.setFileFilter(filter);
-		int returnVal = fc.showOpenDialog(GUI.canvas);
+		int returnVal = fc.showOpenDialog(canvas);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
@@ -328,7 +326,7 @@ public class GUI implements NActionListener {
 	public void saveCSV() {
 		System.out.println("Save");
 		final JFileChooser fc = new JFileChooser();
-		int returnVal = fc.showSaveDialog(GUI.canvas);
+		int returnVal = fc.showSaveDialog(canvas);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
@@ -341,13 +339,8 @@ public class GUI implements NActionListener {
 	}
 
 	public void searchLocality() {
-		if (sList == null) {
-			SearchLocalityDialog d = new SearchLocalityDialog(frame, "");
-			d.setVisible(true);
-		} else {
-			SearchLocalityDialog d = new SearchLocalityDialog(frame, sList.getSelectedText());
-			d.setVisible(true);
-		}
+		SearchLocalityDialog d = new SearchLocalityDialog(frame, "", canvas);
+		d.setVisible(true);
 	}
 
 	public void viewCoordinate() {
@@ -439,7 +432,6 @@ public class GUI implements NActionListener {
 		Point p = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
 		Coordinates c = new Coordinates(p.getY(), p.getX());
 		String s = c.toRUBIN(true);
-		System.out.println(s);
 		RubinLayer r = new RubinLayer(s, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
 		canvas.addLayerTop(r);
@@ -455,7 +447,7 @@ public class GUI implements NActionListener {
 		if (localityID != -1) {
 			JFrame lframe = new JFrame("Locality");
 			lframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-			EditLocalityDialog diag = new EditLocalityDialog(localityID, lframe);
+			EditLocalityDialog diag = new EditLocalityDialog(localityID, lframe, bridgeDialog, canvas);
 			lframe.add(diag);
 			lframe.pack();
 			lframe.setLocationRelativeTo(frame);
@@ -473,14 +465,14 @@ public class GUI implements NActionListener {
 		if (localityID != -1) {
 
 			JFrame lframe = new JFrame("Locality");
-			EditLocalityDialog diag = new EditLocalityDialog(localityID,lframe);
+			EditLocalityDialog diag = new EditLocalityDialog(localityID, lframe, bridgeDialog, canvas);
 			//lframe.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 			lframe.add(diag);
 			diag.cancel.requestFocusInWindow();
 		}
 		//canvas.repaint();
 	}
-	
+
 	private void createLokalAtCoord() {
 		System.out.println("create Locality at");  // TODO trace print
 
@@ -500,26 +492,26 @@ public class GUI implements NActionListener {
 		} else {
 			socken = "utanför lager";
 		}
-		
+
 		JFrame lframe = new JFrame();
-		CreateLocalityDialog diag = new CreateLocalityDialog(lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
-		lframe.add(diag);
-		diag.cancel.requestFocusInWindow();
+		CreateLocalityDialog diag = new CreateLocalityDialog(this, canvas, bridgeDialog, lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
+			diag.cancel.requestFocusInWindow();
 		//canvas.repaint();
 	}
 
-	public static void searchSpecimens() {
+	public void searchSpecimens() {
 		SpecimenService service = new SpecimenService();
 
-		// Open the Bridge Dialog first
-		SpecimenBridgeDialog bridgeDialog = new SpecimenBridgeDialog(frame, service);
+		// Assign to the CLASS FIELD instead of a local variable
+		bridgeDialog = new SpecimenBridgeDialog(frame, service, canvas);
 
-		// Standard settings management
 		bridgeDialog.addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
 				try {
 					Settings.setValue("specimen dialog", "closed");
+					// Clear the reference when closed to prevent memory leaks
+					bridgeDialog = null;
 				} catch (IOException ex) {
 					ex.printStackTrace();
 				}
@@ -562,13 +554,7 @@ public class GUI implements NActionListener {
 		lframe.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
 		// Create the Dialog
-		CreateLocalityDialog diag = new CreateLocalityDialog(
-				lframe,
-				Integer.toString(coord.getY()),
-				Integer.toString(coord.getX()),
-				provins,
-				socken
-		);
+		CreateLocalityDialog diag = new CreateLocalityDialog(this, canvas, bridgeDialog, lframe, Integer.toString(coord.getY()), Integer.toString(coord.getX()), provins, socken);
 
 		// Focus the cancel button (or OK button)
 		diag.cancel.requestFocusInWindow();
@@ -614,67 +600,9 @@ public class GUI implements NActionListener {
 	}
 
 	public static void main(String[] args) {
-		// Schedule a job for the event-dispatching thread:
-		// creating and showing this application's GUI.
-		javax.swing.SwingUtilities.invokeLater(new Runnable() {
-			@Override
-			public void run() {
-				createAndShowGUI();
-			}
-		});
-	}
-
-	public void nActionPerformed(String a) {
-		switch (a) {
-		case "Open File":
-			openFile();
-			break;
-		case  "Open .gpx File":
-			openGPXFile();
-			break;
-		case "Save as .csv":
-			saveCSV();
-			break;
-		case "Exit":
-			System.exit(0);
-			break;
-		case "Search":
-			searchLocality();
-			break;
-		case "Zoom in":
-			canvas.zoom(0.5);
-			break;
-		case "Zoom out":
-			canvas.zoom(2);
-			break;
-		case "View Coordinate":
-			viewCoordinate();
-			break;
-		case "View Rubin":
-			viewRubin();
-			break;
-		case "About":
-			JOptionPane.showMessageDialog(frame, "Minimap 0.1, written by Nils Ericson 2017-04-13");
-			break;
-		case "Distance and Direction":
-			distance();
-			break;
-		case "Layers":
-			LayerDialog l = new LayerDialog(frame, canvas.getLayers());
-			l.setVisible(true);
-			break;
-		case "Set user":
-			userDialog();
-			break;
-		case "Show lokality at marker":
-			showLokalAtCoord();
-			break;
-		case "Create lokality at marker":
-			createLokalAtCoord();
-			break;
-		case "Search localities":
-			searchLocality();
-			break;
-	}
+			javax.swing.SwingUtilities.invokeLater(() -> {
+				GUI app = new GUI(); // Create the object
+				app.createAndShowGUI(); // Call the setup on that specific object
+			});
 	}
 }

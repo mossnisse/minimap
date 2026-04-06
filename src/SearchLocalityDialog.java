@@ -22,7 +22,7 @@ import javax.swing.*;
 public class SearchLocalityDialog extends JDialog implements ActionListener, ItemListener {
 	@Serial
 	private static final long serialVersionUID = 5830869660497471486L;
-
+	private Canvas canvas;
 	private JButton searchb, closeb, zoomb;
 	private JTextField lokal;
 	private JComboBox<String> provins;
@@ -38,8 +38,9 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	private JScrollPane scrollPane;
 	private TNGPointFileLayer lastResults; // Store reference for zooming
 
-	public SearchLocalityDialog(Frame aFrame, String text) {
+	public SearchLocalityDialog(Frame aFrame, String text, Canvas canvas) {
 		super(aFrame, false);
+		this.canvas = canvas;
 		setTitle("Search localities");
 		initGUI(text);
 		setLocationRelativeTo(aFrame);
@@ -141,8 +142,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			performSearch();
 		} else if (source == zoomb) {
 			if (lastResults != null && lastResults.size() > 0) {
-				GUI.canvas.setBounds(lastResults.getBounds().expand(5000));
-				GUI.canvas.repaint();
+				canvas.setBounds(lastResults.getBounds().expand(5000));
+				canvas.repaint();
 			}
 		} else if (source == closeb) {
 			setVisible(false);
@@ -185,8 +186,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			try (ResultSet result = statement.executeQuery()) {
 				while (result.next()) {
 					Coordinates c = new Coordinates(result.getDouble("lat"), result.getDouble("long"));
-					c.toProjected(CoordSystem.SWEREF99TM);
-					Point p = new Point((int) c.getEast(), (int) c.getNorth());
+					Coordinates swer = c.toProjected(CoordSystem.SWEREF99TM);
+					Point p = new Point((int) swer.getEast(), (int) swer.getNorth());
 					allPoints.add(p);
 					allNames.add(result.getString("locality") + " (" + result.getString("district") + ")");
 				}
@@ -194,7 +195,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		} catch (SQLException ex) { ex.printStackTrace(); }
 
 		// --- H2 ---
-		H2TableLayer od = (H2TableLayer) GUI.canvas.getLayer("Ortnamnsdb");
+		H2TableLayer od = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
 		if (od != null) {
 			TNGPointFileLayer h2Results = od.find(getProvinsNr(), searchPattern);
 			for (TNGPointFileLayer.Locality locus : h2Results.getLocalities()) {
@@ -208,8 +209,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
 			lastResults.setColor(Color.RED);
 
-			GUI.canvas.delLayer("Search Results");
-			GUI.canvas.addLayerTop(lastResults);
+			canvas.delLayer("Search Results");
+			canvas.addLayerTop(lastResults);
 
 			for (TNGPointFileLayer.Locality locus : lastResults.getLocalities()) {
 				addResultButton(locus);
@@ -223,7 +224,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		resultPanel.revalidate();
 		resultPanel.repaint();
 		scrollPane.getVerticalScrollBar().setValue(0);
-		GUI.canvas.repaint();
+		canvas.repaint();
 	}
 
 	private void addResultButton(TNGPointFileLayer.Locality locus) {
@@ -231,7 +232,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 		btn.addActionListener(e -> {
 			Point p = locus.getPoint();
-			GUI.canvas.setBounds(new BoundingBox(p.getX()-2500, p.getY()-2500, p.getX()+2500, p.getY()+2500));
+			canvas.setBounds(new BoundingBox(p.getX()-2500, p.getY()-2500, p.getX()+2500, p.getY()+2500));
 		});
 		resultPanel.add(btn);
 	}

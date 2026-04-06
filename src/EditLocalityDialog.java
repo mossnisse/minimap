@@ -21,17 +21,21 @@ import javax.swing.SpringLayout;
 public class EditLocalityDialog extends JPanel implements ActionListener{
 	@Serial
 	private static final long serialVersionUID = -6495783408904343790L;
+	private Canvas canvas;
 	public JButton cancel, delete, ok;
 	private final int localityID;
+	private final SpecimenBridgeDialog bridgeDialog;
 	JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, localitySize, zoomLevel, category;
 	JTextArea comments;
 	JCheckBox isPlace;
 	JLabel labelCreated, labelModified;
 	JFrame localFrame;
 
-	public EditLocalityDialog(int localityID, JFrame localFrame) {
+	public EditLocalityDialog(int localityID, JFrame localFrame, SpecimenBridgeDialog bridge, Canvas canvas) {
+		this.canvas = canvas;
 		this.localFrame = localFrame;
 		this.localityID = localityID;
+		this.bridgeDialog = bridge; // Store the reference
 		this.localFrame.setTitle("Loading Locality...");
 
 		// Set up Layout
@@ -218,13 +222,13 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 				PreparedStatement statement = conn.prepareStatement(sqlstmt);
 				statement.setInt(1, localityID);
 				statement.execute();
-				if (SpecimenList.isOpen()) {
-					SpecimenList.updateLocalityList();
-					SpecimenList.updateSpecimenList();
+				if (bridgeDialog != null && bridgeDialog.isVisible()) {
+					bridgeDialog.updateLocalityList();
 				}
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				JOptionPane.showMessageDialog(this, "Error deleting locality: " + e.getMessage());
 			}
 		}
 	}
@@ -264,13 +268,12 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 			statement.setInt(14, localityID);
 
 			statement.execute();
-			 if (SpecimenList.isOpen()) {
-			    	SpecimenList.updateLocalityList();
-			    	SpecimenList.updateSpecimenList();
-			    }
+			if (bridgeDialog != null && bridgeDialog.isVisible()) {
+				bridgeDialog.updateLocalityList();
+			}
 		} catch (SQLException | IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
 		}
 	}
 
@@ -279,7 +282,7 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 		if ("ok".equals(ev.getActionCommand())) {
 			System.out.println("OK");
 			updateLokal();
-			GUI.canvas.repaint();
+			canvas.repaint();
 			localFrame.setVisible(false);
 			localFrame.dispose();
 		} else if ("cancel".equals(ev.getActionCommand())) {
@@ -288,7 +291,7 @@ public class EditLocalityDialog extends JPanel implements ActionListener{
 			localFrame.dispose();
 		} else if ("delete".equals(ev.getActionCommand())) {
 			deleteLokal();
-			GUI.canvas.repaint();
+			canvas.repaint();
 			localFrame.setVisible(false);
 			localFrame.dispose();
 		}
