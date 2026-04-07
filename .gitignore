@@ -6,4 +6,5 @@
 /logg.txt
 /h2/
 /test.h2.db
-settings.txt
+/settings.txt
+tile_cache/*

@@ -2,7 +2,9 @@ import coords.*;
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import javax.imageio.ImageIO;
 import geometry.BoundingBox;
@@ -77,9 +79,10 @@ public class TopowebLayer implements Layer {
 			return "tilematrix: "+zoomLevel+" Tile column: "+col+" Tile row: "+row;
 		}
 	}
-	
+
 	private class TileBuffer {
 		private final int MAX_TILES = 1000;
+		private final String CACHE_ROOT = "tile_cache/topowebb";
 		private static final java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
 		private final java.util.Set<TileIndex> loading = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
@@ -93,18 +96,41 @@ public class TopowebLayer implements Layer {
 		);
 
 		public Image getTileOrFetch(TileIndex index) {
+			// Check RAM
 			if (tiles.containsKey(index)) {
 				return tiles.get(index);
 			}
 
-			// If not already loading, start the download
-			if (loading.add(index)) {
-				downloadTileAsync(index);
+			// Check Disk (Synchronous check, but ImageIO.read is fast enough for local disk)
+			File localFile = getLocalPath(index);
+			if (localFile.exists()) {
+				try {
+					Image img = ImageIO.read(localFile);
+					if (img != null) {
+						tiles.put(index, img);
+						return img;
+					} else {
+						localFile.delete();
+					}
+				} catch (IOException e) {
+					System.err.println("Failed to read cached tile: " + localFile);
+				}
 			}
-			return null; // Return null immediately; we'll draw it once it arrives
+
+			// Fetch from Network
+			if (loading.add(index)) {
+				downloadTileAsync(index, localFile);
+			}
+			return null;
 		}
 
-		private void downloadTileAsync(TileIndex index) {
+		private File getLocalPath(TileIndex index) {
+			// Path: cache/z/col/row.png
+			return new File(String.format("%s/%d/%d/%d.png",
+					CACHE_ROOT, index.zoomLevel, index.col, index.row));
+		}
+
+		private void downloadTileAsync(TileIndex index, File localFile) {
 			String tileUrl = url + "?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb"
 					+ "&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX=" + index.zoomLevel
 					+ "&TILEROW=" + index.row + "&TILECOL=" + index.col + "&FORMAT=image/png";
@@ -113,20 +139,26 @@ public class TopowebLayer implements Layer {
 					.uri(java.net.URI.create(tileUrl))
 					.build();
 
-			client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofInputStream())
-					.thenApply(response -> {
-						try (var is = response.body()) {
-							return ImageIO.read(is);
-						} catch (IOException e) {
-							return null;
+			client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofByteArray())
+					.thenAccept(response -> {
+						byte[] data = response.body();
+						if (data != null && data.length > 0) {
+							try {
+								// Save to Disk
+								localFile.getParentFile().mkdirs();
+								Files.write(localFile.toPath(), data);
+
+								// Load into RAM
+								Image img = ImageIO.read(new java.io.ByteArrayInputStream(data));
+								if (img != null) {
+									tiles.put(index, img);
+									canvas.repaint();
+								}
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
 						}
-					})
-					.thenAccept(img -> {
-						if (img != null) {
-							tiles.put(index, img);
-							canvas.repaint();
-						}
-						loading.remove(index); // Done loading
+						loading.remove(index);
 					});
 		}
 	}
