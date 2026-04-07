@@ -3,10 +3,12 @@ import geometry.BoundingBox;
 import java.awt.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+
 
 public class MYSQLTableLayer implements Layer {
 	private String name;
@@ -15,7 +17,8 @@ public class MYSQLTableLayer implements Layer {
 	private int maxZoom, minZoom;
 	private CoordSystem cs;
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
-	private List<LocalityRec> cache = new ArrayList<>();
+	private List<LocalityRec> cache = new CopyOnWriteArrayList<>();
+	private final Object dbLock = new Object();
 	private BoundingBox cachedBounds = null;
 	private PreparedStatement activeStatement = null;
 
@@ -78,7 +81,9 @@ public class MYSQLTableLayer implements Layer {
 			int y = (int) ((rec.n * yScale) + yShift);
 
 			// Optimization: Only draw if actually on screen (clipping)
-			if (x < -10 || x > g2d.getClipBounds().width + 10) continue;
+			//if (x < -10 || x > g2d.getClipBounds().width + 10) continue;
+			Shape clip = g2d.getClip();
+			if (clip != null && !clip.contains(x, y)) continue;
 
 			g2d.drawOval(x - 3, y - 3, 6, 6);
 			if (rec.precision > 0) {
@@ -91,52 +96,61 @@ public class MYSQLTableLayer implements Layer {
 	}
 
 	private boolean shouldRefreshCache(BoundingBox currentBounds) {
-		if (cachedBounds == null || cache.isEmpty()) return true;
-		// Check if current view is still inside our cached rectangle
+		if (cachedBounds == null) return true;
 		return !cachedBounds.isInside(currentBounds);
 	}
 
-	private void refreshCache(BoundingBox bounds) throws SQLException {
-		Connection conn = DBConnection.getConn();
+	private void refreshCache(BoundingBox bounds) { // Removed 'throws SQLException'
+		// Use a lock to ensure only one thread touches the DB/Statement at a time
+		synchronized (dbLock) {
+			try {
+				Connection conn = DBConnection.getConn();
 
-		// Prepare statement once or recover if connection changed
-		if (activeStatement == null || activeStatement.getConnection().isClosed()) {
-			String sql = "SELECT SWTMN, SWTME, locality, Coordinateprecision FROM locality " +
-					"WHERE SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?;";
-			activeStatement = conn.prepareStatement(sql);
-		}
+				// Fixed typo here: checking activeStatement.isClosed() instead of connection twice
+				if (activeStatement == null || activeStatement.isClosed() || activeStatement.getConnection().isClosed()) {
+					String sql = "SELECT SWTMN, SWTME, locality, Coordinateprecision FROM locality " +
+							"WHERE SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?;";
+					activeStatement = conn.prepareStatement(sql);
+				}
 
-		// Create a BUFFER (e.g., fetch 50% more area in every direction)
-		int width = Math.abs(bounds.getX1() - bounds.getX2());
-		int height = Math.abs(bounds.getY1() - bounds.getY2());
+				BoundingBox bufferedArea = bounds.grow(0.5);
 
-		BoundingBox bufferedArea = bounds.grow(0.5);
+				activeStatement.setInt(1, Math.min(bufferedArea.getY1(), bufferedArea.getY2()));
+				activeStatement.setInt(2, Math.max(bufferedArea.getY1(), bufferedArea.getY2()));
+				activeStatement.setInt(3, Math.min(bufferedArea.getX1(), bufferedArea.getX2()));
+				activeStatement.setInt(4, Math.max(bufferedArea.getX1(), bufferedArea.getX2()));
 
-		int yMin = Math.min(bufferedArea.getY1(), bufferedArea.getY2());
-		int yMax = Math.max(bufferedArea.getY1(), bufferedArea.getY2());
-		int xMin = Math.min(bufferedArea.getX1(), bufferedArea.getX2());
-		int xMax = Math.max(bufferedArea.getX1(), bufferedArea.getX2());
-
-		activeStatement.setInt(1, yMin);
-		activeStatement.setInt(2, yMax);
-		activeStatement.setInt(3, xMin);
-		activeStatement.setInt(4, xMax);
-
-		cache.clear();
-		try (ResultSet rs = activeStatement.executeQuery()) {
-			while (rs.next()) {
-				cache.add(new LocalityRec(
-						rs.getInt("SWTMN"),
-						rs.getInt("SWTME"),
-						rs.getString("locality"),
-						rs.getInt("Coordinateprecision")
-				));
+				try (ResultSet rs = activeStatement.executeQuery()) {
+					List<LocalityRec> temp = new ArrayList<>();
+					while (rs.next()) {
+						temp.add(new LocalityRec(
+								rs.getInt("SWTMN"),
+								rs.getInt("SWTME"),
+								rs.getString("locality"),
+								rs.getInt("Coordinateprecision")
+						));
+					}
+					// Update the thread-safe list all at once
+					cache.clear();
+					cache.addAll(temp);
+					this.cachedBounds = bufferedArea;
+				}
+			} catch (SQLException e) {
+				// THIS WILL TELL US EXACTLY WHAT IS WRONG
+				System.err.println("=== SQL ERROR IN MYSQLTableLayer ===");
+				System.err.println("Message: " + e.getMessage());
+				System.err.println("SQL State: " + e.getSQLState());
+				e.printStackTrace();
+				System.err.println("====================================");
 			}
 		}
-		// Remember what area we now have in RAM
-		this.cachedBounds = bufferedArea;
 	}
-	
+
+	public void invalidateCache() {
+		this.cachedBounds = null;
+		//this.cache.clear();
+	}
+
 	@Override
 	public boolean isHidden() {
 		return hidden;
@@ -218,6 +232,8 @@ public class MYSQLTableLayer implements Layer {
 		}
 			
 	}
+
+
 	
 	static void main(String[] args) {
 		MYSQLTableLayer MT = new MYSQLTableLayer();

@@ -18,7 +18,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private final SpecimenBridgeDialog bridgeDialog;
 
 	// Components
-	private JTextField name, altNames, RT90N, RT90E, province, district, coordinate_source, localitySize, zoomLevel, category;
+	private JTextField name, altNames, province, district, coordinate_source, localitySize, zoomLevel, category;
 	private JTextArea comments;
 	private JCheckBox isPlace;
 	private JLabel labelCreated, labelModified;
@@ -58,8 +58,6 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		// Initialize Components
 		name = new JTextField(20);
 		altNames = new JTextField(20);
-		RT90N = new JTextField(10);
-		RT90E = new JTextField(10);
 		province = new JTextField(15);
 		district = new JTextField(15);
 		localitySize = new JTextField(10);
@@ -86,9 +84,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		// Add to Layout
 		JLabel lName = addField("Name:", name, content, layout, 10, content);
 		JLabel lAlt = addField("Alt Names:", altNames, content, layout, 10, lName);
-		JLabel lNorth = addField("RT90 N:", RT90N, content, layout, 10, lAlt);
-		JLabel lEast = addField("RT90 E:", RT90E, content, layout, 10, lNorth);
-		JLabel lProv = addField("Province:", province, content, layout, 10, lEast);
+		JLabel lProv = addField("Province:", province, content, layout, 10, lAlt);
 		JLabel lSize = addField("Size:", localitySize, content, layout, 10, lProv);
 		JLabel lDist = addField("District:", district, content, layout, 10, lSize);
 		JLabel lSrc = addField("Source:", coordinate_source, content, layout, 10, lDist);
@@ -135,13 +131,9 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		layout.putConstraint(SpringLayout.WEST, ok, 10, SpringLayout.EAST, delete);
 		layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
 
-		// Anchor the right edge of the panel to the right edge of the text fields
 		layout.putConstraint(SpringLayout.EAST, this.getContentPane(), 10, SpringLayout.EAST, name);
-		// Anchor the bottom edge of the panel to the bottom of the buttons
 		layout.putConstraint(SpringLayout.SOUTH, this.getContentPane(), 10, SpringLayout.SOUTH, cancel);
-		// This tells the layout "The width is name.width + 10px"
 		layout.putConstraint(SpringLayout.EAST, this.getContentPane(), 20, SpringLayout.EAST, scrollPane);
-		// This tells the layout "The height is cancel.bottom + 10px"
 		layout.putConstraint(SpringLayout.SOUTH, this.getContentPane(), 10, SpringLayout.SOUTH, cancel);
 
 		// Listeners
@@ -176,7 +168,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private void loadData() {
-		String sql = "SELECT locality, alternative_names, RT90N, RT90E, province, district, " +
+		String sql = "SELECT locality, alternative_names, province, district, " +
 				"coordinate_source, lcomments, created, createdBy, modified, modifiedBy, " +
 				"Coordinateprecision, category, zoomLevel, isPlace FROM locality WHERE ID = ?";
 
@@ -189,25 +181,23 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					// Basic Fields
 					name.setText(rs.getString(1));
 					altNames.setText(rs.getString(2));
-					RT90N.setText(rs.getString(3));
-					RT90E.setText(rs.getString(4));
-					province.setText(rs.getString(5));
-					district.setText(rs.getString(6));
-					coordinate_source.setText(rs.getString(7));
-					comments.setText(rs.getString(8));
+					province.setText(rs.getString(3));
+					district.setText(rs.getString(4));
+					coordinate_source.setText(rs.getString(5));
+					comments.setText(rs.getString(6));
 
 					// Metadata Labels (Columns 9, 10, 11, 12)
-					labelCreated.setText("Created: " + rs.getString(9) + " by " + rs.getString(10));
-					labelModified.setText("Modified: " + rs.getString(11) + " by " + rs.getString(12));
+					labelCreated.setText("Created: " + rs.getString(7) + " by " + rs.getString(8));
+					labelModified.setText("Modified: " + rs.getString(9) + " by " + rs.getString(10));
 
 					// Lower Fields
-					localitySize.setText(rs.getString(13));
-					category.setText(rs.getString(14));
-					zoomLevel.setText(rs.getString(15));
+					localitySize.setText(rs.getString(11));
+					category.setText(rs.getString(12));
+					zoomLevel.setText(rs.getString(13));
 
-					isPlace.setSelected(rs.getInt(16) == 1);
+					isPlace.setSelected(rs.getInt(14) == 1);
 
-					setTitle("View Locality: " + rs.getString(1));
+					setTitle("View Locality: " + name.getText());
 				}
 			}
 		} catch (SQLException e) {
@@ -216,66 +206,80 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		}
 	}
 	
-	private void deleteLokal() {
+	private void deleteLocality() {
 		int dialogResult = JOptionPane.showConfirmDialog (null, "Do you realy want to delete the local?","Warning",JOptionPane.YES_NO_OPTION);
 		if(dialogResult == JOptionPane.YES_OPTION){
 			try {
 				Connection conn = DBConnection.getConn();
 				String sqlstmt = "DELETE FROM locality WHERE ID =?";
-				System.out.println(sqlstmt);
-				PreparedStatement statement = conn.prepareStatement(sqlstmt);
-				statement.setInt(1, localityID);
-				statement.execute();
-				if (bridgeDialog != null && bridgeDialog.isVisible()) {
-					bridgeDialog.updateLocalityList();
+				try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
+					statement.setInt(1, localityID);
+					statement.execute();
+					if (bridgeDialog != null && bridgeDialog.isVisible()) {
+						bridgeDialog.updateLocalityList();
+					}
+					Layer layer = canvas.getLayer("LokalDB");
+					if (layer instanceof MYSQLTableLayer mysqlLayer) {
+						mysqlLayer.invalidateCache();
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
 				}
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(this, "Error deleting locality: " + e.getMessage());
 			}
 		}
 	}
 	
-	private void updateLokal() {
+	private void updateLocality() {
+		// check if size is possitive integer
+		try {
+			int size = Integer.parseInt(localitySize.getText());
+			if (size < 0) throw new NumberFormatException();
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(null, "Size is not an possitive integer", "InfoBox: " + "Error", JOptionPane.INFORMATION_MESSAGE);
+			return;
+		}
+
 		try {
 			Connection conn = DBConnection.getConn();
-			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, RT90N = ?, RT90E = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?, category = ?, zoomLevel =?, isPlace =?  WHERE ID =?";
-			System.out.println(sqlstmt);
-			PreparedStatement statement = conn.prepareStatement(sqlstmt);
-			statement.setString(1, name.getText());
-			statement.setString(2, district.getText());
-			statement.setString(3, province.getText());
-			statement.setString(4, RT90N.getText());
-			statement.setString(5, RT90E.getText());
-			statement.setString(6, altNames.getText());
-			statement.setString(7, coordinate_source.getText());
-			statement.setString(8, comments.getText());
-			statement.setString(9,Settings.getValue("user"));
-			statement.setString(10,localitySize.getText());
-			statement.setString(11, category.getText());
-			
-			int zl;
-			try {
-				zl = Integer.parseInt(zoomLevel.getText());
-			} catch (NumberFormatException e) {
-				zl = -1;
-			}
-			statement.setInt(12, zl);
-			
-			int i=0;
-			if (isPlace.isSelected()) {
-				i=1;
-			}
-			statement.setInt(13, i);
-			
-			statement.setInt(14, localityID);
+			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?, category = ?, zoomLevel =?, isPlace =?  WHERE ID =?";
+			try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
+				statement.setString(1, name.getText());
+				statement.setString(2, district.getText());
+				statement.setString(3, province.getText());
+				statement.setString(4, altNames.getText());
+				statement.setString(5, coordinate_source.getText());
+				statement.setString(6, comments.getText());
+				statement.setString(7, Settings.getValue("user"));
+				statement.setString(8, localitySize.getText());
+				statement.setString(9, category.getText());
 
-			statement.execute();
-			if (bridgeDialog != null && bridgeDialog.isVisible()) {
-				bridgeDialog.updateLocalityList();
+				int zl;
+				try {
+					zl = Integer.parseInt(zoomLevel.getText());
+				} catch (NumberFormatException e) {
+					zl = -1;
+				}
+				statement.setInt(10, zl);
+				statement.setBoolean(11, isPlace.isSelected());
+				statement.setInt(12, localityID);
+
+				statement.execute();
+				if (bridgeDialog != null && bridgeDialog.isVisible()) {
+					bridgeDialog.updateLocalityList();
+				}
+				Layer layer = canvas.getLayer("LokalDB");
+				if (layer instanceof MYSQLTableLayer mysqlLayer) {
+					mysqlLayer.invalidateCache();
+				}
+			} catch (SQLException | IOException e) {
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
 			}
-		} catch (SQLException | IOException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
 		}
@@ -285,13 +289,13 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	public void actionPerformed(ActionEvent ev) {
 		String cmd = ev.getActionCommand();
 		if ("ok".equals(cmd)) {
-			updateLokal();
+			updateLocality();
 			canvas.repaint();
 			this.dispose();
 		} else if ("cancel".equals(cmd)) {
 			this.dispose();
 		} else if ("delete".equals(cmd)) {
-			deleteLokal();
+			deleteLocality();
 			canvas.repaint();
 			this.dispose();
 		}

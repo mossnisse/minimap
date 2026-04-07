@@ -491,9 +491,8 @@ public class GUI  {
 			if (so != null) district = so.getName();
 		}
 
-		new CreateLocalityDialog(frame, this, canvas, bridgeDialog,
-				Integer.toString(p.y), Integer.toString(p.x), province, district);
-
+		CreateLocalityDialog d = new CreateLocalityDialog(frame, this, canvas, bridgeDialog, p.y, p.x, province, district);
+		d.setVisible(true);
 		canvas.repaint();
 	}
 
