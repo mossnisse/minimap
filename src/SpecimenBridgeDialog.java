@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -14,7 +15,7 @@ public class SpecimenBridgeDialog extends JDialog {
     private final SpecimenService service;
     private final Canvas canvas;
     private int totalCount;
-    private int currentIndex = 0;
+    private int currentIndex;
     private Specimen targetSpecimen;
     private BridgeData originalBridge; // What we loaded from DB
     private BridgeData lastSavedBridge; // For the F1 "Copy Last" feature
@@ -48,9 +49,14 @@ public class SpecimenBridgeDialog extends JDialog {
         this.service = service;
         this.canvas = canvas;
         this.totalCount = service.getCacheCount(); // Only get the number, not the data
+        try {
+            currentIndex = Integer.parseInt(Settings.getValue("cnr"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         initUI();
-        loadSpecimen(0); // Fetch the first one
+        loadSpecimen(currentIndex);
         this.pack();
         this.setLocationRelativeTo(owner);
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
@@ -85,8 +91,10 @@ public class SpecimenBridgeDialog extends JDialog {
             }
         });
 
-        // --- F1: COPY LAST SAVED DATA ---
+        // --- F1 & Ctrl + L: COPY LAST SAVED DATA ---
         inputMap.put(KeyStroke.getKeyStroke("F1"), "copyLast");
+        inputMap.put(KeyStroke.getKeyStroke("control L"), "copyLast");
+
         actionMap.put("copyLast", new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -152,7 +160,7 @@ public class SpecimenBridgeDialog extends JDialog {
         navPanel.add(totalLabel);
         navPanel.add(nextBtn);
 
-        topPanel.add(navPanel, BorderLayout.SOUTH); // Combined with infoPanel later
+        topPanel.add(navPanel, BorderLayout.NORTH); // Combined with infoPanel later
 
         // Specimen Data Display
         JPanel infoPanel = new JPanel(new GridBagLayout());
@@ -354,7 +362,7 @@ public class SpecimenBridgeDialog extends JDialog {
         } else {
             // Reset fields if cache was cleared but no new hits found
             targetSpecimen = null;
-            currentIndex = 0;
+            //currentIndex = 0;
             clearFields();
             setTitle("Bridge Tool - Cache Empty");
         }
@@ -403,6 +411,11 @@ public class SpecimenBridgeDialog extends JDialog {
         if (s != null) {
             this.targetSpecimen = s;
             this.currentIndex = index;
+            try {
+                Settings.setValue("cnr", String.valueOf(index));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             updateUIFields(s);
         }
     }
@@ -784,35 +797,50 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     public void searchLocality() {
-        // should also catch province and pass to SearchLocalityDialog
         String selectedText = "";
+        String province = "";
 
-        // Find which component currently has focus in this dialog
+        // Capture Province from the target specimen
+        if (targetSpecimen != null) {
+            // Assuming your Specimen object has a getProvince method
+            province = targetSpecimen.getProvince();
+        }
+
+        // Get text selection using Java 21 Pattern Matching
         Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-
-        if (focusOwner instanceof javax.swing.text.JTextComponent) {
-            javax.swing.text.JTextComponent textComp = (javax.swing.text.JTextComponent) focusOwner;
+        if (focusOwner instanceof javax.swing.text.JTextComponent textComp) {
             String selection = textComp.getSelectedText();
-            if (selection != null && !selection.trim().isEmpty()) {
+            if (selection != null && !selection.isBlank()) {
                 selectedText = selection.trim();
             }
         }
 
-        // If no text was selected, we can fall back to a default (e.g., the specimen's recorded locality)
         if (selectedText.isEmpty() && targetSpecimen != null) {
             selectedText = targetSpecimen.getSpecimenLocality();
         }
 
-        try {
-            StringSelection stringSelection = new StringSelection(selectedText);
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboard.setContents(stringSelection, null);
-        } catch (Exception e) {
-            System.err.println("Clipboard copy failed: " + e.getMessage());
+        // Clipboard handling
+        if (!selectedText.isEmpty()) {
+            try {
+                Toolkit.getDefaultToolkit().getSystemClipboard()
+                        .setContents(new StringSelection(selectedText), null);
+            } catch (Exception e) {
+                System.err.println("Clipboard error: " + e.getMessage());
+            }
         }
 
-        // Open the existing dialog (assuming 'frame' is accessible or use 'this')
-        SearchLocalityDialog d = new SearchLocalityDialog(null, selectedText, canvas);
+        // Resolve the Parent Frame
+        // We look for the top-level Window (the GUI Frame) that contains this dialog
+        Frame parentFrame = (Frame) javax.swing.SwingUtilities.getWindowAncestor(this);
+
+        // Open and Position the Dialog
+        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, selectedText, canvas);
+
+        // Pass the province if your dialog supports it
+        //d.setProvince(province);
+
+        d.pack();
+        d.setLocationRelativeTo(this);
         d.setVisible(true);
     }
 

@@ -214,24 +214,26 @@ public class TopowebLayer implements Layer {
 		int origoY = 8500000;
 		int origoX = -1200000;
 		int tileWidth = tileWidth(tilematrix); // meters
-		return new BoundingBox(origoX+tileWidth*tilecol, origoY-tileWidth*(tilerow+1),  origoX+tileWidth*(tilecol+1), origoY-tileWidth*(tilerow));
+		return new BoundingBox(origoX + tileWidth * tilecol, origoY - tileWidth * (tilerow + 1),  origoX + tileWidth * (tilecol + 1), origoY - tileWidth * (tilerow));
 	}
 	
 	private static BoundingBox getTileBounds(TileIndex ind) {
 		int origoY = 8500000;
 		int origoX = -1200000;
 		int tileWidth = tileWidth(ind.zoomLevel); // meters
-		return new BoundingBox(origoX+tileWidth*ind.col, origoY-tileWidth*(ind.row+1),  origoX+tileWidth*(ind.col+1), origoY-tileWidth*(ind.row));
+		return new BoundingBox(origoX + tileWidth * ind.col, origoY - tileWidth * (ind.row + 1),  origoX + tileWidth * (ind.col + 1), origoY - tileWidth * (ind.row));
 	}
-	
-	private static int log(int x, int base)
-	{
-	    return (int) (Math.log(x) / Math.log(base));
-	}
-	
+
 	private static int tileMatrix(int tileWidth) {
-		int m = log(1048576/tileWidth,2);
-		if (m>TILEMATRIX_LIMIT) m=TILEMATRIX_LIMIT;
+		// 1048576 is 2^20.
+		// Integer.numberOfLeadingZeros(tileWidth) gives us the log2 indirectly.
+		// In a 32-bit integer, log2(x) is 31 - numberOfLeadingZeros(x).
+
+		int log2TileWidth = 31 - Integer.numberOfLeadingZeros(tileWidth);
+		int m = 20 - log2TileWidth;
+
+		if (m > TILEMATRIX_LIMIT) m = TILEMATRIX_LIMIT;
+		if (m < 0) m = 0; // Safety check
 		return m;
 	}
 

@@ -206,7 +206,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		// --- Result Handling ---
 		if (!allPoints.isEmpty()) {
 			lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
-			lastResults.setColor(Color.RED);
+			lastResults.setColor(Color.BLUE);
 
 			canvas.delLayer("Search Results");
 			canvas.addLayerTop(lastResults);
