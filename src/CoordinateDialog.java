@@ -1,173 +1,79 @@
-import coords.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener; //property change stuff
 import java.io.Serial;
-import javax.swing.JButton;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.JTextField;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
-/* 1.4 example used by DialogDemo.java. */
-class CoordinateDialog extends JDialog
-                   implements ActionListener, PropertyChangeListener {
+public class CoordinateDialog extends JDialog {
 	@Serial
-	private static final long serialVersionUID = -4511067776450458493L;
-	private final JTextField rt90north, rt90east, wgs84north, wgs84east, sweref99TMnorth, sweref99TMeast, socken, provins, rubin;
-    public JOptionPane optionPane;
-    private final TNGPolygonFileLayer provinces, district;
-    private final Point p;
-    public JButton cancel;
+	private static final long serialVersionUID = 1L;
 
-    public Point getCoordinateSweref99TM() {
-    	int norths = Integer.parseInt(sweref99TMnorth.getText());
-    	int easts = Integer.parseInt(sweref99TMeast.getText());
-        return new Point(easts, norths);
-    }
+	public CoordinateDialog(Frame owner, String sweref, String rt90, String wgs84, String rubin, String province, String district) {
+		super(owner, "Coordinate Details", false);
 
-    /** Creates the reusable dialog. */
-    public CoordinateDialog(Frame aFrame, Point p, TNGPolygonFileLayer provinces, TNGPolygonFileLayer district) { //DialogDemo parent
-        super(aFrame, true);
-        setTitle("View Coordinate");
-        this.provinces = provinces;
-        this.district = district;
-        this.p = p;
+		// Main container with some padding
+		JPanel panel = new JPanel(new SpringLayout());
+		panel.setBorder(new EmptyBorder(10, 10, 10, 10));
+		SpringLayout layout = (SpringLayout) panel.getLayout();
 
-        sweref99TMnorth = new JTextField(10);
-        sweref99TMeast = new JTextField(10);
-        wgs84north = new JTextField(10);
-        wgs84east = new JTextField(10);
-        rt90north = new JTextField(10);
-        rt90east = new JTextField(10);
-        provins = new JTextField(10);
-        socken = new JTextField(10);
-        rubin = new JTextField(10);
-        cancel = new JButton("Cancel");
-        
-        if (p!=null) {
-        	update();
-        }
+		// Initialize and add fields
+		JTextField swerefF = createReadOnlyField(sweref);
+		JTextField rt90F = createReadOnlyField(rt90);
+		JTextField wgs84F = createReadOnlyField(wgs84);
+		JTextField rubinF = createReadOnlyField(rubin);
+		JTextField provF = createReadOnlyField(province);
+		JTextField distF = createReadOnlyField(district);
 
-        //Create an array of the text and components to be displayed.
-        Object[] array = {"Sweref99TM North", sweref99TMnorth, "East", sweref99TMeast, "RT90: North", rt90north, "East", rt90east, "WGS84 North", wgs84north, "East", wgs84east, "Provins", provins, "Socken", socken, "RUBIN", rubin};
+		// Build the UI rows
+		JLabel last = null;
+		last = addRow("Sweref99TM (N, E):", swerefF, panel, layout, last);
+		last = addRow("RT90 (N, E):", rt90F, panel, layout, last);
+		last = addRow("WGS84 (lat, lon):", wgs84F, panel, layout, last);
+		last = addRow("RUBIN:", rubinF, panel, layout, last);
+		last = addRow("Province:", provF, panel, layout, last);
+		last = addRow("District:", distF, panel, layout, last);
 
-        //Create an array specifying the number of dialog buttons
-        //and their text.
-        Object[] options = {"Enter", "Hide", cancel, "Update"};
+		// OK Button to close
+		JButton okButton = new JButton("Close");
+		okButton.addActionListener(e -> dispose());
+		panel.add(okButton);
 
-        //Create the JOptionPane.
-        optionPane = new JOptionPane(array,
-                                    JOptionPane.QUESTION_MESSAGE,
-                                    JOptionPane.YES_NO_OPTION,
-                                    null,
-                                    options,
-                                    cancel);
+		layout.putConstraint(SpringLayout.NORTH, okButton, 20, SpringLayout.SOUTH, last);
+		layout.putConstraint(SpringLayout.HORIZONTAL_CENTER, okButton, 0, SpringLayout.HORIZONTAL_CENTER, panel);
 
-        //Make this dialog display it.
-        setContentPane(optionPane);
-        pack();
+		// Set panel boundaries for pack()
+		layout.putConstraint(SpringLayout.EAST, panel, 10, SpringLayout.EAST, swerefF);
+		layout.putConstraint(SpringLayout.SOUTH, panel, 10, SpringLayout.SOUTH, okButton);
 
-        //Handle window closing correctly.
-        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-        addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent we) {
-            }
-        });
-
-		addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentShown(ComponentEvent ce) {
-				// Request focus on the cancel button to swallow stray keystrokes
-				cancel.requestFocusInWindow();
-			}
-		});
-
-        //Register an event handler that puts the text into the option pane.
-        sweref99TMnorth.addActionListener(this);
-
-        //Register an event handler that reacts to option pane state changes.
-        optionPane.addPropertyChangeListener(this);
-    }
-
-    private void update() {
-    	sweref99TMnorth.setText(String.valueOf(p.getY()));
-    	sweref99TMeast.setText(String.valueOf(p.getX()));
-    	Coordinates sweref99TM = new Coordinates(p.getY(),p.getX());
-    	Coordinates wgs84 = sweref99TM.toWGS84(CoordSystem.SWEREF99TM);
-    	Coordinates RT90 = wgs84.toProjected(CoordSystem.RT90);
-    	wgs84north.setText(String.valueOf(wgs84.getNorth()));
-    	wgs84east.setText(String.valueOf(wgs84.getEast()));
-    	rt90north.setText(String.valueOf(Math.round(RT90.getNorth())));
-    	rt90east.setText(String.valueOf(Math.round(RT90.getEast())));
-    	
-    	TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
-    	if (pr != null) {
-    		provins.setText(pr.getName());
-    	} else {
-    		provins.setText("utanför lager");
-    	}
-    	TNGPolygonFileLayer.Province so = district.inPolygon(p);
-    	if (so != null) {
-    		socken.setText(so.getName());
-    	} else {
-    		socken.setText("utanför lager");
-    	}
-    	rubin.setText(RT90.toRUBIN(false));
-    }
-    
-    private void updateFromRubin() {
-    	if (rubin.getText().isEmpty()) {
-    		System.out.println("empty");
-    	} else {
-    		System.out.println("full gubbe");
-    		Coordinates c = new Coordinates(0,0);
-			c.setFromRUBIN(rubin.getText(), true);
-    		p.x = (int) c.getEast();
-    		p.y = (int) c.getNorth();
-    		update();
-    	}
-    }
-    
-    /** This method handles events for the text field. */
-    public void actionPerformed(ActionEvent e) {
-        //optionPane.setValue(btnString1);
-    	//System.out.println("action perf");
-    }
-
-    /** This method reacts to state changes in the option pane. */
-	public void propertyChange(PropertyChangeEvent e) {
-		if (!"value".equals(e.getPropertyName()) || !isVisible()) return;
-
-		Object value = e.getNewValue();
-		if (value == null || value == JOptionPane.UNINITIALIZED_VALUE) return;
-
-		optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
-
-		String valStr = value.toString();
-
-		// Logic separation: Update vs Commit
-		if ("Update".equals(valStr)) {
-			updateFromRubin();
-		} else if ("Enter".equals(valStr)) {
-			if (validateInputs()) {
-				dispose();
-			}
-		} else {
-			// Cancel or Hide
-			dispose();
-		}
+		setContentPane(panel);
+		this.getRootPane().setDefaultButton(okButton);
+		pack();
+		setLocationRelativeTo(owner);
 	}
 
-	private boolean validateInputs() {
-		try {
-			Integer.parseInt(sweref99TMnorth.getText());
-			Integer.parseInt(sweref99TMeast.getText());
-			return true;
-		} catch (NumberFormatException e) {
-			JOptionPane.showMessageDialog(this, "Please enter valid numeric coordinates.", "Input Error", JOptionPane.ERROR_MESSAGE);
-			return false;
+	private JTextField createReadOnlyField(String text) {
+		JTextField field = new JTextField(text, 20);
+		field.setEditable(false);
+		field.setFocusable(true);
+		field.setBorder(BorderFactory.createEmptyBorder(2, 5, 2, 5));
+		field.setBackground(new Color(245, 245, 245)); // Very light gray
+		return field;
+	}
+
+	private JLabel addRow(String labelText, JTextField field, Container parent, SpringLayout layout, JLabel topAnchor) {
+		JLabel label = new JLabel(labelText);
+		parent.add(label);
+		parent.add(field);
+
+		layout.putConstraint(SpringLayout.WEST, label, 5, SpringLayout.WEST, parent);
+		if (topAnchor == null) {
+			layout.putConstraint(SpringLayout.NORTH, label, 5, SpringLayout.NORTH, parent);
+		} else {
+			layout.putConstraint(SpringLayout.NORTH, label, 10, SpringLayout.SOUTH, topAnchor);
 		}
+
+		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, parent);
+		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
+
+		return label;
 	}
 }

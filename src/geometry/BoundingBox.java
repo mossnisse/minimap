@@ -109,6 +109,21 @@ public class BoundingBox {
 		);
 	}
 
+	public BoundingBox grow(double percentage) {
+		int width = Math.abs(getX2() - getX1());
+		int height = Math.abs(getY2() - getY1());
+
+		int xBuffer = (int) (width * percentage);
+		int yBuffer = (int) (height * percentage);
+
+		return new BoundingBox(
+				getX1() - xBuffer,
+				getY1() - yBuffer,
+				getX2() + xBuffer,
+				getY2() + yBuffer
+		);
+	}
+
 	public String toString() {
 		return "BoundingBox("+p1+" "+p2+")";
 	}

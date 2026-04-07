@@ -56,7 +56,7 @@ public class GUI  {
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_R)) {
 					showRubin(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_C)) {
-					showCoordDialog(e);
+					showCoordinateInfo(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_S)) {
 					createLocalityDialog(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_K)) {
@@ -166,11 +166,11 @@ public class GUI  {
 		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK));
 		menuItem12.addActionListener(e->MarkCoordDialog());
 		menu2.add(menuItem12);
-		
+
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K, InputEvent.CTRL_DOWN_MASK));
-		menuItem6.addActionListener(e->viewCoordinate());
+		menuItem6.addActionListener(e->showCoordinateInfoAtCoordinate());
 		menu2.add(menuItem6);
 
 		menuItem8 = new JMenuItem("View Rubin", KeyEvent.VK_R);
@@ -268,7 +268,7 @@ public class GUI  {
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();
-				JOptionPane.showMessageDialog(null, "kan inte öppna: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
+				JOptionPane.showMessageDialog(null, "Can't open the file: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} finally {
 				setCursorDefault();
 			}
@@ -331,26 +331,50 @@ public class GUI  {
 		d.setVisible(true);
 	}
 
-	public void viewCoordinate() {
-		CoordinateDialog d = new CoordinateDialog(frame, canvas.getCoordinate(),
-				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
-				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
-		d.setVisible(true);
-		coord = d.getCoordinateSweref99TM();
-		canvas.focus(coord);
-		canvas.setCoordinate(coord);
+
+	public void showCoordInfoDialog(Point p) {
+		// do Math
+		Coordinates sweref = new Coordinates(p.y, p.x);
+		Coordinates wgs84 = sweref.toWGS84(CoordSystem.SWEREF99TM);
+		Coordinates rt90 = wgs84.toProjected(CoordSystem.RT90);
+		String rubin = rt90.toRUBIN(false);
+
+		// Get Layers
+		String prov = "outside layer";
+		String dist = "outside layer";
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.getLayer("socknar");
+
+		if (provinces != null) {
+			TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
+			if (pr != null) prov = pr.getName();
+		}
+
+		if (districts != null) {
+			TNGPolygonFileLayer.Province di = districts.inPolygon(p);
+			if (di != null) dist = di.getName();
+		}
+
+		// Open Modal Dialog
+		new CoordinateDialog(
+				frame,
+				Math.round(sweref.getNorth()) + ", " + Math.round(sweref.getEast()),
+				Math.round(rt90.getNorth()) + ", " + Math.round(rt90.getEast()),
+				String.format(java.util.Locale.US, "%.5f, %.5f", wgs84.getNorth(), wgs84.getEast()),
+				rubin,
+				prov,
+				dist
+		).setVisible(true);
 	}
 
-	public void showCoordDialog(MouseEvent e) {
-		coord = canvas.translatePoint(new Point(e.getX(), e.getY()));
-		canvas.setCoordinate(coord);
-		CoordinateDialog d = new CoordinateDialog(frame, coord,
-				(TNGPolygonFileLayer) canvas.getLayer("provinser"),
-				(TNGPolygonFileLayer) canvas.getLayer("socknar"));
-		d.setVisible(true);
-		coord = d.getCoordinateSweref99TM();
-		canvas.focus(coord);
-		canvas.setCoordinate(coord);
+	public void showCoordinateInfoAtCoordinate() {
+		Point p = canvas.getCoordinate();
+		showCoordInfoDialog(p);
+	}
+
+	public void showCoordinateInfo(MouseEvent me) {
+		Point p = canvas.translatePoint(new Point(me.getX(), me.getY()));
+		showCoordInfoDialog(p);
 	}
 
 	public void viewRubin() {

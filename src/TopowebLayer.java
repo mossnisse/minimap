@@ -13,6 +13,7 @@ public class TopowebLayer implements Layer {
 	//private final String url = "https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/";
 	private final String url = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";
 	// http://hades.slu.se/lm/topowebb/wms/v1/?SERVICE=WMS&REQUEST=GetCapabilities
+	private final static int TILEMATRIX_LIMIT = 12;
 	private String name;
 	private boolean hidden;
 	private Color color;
@@ -21,7 +22,7 @@ public class TopowebLayer implements Layer {
 	private final TileBuffer tileBuffer;
 	private CoordSystem cs;
 	
-	public class TileIndex {
+	public static class TileIndex {
 		public int zoomLevel;  // == tilematrix;
 		public int col;		// tile column increase East
 		public int row;			// tile row increase South
@@ -31,45 +32,27 @@ public class TopowebLayer implements Layer {
 			this.col = col;
 			this.row = row;
 		}
-		
-		TileIndex(){			
-		}
-		
-		public void setTileIndex(int x, int y, int tilematrix) {
+
+		public static TileIndex[] getTileIndexes(BoundingBox box, int tilematrix) {
 			int origoY = 8500000;
 			int origoX = -1200000;
 			int tileWidth = tileWidth(tilematrix);
-			col = (x-origoX)/tileWidth;
-			row = (origoY-y)/tileWidth;
-			zoomLevel = tilematrix;
-		}
-		
-		public TileIndex[] getTileIndexes(BoundingBox box,int tilematrix) {
-			int pxmin =box.getX1();  // in meters Sweref99TM
-			int pymin =box.getY1();
-			int pxmax = box.getX2(); // in meters Sweref99TM
-			int pymax = box.getY2();
-			//System.out.println("px: ("+pxmin+"-"+pxmax+")");
-			//System.out.println("py: ("+pymin+"-"+pymax+")");
-			
-			TileIndex tp3 = new TileIndex();
-			tp3.setTileIndex(pxmin, pymax, tilematrix);
-			TileIndex tp4 = new TileIndex();
-			tp4.setTileIndex(pxmax, pymin, tilematrix);
-			//System.out.println("tp3: "+tp3);
-			//System.out.println("tp4: "+tp4);
-			int rowMin= tp3.row;
-			int rowMax=	tp4.row;
-			int colMin=	tp3.col;
-			int colMax=	tp4.col;
-			int numTiles = (rowMax-rowMin+1)*(colMax-colMin+1);
-			//System.out.println("numTiles: "+numTiles);
+
+			// Calculate min/max directly from bounds
+			int colMin = (box.getX1() - origoX) / tileWidth;
+			int colMax = (box.getX2() - origoX) / tileWidth;
+
+			// Note: Rows increase South (down), so Y1 (North/Higher) is a smaller row index
+			int rowMin = (origoY - box.getY2()) / tileWidth;
+			int rowMax = (origoY - box.getY1()) / tileWidth;
+
+			int numTiles = (rowMax - rowMin + 1) * (colMax - colMin + 1);
 			TileIndex[] indexes = new TileIndex[numTiles];
-			int i=0;
-			for(row = rowMin; row<rowMax+1; row++) {
-				for(col = colMin; col<colMax+1; col++) {
-					indexes[i]= new TileIndex(tilematrix, col, row);
-					i++;
+
+			int i = 0;
+			for (int r = rowMin; r <= rowMax; r++) {
+				for (int c = colMin; c <= colMax; c++) {
+					indexes[i++] = new TileIndex(tilematrix, c, r);
 				}
 			}
 			return indexes;
@@ -77,18 +60,10 @@ public class TopowebLayer implements Layer {
 		
 		// Overriding equals() to compare two TileIndex
 	    @Override
-	    public boolean equals(Object o) { 
-	        // If the object is compared with itself then return true   
-	        if (o == this) { 
-	            return true; 
-	        } 
-	        /* Check if o is an instance of TileIndex or not "null instanceof [type]" also returns false */
-	        if (!(o instanceof TileIndex)) { 
-	            return false; 
-	        } 
-	        // typecast o to Complex so that we can compare data members  
-	        TileIndex tile = (TileIndex) o; 
-	        // Compare the data members and return accordingly  
+	    public boolean equals(Object o) {
+	        if (o == this) { return true; }
+	        if (!(o instanceof TileIndex)) { return false; }
+	        TileIndex tile = (TileIndex) o;
 	        return tile.col == this.col && tile.row == this.row && tile.zoomLevel == this.zoomLevel;
 	    } 
 		
@@ -199,15 +174,14 @@ public class TopowebLayer implements Layer {
 	}
 	
 	private static int tileWidth (int tilematrix) {
-		return 1048576/(int)(Math.pow((double)2,(double)tilematrix));
+		//return 1048576/(int)(Math.pow(2, tilematrix));
+		return 1048576 / (1 << tilematrix);
 	}
 	
 	private static BoundingBox tileBounds(int tilerow, int tilecol, int tilematrix) {
 		int origoY = 8500000;
 		int origoX = -1200000;
 		int tileWidth = tileWidth(tilematrix); // meters
-		//System.out.println("tileWidth: "+tileWidth);
-		//System.out.println("tilecol: "+tilecol+" rilerow: "+tilerow);
 		return new BoundingBox(origoX+tileWidth*tilecol, origoY-tileWidth*(tilerow+1),  origoX+tileWidth*(tilecol+1), origoY-tileWidth*(tilerow));
 	}
 	
@@ -215,8 +189,6 @@ public class TopowebLayer implements Layer {
 		int origoY = 8500000;
 		int origoX = -1200000;
 		int tileWidth = tileWidth(ind.zoomLevel); // meters
-		//System.out.println("tileWidth: "+tileWidth);
-		//System.out.println("tilecol: "+tilecol+" rilerow: "+tilerow);
 		return new BoundingBox(origoX+tileWidth*ind.col, origoY-tileWidth*(ind.row+1),  origoX+tileWidth*(ind.col+1), origoY-tileWidth*(ind.row));
 	}
 	
@@ -226,9 +198,8 @@ public class TopowebLayer implements Layer {
 	}
 	
 	private static int tileMatrix(int tileWidth) {
-		//return 1048576/(int)(Math.pow((double)2,(double)tilematrix));
 		int m = log(1048576/tileWidth,2);
-		if (m>9) m=9;
+		if (m>TILEMATRIX_LIMIT) m=TILEMATRIX_LIMIT;
 		return m;
 	}
 
@@ -237,7 +208,7 @@ public class TopowebLayer implements Layer {
 		int tilesize = 256;
 		int tilematrix = tileMatrix((int)Math.round(1/xScale * tilesize));
 
-		TileIndex[] indexes = new TileIndex().getTileIndexes(bounds, tilematrix);
+		TileIndex[] indexes = TileIndex.getTileIndexes(bounds, tilematrix);
 
 		for (TileIndex ind : indexes) {
 			if (ind.col > -1 && ind.row > -1) {
@@ -251,7 +222,7 @@ public class TopowebLayer implements Layer {
 					int x2 = (int) ((box.getX2() * xScale) + xShift);
 					int y2 = (int) ((box.getY2() * yScale) + yShift);
 
-					g2d.drawImage(img, x1, y2, x2 - x1, y1 - y2, null);
+					g2d.drawImage(img, x1, y2, x2 - x1, Math.abs(y1 - y2), null);
 				}
 			}
 		}

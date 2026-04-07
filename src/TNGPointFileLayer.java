@@ -29,11 +29,6 @@ public class TNGPointFileLayer implements Layer{
 			super(p);
 			this.name = name;
 		}
-
-		/*
-		private double distance(double x, double y) {
-			return Math.sqrt(Math.pow(this.x-x,2) + Math.pow(this.y-y,2));
-		}*/
 		
 		public double dist(int x, int y) {
 			return  Math.round(distance(x, y)/100)/10.0; //Math.round(
