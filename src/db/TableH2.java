@@ -9,6 +9,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import org.h2.jdbcx.JdbcDataSource;
 
+/*
 public class TableH2 extends JPanel implements Table  {
 	private String name;
 	private Connection conn;
@@ -127,4 +128,4 @@ public class TableH2 extends JPanel implements Table  {
 	        });
 		
 	}
-}
+}*/

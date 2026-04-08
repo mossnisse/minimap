@@ -30,7 +30,7 @@ public class SpecimenBridgeDialog extends JDialog {
     // Specimen Info Fields (Selectable)
     private JTextField idField, nameField, collectorField;
     private JTextArea origTextField; // JTextArea for long descriptions
-    private JTextField locField, rubinField, rt90Field, swerefField, latLongField;
+    private JTextField rubinField, rt90Field, swerefField, latLongField;
     private JTextField provinceDistrField;
 
     // Editable Bridge Fields
@@ -177,7 +177,7 @@ public class SpecimenBridgeDialog extends JDialog {
         idField = createPlainField();
         nameField = createPlainField();
         collectorField = createPlainField();
-        locField = createPlainField();
+        //locField = createPlainField();
         rubinField = createPlainField();
         rt90Field = createPlainField();
         swerefField = createPlainField();
@@ -210,13 +210,13 @@ public class SpecimenBridgeDialog extends JDialog {
         // Reset weights for the rest
         c.weighty = 0; c.fill = GridBagConstraints.HORIZONTAL;
         c.gridy = 3; infoPanel.add(collectorField, c);
-        c.gridy = 4; infoPanel.add(locField, c);
-        c.gridy = 5; infoPanel.add(provinceDistrField, c);
+       // c.gridy = 4; infoPanel.add(locField, c);
+        c.gridy = 4; infoPanel.add(provinceDistrField, c);
 
-        c.gridy = 6; infoPanel.add(createFocusRow(rubinField, "Focus Rubin", this::focusRubin, "RUBIN"), c);
-        c.gridy = 7; infoPanel.add(createFocusRow(rt90Field, "Focus RT90", this::focusRT90, "RT90"), c);
-        c.gridy = 8; infoPanel.add(createFocusRow(swerefField, "Focus SWEREF", this::focusSweref, "SWEREF"), c);
-        c.gridy = 9; infoPanel.add(createFocusRow(latLongField, "Focus DMS", this::focusLatLong, "DMS"), c);
+        c.gridy = 5; infoPanel.add(createFocusRow(rubinField, "Focus Rubin", this::focusRubin, "RUBIN"), c);
+        c.gridy = 6; infoPanel.add(createFocusRow(rt90Field, "Focus RT90", this::focusRT90, "RT90"), c);
+        c.gridy = 7; infoPanel.add(createFocusRow(swerefField, "Focus SWEREF", this::focusSweref, "SWEREF"), c);
+        c.gridy = 8; infoPanel.add(createFocusRow(latLongField, "Focus DMS", this::focusLatLong, "DMS"), c);
 
         topPanel.add(infoPanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
@@ -376,7 +376,7 @@ public class SpecimenBridgeDialog extends JDialog {
         nameField.setText("");
         origTextField.setText("");
         collectorField.setText("");
-        locField.setText("");
+        //locField.setText("");
         provinceDistrField.setText("");
         rubinField.setText("");
         rt90Field.setText("");
@@ -449,8 +449,8 @@ public class SpecimenBridgeDialog extends JDialog {
         nameField.setText(s.getGenus() + " " + s.getSpecies());
         origTextField.setText(s.getOriginalText());
         collectorField.setText(s.getCollector() + " (" + s.getCollectionCode() + ")      " + String.format("%d-%02d-%02d", s.getYear(), s.getMonth(), s.getDay()));
-        locField.setText(s.getSpecimenLocality());
-        provinceDistrField.setText(s.getProvince() +", "+ s.getDistrict());
+        //locField.setText(s.getSpecimenLocality());
+        provinceDistrField.setText(s.getProvince() + ", " + s.getDistrict() + ", " + s.getSpecimenLocality());
         rubinField.setText(s.getRubin());
         rt90Field.setText("N: " + s.getRiketsN() + " O: " + s.getRiketsO());
         swerefField.setText(s.getSweref());

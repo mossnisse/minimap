@@ -2,5 +2,5 @@ specimen dialog: open
 password: bruhh
 landskap: Bohuslän
 socken: Tjärnö
-cnr: 3449
+cnr: 28
 user: Nils Ericson

@@ -1,3 +1,6 @@
+import coords.CoordSystem;
+import coords.Coordinates;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,6 +17,7 @@ import javax.swing.*;
 
 public class EditLocalityDialog extends JDialog implements ActionListener {
 	private final Canvas canvas;
+	private final GUI gui;
 	private final int localityID;
 	private final SpecimenBridgeDialog bridgeDialog;
 
@@ -22,13 +26,14 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private JTextArea comments;
 	private JCheckBox isPlace;
 	private JLabel labelCreated, labelModified;
-	public JButton cancel, delete, ok;
+	public JButton cancel, delete, ok, move;
 
-	public EditLocalityDialog(Frame owner, int localityID, SpecimenBridgeDialog bridge, Canvas canvas) {
+	public EditLocalityDialog(GUI gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, Canvas canvas) {
 		// 'false' makes it non-modal, 'true' would stop interaction with map
 		super(owner, "Edit Locality", false);
 
 		this.canvas = canvas;
+		this.gui = gui;
 		this.localityID = localityID;
 		this.bridgeDialog = bridge;
 
@@ -80,6 +85,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		cancel = new JButton("Cancel");
 		delete = new JButton("Delete");
 		ok = new JButton("OK - Change");
+		move = new JButton("Move on Map");
 
 		// Add to Layout
 		JLabel lName = addField("Name:", name, content, layout, 10, content);
@@ -121,6 +127,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		add(cancel);
 		add(delete);
 		add(ok);
+		add(move);
 
 		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, this.getContentPane());
 		layout.putConstraint(SpringLayout.NORTH, cancel, 20, SpringLayout.SOUTH, isPlace);
@@ -130,6 +137,8 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 		layout.putConstraint(SpringLayout.WEST, ok, 10, SpringLayout.EAST, delete);
 		layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
+		layout.putConstraint(SpringLayout.WEST, move, 10, SpringLayout.EAST, ok);
+		layout.putConstraint(SpringLayout.NORTH, move, 0, SpringLayout.NORTH, cancel);
 
 		layout.putConstraint(SpringLayout.EAST, this.getContentPane(), 10, SpringLayout.EAST, name);
 		layout.putConstraint(SpringLayout.SOUTH, this.getContentPane(), 10, SpringLayout.SOUTH, cancel);
@@ -143,6 +152,8 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		cancel.setActionCommand("cancel");
 		delete.setActionCommand("delete");
 		ok.setActionCommand("ok");
+		move.addActionListener(this);
+		move.setActionCommand("move");
 	}
 
 	private JLabel addField(String labelText, Component field, Container container, SpringLayout layout, int margin, Component topAnchor) {
@@ -285,6 +296,46 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		}
 	}
 
+	public void updateCoordinates(Point p) {
+		// p.y is North, p.x is East in SWEREF99TM
+		int newN = p.y;
+		int newE = p.x;
+
+		// Optional: Auto-lookup the new District/Province for the new spot
+		// (Reuse the logic from your CreateLocality code)
+
+		// Update the DB directly
+		try {
+			Connection conn = DBConnection.getConn();
+			String sql = "UPDATE locality SET SWTMN = ?, SWTME = ?, lat = ?, `long` = ?, RT90N = ?, RT90E = ? WHERE ID = ?";
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+				Coordinates SWTMc = new Coordinates(newN, newE);
+				Coordinates wgs84c = SWTMc.toWGS84(CoordSystem.SWEREF99TM);
+				Coordinates rt90c = wgs84c.toProjected(CoordSystem.RT90);
+				stmt.setInt(1, newN);
+				stmt.setInt(2, newE);
+				stmt.setDouble(3, wgs84c.getNorth());
+				stmt.setDouble(4, wgs84c.getEast());
+				stmt.setInt(5, (int) Math.round(rt90c.getNorth()));
+				stmt.setInt(6, (int) Math.round(rt90c.getEast()));
+				stmt.setInt(7, localityID);
+				stmt.executeUpdate();
+
+				// Refresh layers
+				Layer layer = canvas.getLayer("LokalDB");
+				if (layer instanceof MYSQLTableLayer mysqlLayer) {
+					mysqlLayer.invalidateCache();
+				}
+				canvas.repaint();
+
+				JOptionPane.showMessageDialog(this, "Locality moved successfully!");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error moving the locality: " + e.getMessage());
+		}
+	}
+
 	@Override
 	public void actionPerformed(ActionEvent ev) {
 		String cmd = ev.getActionCommand();
@@ -298,6 +349,10 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			deleteLocality();
 			canvas.repaint();
 			this.dispose();
+		} else if ("move".equals(cmd)) {
+			// Minimize dialog or just tell the user to click
+			//this.setState(Frame.ICONIFIED); // Optional: hide dialog so they can see the map
+			gui.enterMoveMode(this);
 		}
 	}
 }

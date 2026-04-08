@@ -37,6 +37,21 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	private JScrollPane scrollPane;
 	private TNGPointFileLayer lastResults; // Store reference for zooming
 
+	public class NButton extends JButton {
+		@Serial
+		private static final long serialVersionUID = -1082059330878801135L;
+		private final Point c;
+
+		public NButton(String name, Point c) {
+			super(name);
+			this.c = c;
+		}
+
+		public Point getPoint() {
+			return c;
+		}
+	}
+
 	public SearchLocalityDialog(Frame aFrame, String text, Canvas canvas) {
 		super(aFrame, false);
 		this.canvas = canvas;

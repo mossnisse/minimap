@@ -210,13 +210,6 @@ public class TopowebLayer implements Layer {
 		return 1048576 / (1 << tilematrix);
 	}
 	
-	private static BoundingBox tileBounds(int tilerow, int tilecol, int tilematrix) {
-		int origoY = 8500000;
-		int origoX = -1200000;
-		int tileWidth = tileWidth(tilematrix); // meters
-		return new BoundingBox(origoX + tileWidth * tilecol, origoY - tileWidth * (tilerow + 1),  origoX + tileWidth * (tilecol + 1), origoY - tileWidth * (tilerow));
-	}
-	
 	private static BoundingBox getTileBounds(TileIndex ind) {
 		int origoY = 8500000;
 		int origoX = -1200000;
@@ -229,8 +222,8 @@ public class TopowebLayer implements Layer {
 		// Integer.numberOfLeadingZeros(tileWidth) gives us the log2 indirectly.
 		// In a 32-bit integer, log2(x) is 31 - numberOfLeadingZeros(x).
 
-		int log2TileWidth = 31 - Integer.numberOfLeadingZeros(tileWidth);
-		int m = 20 - log2TileWidth;
+		int log2TileWidth = 31 - Integer.numberOfLeadingZeros(tileWidth) ;
+		int m = 20 - log2TileWidth -1;
 
 		if (m > TILEMATRIX_LIMIT) m = TILEMATRIX_LIMIT;
 		if (m < 0) m = 0; // Safety check

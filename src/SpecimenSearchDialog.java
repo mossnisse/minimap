@@ -7,6 +7,9 @@ public class SpecimenSearchDialog extends JDialog {
     // UI Components
     private JComboBox<String> provinceCombo;
     private JTextField districtField;
+    private JTextField collectorField;
+    private JTextField accessionField;
+    private JTextField yearField;
     private JLabel statusLabel;
     private JButton searchButton;
 

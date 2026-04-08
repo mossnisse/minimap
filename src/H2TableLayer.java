@@ -42,7 +42,7 @@ public class H2TableLayer implements Layer {
 				System.out.println("--- Tables found in this database ---");
 				boolean found = false;
 				while (res.next()) {
-					System.out.println("Table: " + res.getString("TABLE_NAME"));
+					System.out.println("db.Table: " + res.getString("TABLE_NAME"));
 					found = true;
 				}
 				if (!found) System.out.println("WARNING: No tables found! You are likely in an empty DB.");

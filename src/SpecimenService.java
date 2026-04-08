@@ -35,7 +35,7 @@ public class SpecimenService {
              Connection h2Conn = DBConnection.getH2Conn();
              PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql)) {
 
-            // Setup H2 Table
+            // Setup H2 db.Table
             prepareH2Table(h2Conn);
 
             // Fetch from MySQL

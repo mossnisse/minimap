@@ -13,6 +13,7 @@ public class Canvas extends JPanel {
 	BoundingBox bounds;
 	Point coord;
 	private final ArrayList<Layer> layers;
+
 	
 	public Canvas() {
 		cs = CoordSystem.SWEREF99TM;
