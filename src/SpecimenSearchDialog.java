@@ -29,28 +29,51 @@ public class SpecimenSearchDialog extends JDialog {
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
 
-        // --- TOP: Search Controls ---
         JPanel searchPanel = new JPanel(new GridBagLayout());
-        searchPanel.setBorder(BorderFactory.createTitledBorder("MySQL Query Criteria"));
+        searchPanel.setBorder(BorderFactory.createTitledBorder("Search Criteria"));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 10, 5, 10);
+        gbc.insets = new Insets(4, 8, 4, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
+        // Row 0: Province
         gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
         searchPanel.add(new JLabel("Province:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
         provinceCombo = new JComboBox<>(prov);
         searchPanel.add(provinceCombo, gbc);
 
+        // Row 1: District
         gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
         searchPanel.add(new JLabel("District:"), gbc);
         gbc.gridx = 1; gbc.weightx = 1.0;
-        districtField = new JTextField(15);
+        districtField = new JTextField("*", 15);
         searchPanel.add(districtField, gbc);
 
+        // Row 2: Collector
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
+        searchPanel.add(new JLabel("Collector:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        collectorField = new JTextField("*", 15);
+        searchPanel.add(collectorField, gbc);
+
+        // Row 3: Accession
+        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
+        searchPanel.add(new JLabel("Accession No:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        accessionField = new JTextField("*", 15);
+        searchPanel.add(accessionField, gbc);
+
+        // Row 4: Year
+        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0;
+        searchPanel.add(new JLabel("Year:"), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        yearField = new JTextField("*", 15);
+        searchPanel.add(yearField, gbc);
+
+        // Row 5: Search Button
         searchButton = new JButton("Search & Cache");
         searchButton.addActionListener(e -> performSearch());
-        gbc.gridx = 1; gbc.gridy = 2; gbc.fill = GridBagConstraints.NONE;
+        gbc.gridx = 1; gbc.gridy = 5; gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
         searchPanel.add(searchButton, gbc);
 
@@ -82,9 +105,12 @@ public class SpecimenSearchDialog extends JDialog {
 
         String selectedProv = (String) provinceCombo.getSelectedItem();
         String dist = districtField.getText().trim();
+        String coll = collectorField.getText().trim();
+        String acc = accessionField.getText().trim();
+        String year = yearField.getText().trim();
 
-        // Pass the selection to the service
-        int hitCount = service.refreshCache(selectedProv, dist);
+        // Update your Service method signature to accept these new parameters
+        int hitCount = service.refreshCache(selectedProv, dist, coll, acc, year);
 
         if (hitCount > 0) {
             statusLabel.setText("Found " + hitCount + " specimens. Cache updated.");
@@ -92,7 +118,6 @@ public class SpecimenSearchDialog extends JDialog {
         } else {
             statusLabel.setText("No results found.");
             statusLabel.setForeground(Color.RED);
-
         }
 
         searchButton.setEnabled(true);

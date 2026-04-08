@@ -9,20 +9,46 @@ import java.util.List;
 public class SpecimenService {
 
     // creates the H2 chache and reports found specimens
-    public int refreshCache(String province, String district) {
+    public int refreshCache(String province, String district, String collector, String accession, String year) {
         int count = 0;
+        List<Object> params = new ArrayList<>();
 
-        String mysqlSql = "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, Collector, "
-                + "specimens.InstitutionCode, specimens.locality as specimen_locality, specimens.district, specimens.province, specimens.ID as specimen_ID, "
-                + "RUBIN, RiketsN, RiketsO, Sweref99TMN as SwerefN, Sweref99TME as SwerefE, Lat_dir, Lat_deg, Lat_min, "
-                + "Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, "
-                + "specimen_locality.locality_ID, distance, direction, oDistrict, oProvince "
-                + "FROM specimens "
-                + "LEFT JOIN specimen_locality ON specimens.ID = specimen_locality.specimen_ID "
-                + "WHERE specimens.Province = ? AND specimens.district = ? "
-                + "ORDER BY Year ASC, Month ASC, Day ASC";
+        // Base SQL
+        StringBuilder mysqlSql = new StringBuilder(
+                "SELECT specimens.AccessionNo, Year, Month, Day, original_text, Genus, Species, Collector, "
+                        + "specimens.InstitutionCode, specimens.locality as specimen_locality, specimens.district, specimens.province, specimens.ID as specimen_ID, "
+                        + "RUBIN, RiketsN, RiketsO, Sweref99TMN as SwerefN, Sweref99TME as SwerefE, Lat_dir, Lat_deg, Lat_min, "
+                        + "Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, specimens.CollectionCode, "
+                        + "specimen_locality.locality_ID, distance, direction, oDistrict, oProvince "
+                        + "FROM specimens "
+                        + "LEFT JOIN specimen_locality ON specimens.ID = specimen_locality.specimen_ID "
+                        + "WHERE 1=1 "
+        );
 
-        //     + "LEFT JOIN locality ON specimen_locality.locality_ID = locality.ID "
+        // Dynamic Filtering Logic
+        if (province != null && !province.equals("*")) {
+            mysqlSql.append(" AND specimens.Province = ?");
+            params.add(province);
+        }
+        if (district != null && !district.equals("*")) {
+            mysqlSql.append(" AND specimens.district = ?");
+            params.add(district);
+        }
+        if (collector != null && !collector.isEmpty() && !collector.equals("*")) {
+            // MySQL Fulltext Search
+            mysqlSql.append(" AND MATCH (Collector) AGAINST (? IN BOOLEAN MODE)");
+            params.add(collector);
+        }
+        if (accession != null && !accession.isEmpty() && !accession.equals("*")) {
+            mysqlSql.append(" AND specimens.AccessionNo = ?");
+            params.add(accession);
+        }
+        if (year != null  && !year.equals("*")) {
+            mysqlSql.append(" AND specimens.Year = ?");
+            params.add(year);
+        }
+
+        mysqlSql.append(" ORDER BY Year ASC, Month ASC, Day ASC");
 
         String h2Insert = "INSERT INTO tempspecimens (AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
                 + "InstitutionCode, specimen_locality, district, province, specimens_ID, "
@@ -33,36 +59,31 @@ public class SpecimenService {
 
         try (Connection mysqlConn = DBConnection.getConn();
              Connection h2Conn = DBConnection.getH2Conn();
-             PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql)) {
+             PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
 
-            // Setup H2 db.Table
             prepareH2Table(h2Conn);
 
-            // Fetch from MySQL
-            selectStmt.setString(1, province);
-            selectStmt.setString(2, district);
+            // Map dynamic parameters to the PreparedStatement
+            for (int i = 0; i < params.size(); i++) {
+                selectStmt.setObject(i + 1, params.get(i));
+            }
 
             try (ResultSet rs = selectStmt.executeQuery();
                  PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
 
-                h2Conn.setAutoCommit(false); // Enable batching
-
+                h2Conn.setAutoCommit(false);
                 while (rs.next()) {
                     for (int i = 1; i <= 32; i++) {
                         insertStmt.setString(i, rs.getString(i));
                     }
                     insertStmt.addBatch();
                     count++;
-
-                    // Execute batch every 100 rows to keep memory stable
                     if (count % 100 == 0) insertStmt.executeBatch();
                 }
-
-                insertStmt.executeBatch(); // Final batch
+                insertStmt.executeBatch();
                 h2Conn.commit();
                 h2Conn.setAutoCommit(true);
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
