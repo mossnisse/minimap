@@ -1,6 +1,0 @@
-specimen dialog: open
-password: bruhh
-landskap: Bohuslän
-socken: Tjärnö
-cnr: 28
-user: Nils Ericson

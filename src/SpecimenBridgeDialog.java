@@ -357,12 +357,15 @@ public class SpecimenBridgeDialog extends JDialog {
         isAdjusting = true;
         this.totalCount = service.getCacheCount();
         totalLabel.setText("/ " + totalCount);
+
         if (totalCount > 0) {
-            loadSpecimen(0);
+            // If our current index is now out of bounds (e.g., search results are fewer), reset to 0
+            if (currentIndex >= totalCount) {
+                currentIndex = 0;
+            }
+            loadSpecimen(currentIndex);
         } else {
-            // Reset fields if cache was cleared but no new hits found
             targetSpecimen = null;
-            //currentIndex = 0;
             clearFields();
             setTitle("Bridge Tool - Cache Empty");
         }
@@ -411,11 +414,6 @@ public class SpecimenBridgeDialog extends JDialog {
         if (s != null) {
             this.targetSpecimen = s;
             this.currentIndex = index;
-            try {
-                Settings.setValue("cnr", String.valueOf(index));
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
             updateUIFields(s);
         }
     }

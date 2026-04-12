@@ -1,3 +1,7 @@
+import coords.CoordSystem;
+import coords.Coordinates;
+import coords.UTMResult;
+
 import java.awt.*;
 import java.io.Serial;
 import javax.swing.*;
@@ -7,8 +11,31 @@ public class CoordinateDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	public CoordinateDialog(Frame owner, String sweref, String rt90, String wgs84, String rubin, String province, String district) {
+	public CoordinateDialog(Frame owner, Canvas canvas, Point p) {
 		super(owner, "Coordinate Details", false);
+
+		Coordinates sweref = new Coordinates(p.y, p.x);
+		Coordinates wgs84 = sweref.toWGS84(CoordSystem.SWEREF99TM);
+		Coordinates rt90 = wgs84.toProjected(CoordSystem.RT90);
+		String rubin = rt90.toRUBIN(false);
+		UTMResult utm = wgs84.toUTM();
+		String mgrs = wgs84.toMGRS();
+
+		// Get Layers
+		String prov = "outside layer";
+		String dist = "outside layer";
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.getLayer("socknar");
+
+		if (provinces != null) {
+			TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
+			if (pr != null) prov = pr.getName();
+		}
+
+		if (districts != null) {
+			TNGPolygonFileLayer.Province di = districts.inPolygon(p);
+			if (di != null) dist = di.getName();
+		}
 
 		// Main container with some padding
 		JPanel panel = new JPanel(new SpringLayout());
@@ -16,21 +43,25 @@ public class CoordinateDialog extends JDialog {
 		SpringLayout layout = (SpringLayout) panel.getLayout();
 
 		// Initialize and add fields
-		JTextField swerefF = createReadOnlyField(sweref);
-		JTextField rt90F = createReadOnlyField(rt90);
-		JTextField wgs84F = createReadOnlyField(wgs84);
+		JTextField provF = createReadOnlyField(prov);
+		JTextField distF = createReadOnlyField(dist);
+		JTextField swerefF = createReadOnlyField(Math.round(sweref.getNorth()) + ", " + Math.round(sweref.getEast()));
+		JTextField rt90F = createReadOnlyField(Math.round(rt90.getNorth()) + ", " + Math.round(rt90.getEast()));
+		JTextField wgs84F = createReadOnlyField(String.format(java.util.Locale.US, "%.5f, %.5f", wgs84.getNorth(), wgs84.getEast()));
 		JTextField rubinF = createReadOnlyField(rubin);
-		JTextField provF = createReadOnlyField(province);
-		JTextField distF = createReadOnlyField(district);
+		JTextField utmF = createReadOnlyField(utm.toString());
+		JTextField mgrsF = createReadOnlyField(mgrs);
 
 		// Build the UI rows
 		JLabel last = null;
+		last = addRow("Province:", provF, panel, layout, last);
+		last = addRow("District:", distF, panel, layout, last);
 		last = addRow("Sweref99TM (N, E):", swerefF, panel, layout, last);
 		last = addRow("RT90 (N, E):", rt90F, panel, layout, last);
 		last = addRow("WGS84 (lat, lon):", wgs84F, panel, layout, last);
 		last = addRow("RUBIN:", rubinF, panel, layout, last);
-		last = addRow("Province:", provF, panel, layout, last);
-		last = addRow("District:", distF, panel, layout, last);
+		last = addRow("UTM (GZD, E, N):", utmF, panel, layout, last);
+		last = addRow("MGRS:", mgrsF, panel, layout, last);
 
 		// OK Button to close
 		JButton okButton = new JButton("Close");
