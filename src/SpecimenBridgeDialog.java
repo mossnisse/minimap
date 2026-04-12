@@ -23,8 +23,10 @@ public class SpecimenBridgeDialog extends JDialog {
             "", "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
             "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
     };
-
     private JTextField indexField; // For jumping to specific records
+    private int pendingIndex = -1;
+    private boolean isNavigating = false;
+
     private JLabel totalLabel;
 
     // Specimen Info Fields (Selectable)
@@ -88,6 +90,27 @@ public class SpecimenBridgeDialog extends JDialog {
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 if (currentIndex > 0) {
                     handleNavigation(currentIndex - 1);
+                }
+            }
+        });
+
+        this.addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                if (isDirty()) {
+                    LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
+                    if (selected != null && selected.getId() > 0) {
+                        // Pass -1 to signify "don't navigate anywhere after saving, just close"
+                        saveBridge(-1);
+                    }
+                } else {
+                    try {
+                        Settings.setValue("cnr", String.valueOf(currentIndex));
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
+                    saveCurrentIndex();
+                    dispose();
                 }
             }
         });
@@ -233,12 +256,6 @@ public class SpecimenBridgeDialog extends JDialog {
         c.weighty = 0; // Ensure this row doesn't grow
         infoPanel.add(coordWrapper, c);
 
-        /*
-        c.gridy = 5; infoPanel.add(createFocusRow(rubinField, "Focus Rubin", this::focusRubin, "RUBIN"), c);
-        c.gridy = 6; infoPanel.add(createFocusRow(rt90Field, "Focus RT90", this::focusRT90, "RT90"), c);
-        c.gridy = 7; infoPanel.add(createFocusRow(swerefField, "Focus SWEREF", this::focusSweref, "SWEREF"), c);
-        c.gridy = 8; infoPanel.add(createFocusRow(latLongField, "Focus DMS", this::focusLatLong, "DMS"), c);*/
-
         topPanel.add(infoPanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
 
@@ -295,7 +312,7 @@ public class SpecimenBridgeDialog extends JDialog {
         // --- BOTTOM: ACTION BUTTONS ---
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         linkBtn = new JButton("Create Link (Save to MySQL)");
-        linkBtn.addActionListener(e -> saveBridge());
+        linkBtn.addActionListener(e -> saveBridge(0));
 
         deleteBtn = new JButton("Delete Link");
         deleteBtn.setForeground(Color.RED);
@@ -303,7 +320,9 @@ public class SpecimenBridgeDialog extends JDialog {
         actionPanel.add(deleteBtn);
 
         JButton closeBtn = new JButton("Close");
-        closeBtn.addActionListener(e -> dispose());
+        closeBtn.addActionListener(e -> {
+            processWindowEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING));
+        });
 
         actionPanel.add(linkBtn);
         actionPanel.add(closeBtn);
@@ -320,8 +339,14 @@ public class SpecimenBridgeDialog extends JDialog {
         navPanel.add(openSearchBtn);
 
         // Navigation Actions
-        prevBtn.addActionListener(e -> handleNavigation(currentIndex - 1));
-        nextBtn.addActionListener(e -> handleNavigation(currentIndex + 1));
+        prevBtn.addActionListener(e -> {
+            pendingIndex = currentIndex - 1;
+            handleNavigation(pendingIndex);
+        });
+        nextBtn.addActionListener(e -> {
+            pendingIndex = currentIndex + 1;
+            handleNavigation(pendingIndex);
+        });
 
         javax.swing.event.DocumentListener overrideListener = new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
@@ -331,7 +356,7 @@ public class SpecimenBridgeDialog extends JDialog {
             private void checkUpdate() {
                 // Only trigger if the user is typing, not when loadSpecimen() is running
                 if (!isAdjusting && targetSpecimen != null) {
-                    updateLocalityList();
+                    SwingUtilities.invokeLater(() -> updateLocalityList());
                 }
             }
         };
@@ -433,35 +458,54 @@ public class SpecimenBridgeDialog extends JDialog {
     private void loadSpecimen(int index) {
         if (index < 0 || index >= totalCount) return;
 
-        // Show a small loading indicator if you want, but H2 is local and very fast
         Specimen s = service.getSpecimenAt(index);
         if (s != null) {
             this.targetSpecimen = s;
             this.currentIndex = index;
+
+            // Save the current index to settings so it persists
+            try {
+                Settings.setValue("cnr", String.valueOf(index));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
             updateUIFields(s);
         }
     }
 
     private void handleNavigation(int nextIndex) {
-        if (isDirty()) {
+        if (isNavigating) return;
+        isNavigating = true;
+
+        try {
             LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
+            boolean hasSelectedLocality = (selected != null && selected.getId() > 0);
+            boolean wasPreviouslyLinked = (targetSpecimen != null && targetSpecimen.getLocalityId() > 0);
 
-            // Scenario A: User set a locality and changed something -> Auto Save
-            if (selected != null && selected.getId() > 0) {
-                saveBridge(); // This validates and saves
-                return; // saveBridge will call handleNavigation again once clean, so stop here!
+            if (isDirty()) {
+                if (hasSelectedLocality) {
+                    saveBridge(nextIndex); // This validates and saves
+                    return; // saveBridge will call handleNavigation again once clean, so stop here!
+                } else if(wasPreviouslyLinked) {
+                    int choice = JOptionPane.showConfirmDialog(this,
+                            "You cleared the locality. Delete this link?",
+                            "Confirm Unlink", JOptionPane.YES_NO_CANCEL_OPTION);
+
+                    if (choice == JOptionPane.YES_OPTION) {
+                        deleteBridge();
+                    } else if (choice == JOptionPane.CANCEL_OPTION) {
+                        return; // Stay on current record
+                    }
+                }
             }
-            // Scenario B: User cleared the locality -> Ask if they want to delete the link
-            else if (targetSpecimen.getLocalityId() > 0 && (selected == null || selected.getId() <= 0)) {
-                deleteBridge();
-            }
+            loadSpecimen(nextIndex);
+            canvas.delLayer("Rubin");
+            canvas.delLayer("distance");
+            canvas.repaint();
+        } finally {
+            isNavigating = false;
         }
-
-        // If clean, or if we ignored changes, proceed to load
-        loadSpecimen(nextIndex);
-        canvas.delLayer("Rubin");
-        canvas.delLayer("distance");
-        canvas.repaint();
     }
 
     private void updateUIFields(Specimen s) {
@@ -532,35 +576,31 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     public void updateLocalityList() {
-        String targetDistrict = targetSpecimen.getDistrict();
-        String overrideDist = overrideDistField.getText().trim();
-        if (!overrideDist.isEmpty()) {
-            targetDistrict = overrideDist;
-        }
+        if (targetSpecimen == null) return;
 
-        String targetProvince = targetSpecimen.getProvince();
-        String overrideProv = overrideProvField.getText().trim();
-        if (!overrideProv.isEmpty()) {
-            targetProvince = overrideProv;
-        }
+        isAdjusting = true; // Guard combo box events
+        try {
+            String targetDistrict = overrideDistField.getText().trim().isEmpty() ?
+                    targetSpecimen.getDistrict() : overrideDistField.getText().trim();
+            String targetProvince = overrideProvField.getText().trim().isEmpty() ?
+                    targetSpecimen.getProvince() : overrideProvField.getText().trim();
 
-        // Clear old items
-        localityCombo.removeAllItems();
+            localityCombo.removeAllItems();
+            localityCombo.addItem(new LocalityRecord(-1, "-- Select a Locality --"));
 
-        localityCombo.addItem(new LocalityRecord(-1, "-- Select a Locality --"));
-        // Fetch localities from MySQL for this district
-        List<LocalityRecord> localities = service.getLocalitiesInDistrict(targetDistrict, targetProvince);
-
-        // Populate
-        for (LocalityRecord l : localities) {
-            localityCombo.addItem(l);
-            if (l.getId() == targetSpecimen.getLocalityId()) {
-                localityCombo.setSelectedItem(l);
+            List<LocalityRecord> localities = service.getLocalitiesInDistrict(targetDistrict, targetProvince);
+            for (LocalityRecord l : localities) {
+                localityCombo.addItem(l);
+                if (l.getId() == targetSpecimen.getLocalityId()) {
+                    localityCombo.setSelectedItem(l);
+                }
             }
+        } finally {
+            isAdjusting = false;
         }
     }
 
-    private void saveBridge() {
+    private void saveBridge(int nextIndex) {
         if (targetSpecimen == null) return;
 
         LocalityRecord selectedLoc = (LocalityRecord) localityCombo.getSelectedItem();
@@ -612,8 +652,6 @@ public class SpecimenBridgeDialog extends JDialog {
 
         if (success) {
             // --- UPDATE STATE FOR WORKFLOW ---
-
-            // Capture the current UI state into our BridgeData objects
             BridgeData currentUI = getBridgeFromUI();
 
             // Memory for the F1 "Copy Last" feature
@@ -630,9 +668,9 @@ public class SpecimenBridgeDialog extends JDialog {
             targetSpecimen.setOProvince(oProv);
 
             // Auto-advance logic
-            if (currentIndex < totalCount - 1) {
-                handleNavigation(currentIndex + 1); // Use handleNavigation to ensure clean transitions
-            } else {
+            if (nextIndex != -1 && nextIndex < totalCount) {
+                loadSpecimen(nextIndex);
+            } else if (nextIndex >= totalCount) {
                 dispose();
             }
         } else {
@@ -922,6 +960,14 @@ public class SpecimenBridgeDialog extends JDialog {
 
             Desktop.getDesktop().browse(new java.net.URI(url));
         } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveCurrentIndex() {
+        try {
+            Settings.setValue("cnr", String.valueOf(currentIndex));
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

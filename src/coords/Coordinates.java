@@ -10,6 +10,19 @@ public class Coordinates {
         this.east = east;
     }
 
+    public double getNorth() {
+        return north;
+    }
+
+    public double getEast() {
+        return east;
+    }
+
+    public void set(double north, double east) {
+        this.north = north;
+        this.east = east;
+    }
+
     private static double atanh(double x) {
         if (x > 0.9999999999) return 20.0;
         if (x < -0.9999999999) return -20.0;
@@ -143,14 +156,6 @@ public class Coordinates {
         return new Coordinates(Math.toDegrees(latRad), Math.toDegrees(lonRad));
     }
 
-    public double getNorth() {
-        return north;
-    }
-
-    public double getEast() {
-        return east;
-    }
-
     public boolean isValid(CoordSystem CS) {
         return CS.Nmax >= north && CS.Nmin <= north && CS.Emax >= east && CS.Emin <= east;
     }
@@ -268,25 +273,48 @@ public class Coordinates {
     }
 
     public void setFromRUBIN(String rubin, boolean targetSweref) {
-        // Clean string: remove spaces and non-breaking spaces
-        String clean = rubin.replaceAll("[\\s\\u00A0]", "");
-
-        // Pad if first part is single digit (e.g., "7" -> "07")
-        if (clean.length() > 0 && !Character.isDigit(clean.charAt(1))) {
+        // Clean the input (remove spaces, hyphens, etc.)
+        String clean = rubin.replaceAll("[\\s\\u00A0-]", "");
+        // Pad if first part is single digit (e.g., "7K" -> "07K")
+        if (!clean.isEmpty() && !Character.isDigit(clean.charAt(1))) {
             clean = "0" + clean;
         }
+        if (!(clean.length() == 3 || clean.length() == 5 || clean.length() == 7 || clean.length() == 9)) {
+            throw new IllegalArgumentException("Invalid RUBIN string length");
+        }
 
-        if (clean.length() < 5) throw new IllegalArgumentException("Invalid RUBIN string length");
-
-        // Parse components
+        // size = 50km  "21K"
         int n1 = Integer.parseInt(clean.substring(0, 2));
         int e1 = alphaToNum(clean.charAt(2));
-        int n2 = alphaToNum(clean.charAt(3));
-        int e2 = alphaToNum(clean.charAt(4));
+        int size = 50000;
+        double baseNorth = RUBIN_ORIGIN_N + (n1 * size);
+        double baseEast = RUBIN_ORIGIN_E + (e1 * size);
 
-        // Center of the 5x5km square (adding 2500m offset)
-        this.north = RUBIN_ORIGIN_N + (n1 * 50000) + (n2 * 5000) + 2500.0;
-        this.east = RUBIN_ORIGIN_E + (e1 * 50000) + (e2 * 5000) + 2500.0;
+        if (clean.length() >= 5) {
+            // size = 5km  "21K8b"
+            int n2 = Character.getNumericValue(clean.charAt(3));
+            int e2 = alphaToNum(clean.charAt(4));
+            size = 5000;
+            baseNorth += (n2 * size);
+            baseEast += (e2 * size);
+        }
+        if (clean.length() == 7) {
+            // size = 1km "21K8b 4-3-" cleaned to "21K8b43"
+            int n3 = Character.getNumericValue(clean.charAt(5));
+            int e3 = Character.getNumericValue(clean.charAt(6));
+            size = 1000;
+            baseNorth += (n3 * size);
+            baseEast += (e3 * size);
+        } else if (clean.length() == 9) {
+            // size = 100m "21K8b4335"
+            int n3 = Integer.parseInt(clean.substring(5, 7));
+            int e3 = Integer.parseInt(clean.substring(7, 9));
+            size = 100;
+            baseNorth += (n3 * size);
+            baseEast += (e3 * size);
+        }
+        north = baseNorth + size / 2.0;
+        east  = baseEast + size / 2.0;
 
         // If target is Sweref, convert from the current RT90 state
         if (targetSweref) {
@@ -316,6 +344,58 @@ public class Coordinates {
         int e3 = (eTotal % 5000) / 100;
 
         return String.format(Locale.US, "%d%c%d%c %02d%02d", n1, e1, n2, e2, n3, e3);
+    }
+
+    // returns the corder of the RUBIN square in RT90
+    public int[][] getRUBINCorners(String rubin) {
+        // Clean the input (remove spaces, hyphens, etc.)
+        String clean = rubin.replaceAll("[\\s\\u00A0-]", "");
+        // Pad if first part is single digit (e.g., "7K" -> "07K")
+        if (!clean.isEmpty() && !Character.isDigit(clean.charAt(1))) {
+            clean = "0" + clean;
+        }
+        if (!(clean.length() == 3 || clean.length() == 5 || clean.length() == 7 || clean.length() == 9)) {
+            throw new IllegalArgumentException("Invalid RUBIN string length");
+        }
+
+        // size = 50km  "21K"
+        int n1 = Integer.parseInt(clean.substring(0, 2));
+        int e1 = alphaToNum(clean.charAt(2));
+        int size = 50000;
+        int baseNorth = RUBIN_ORIGIN_N + (n1 * size);
+        int baseEast = RUBIN_ORIGIN_E + (e1 * size);
+
+        if (clean.length() >= 5) {
+            // size = 5km  "21K8b"
+            int n2 = Character.getNumericValue(clean.charAt(3));
+            int e2 = alphaToNum(clean.charAt(4));
+            size = 5000;
+            baseNorth += (n2 * size);
+            baseEast += (e2 * size);
+        }
+        if (clean.length() == 7) {
+            // size = 1km "21K8b 4-3-" cleaned to "21K8b43"
+            int n3 = Character.getNumericValue(clean.charAt(5));
+            int e3 = Character.getNumericValue(clean.charAt(6));
+            size = 1000;
+            baseNorth += (n3 * size);
+            baseEast += (e3 * size);
+        } else if (clean.length() == 9) {
+            // size = 100m "21K8b4335"
+            int n3 = Integer.parseInt(clean.substring(5, 7));
+            int e3 = Integer.parseInt(clean.substring(7, 9));
+            size = 100;
+            baseNorth += (n3 * size);
+            baseEast += (e3 * size);
+        }
+
+        // Return the corners [SW, NW, NE, SE] in RT90
+        return new int[][] {
+                {baseNorth, baseEast},
+                {baseNorth + size, baseEast},
+                {baseNorth + size, baseEast + size},
+                {baseNorth, baseEast + size}
+        };
     }
 
     // UTM convertion methods

@@ -1,17 +1,19 @@
 import coords.*;
 import geometry.BoundingBox;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RubinLayer implements Layer {
 	private String name, rubin;
 	private Color color;
 	private boolean hidden;
 	private CoordSystem cs;
-	private double westBoundary;
-	private double northBoundary;
-	
+
+	// Store corners in projected (Sweref) coordinates
+	private List<Point> swerefCorners = new ArrayList<>();
+
 	public RubinLayer(String rubin, String name, Color c) {
-		this.rubin = rubin;
 		this.name = name;
 		this.color = c;
 		setRubin(rubin);
@@ -19,18 +21,54 @@ public class RubinLayer implements Layer {
 
 	public void setRubin(String rubin) {
 		this.rubin = rubin;
-		// Pre-calculate the grid boundaries
-		Coordinates c = new Coordinates(0,0);
-		c.setFromRUBIN(rubin, true);
+		this.swerefCorners.clear();
 
-		// A standard RUBIN square is 5000m x 5000m
-		this.westBoundary = c.getEast() - 2500;
-		this.northBoundary = c.getNorth() + 2500;
+		Coordinates coordTool = new Coordinates(0, 0);
+		int[][] rt90Corners = coordTool.getRUBINCorners(rubin);
+
+		if (rt90Corners != null) {
+			for (int[] corner : rt90Corners) {
+				// Set current corner in RT90
+				coordTool.set(corner[0], corner[1]);
+
+				// Convert RT90 -> WGS84 -> SWEREF99TM
+				Coordinates sweref = coordTool.toWGS84(CoordSystem.RT90)
+						.toProjected(CoordSystem.SWEREF99TM);
+
+				// Store the Sweref coordinates
+				swerefCorners.add(new Point((int)sweref.getEast(), (int)sweref.getNorth()));
+			}
+		}
 	}
-	
+
+	@Override
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+		if (hidden || swerefCorners.size() < 4) return;
+
+		g2d.setColor(color);
+		Stroke originalStroke = g2d.getStroke();
+		g2d.setStroke(new BasicStroke(2));
+
+		// Convert the 4 Sweref corners to screen pixel paths
+		int[] xPoints = new int[4];
+		int[] yPoints = new int[4];
+
+		for (int i = 0; i < 4; i++) {
+			Point pt = swerefCorners.get(i);
+			xPoints[i] = (int) ((pt.x * xScale) + xShift);
+			yPoints[i] = (int) ((pt.y * yScale) + yShift);
+		}
+
+		// Use drawPolygon instead of drawRect
+		// This handles cases where the grid might be slightly rotated/skewed after conversion
+		g2d.drawPolygon(xPoints, yPoints, 4);
+
+		g2d.setStroke(originalStroke);
+	}
+
 	public Point getMiddle() {
 		Coordinates c = new Coordinates(0,0);
-		c.setFromRUBIN(rubin, true);
+		c.setFromRUBIN(rubin, true); // true converts to Sweref inside the method
 		return new Point((int) c.getEast(), (int) c.getNorth());
 	}
 	
@@ -65,6 +103,7 @@ public class RubinLayer implements Layer {
 		this.name = name;
 	}
 
+	/*
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
 		if (hidden) return;
@@ -85,7 +124,7 @@ public class RubinLayer implements Layer {
 		// the northBoundary is actually the top (smallest Y in screen space)
 		g2d.drawRect(x, y, w, h);
 		g2d.setStroke(originalStroke);
-	}
+	}*/
 
 	@Override
 	public boolean isHidden() {
