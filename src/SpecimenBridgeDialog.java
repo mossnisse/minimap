@@ -52,7 +52,8 @@ public class SpecimenBridgeDialog extends JDialog {
         try {
             currentIndex = Integer.parseInt(Settings.getValue("cnr"));
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            currentIndex = 0;
+            e.printStackTrace();
         }
 
         initUI();
@@ -177,7 +178,6 @@ public class SpecimenBridgeDialog extends JDialog {
         idField = createPlainField();
         nameField = createPlainField();
         collectorField = createPlainField();
-        //locField = createPlainField();
         rubinField = createPlainField();
         rt90Field = createPlainField();
         swerefField = createPlainField();
@@ -210,13 +210,34 @@ public class SpecimenBridgeDialog extends JDialog {
         // Reset weights for the rest
         c.weighty = 0; c.fill = GridBagConstraints.HORIZONTAL;
         c.gridy = 3; infoPanel.add(collectorField, c);
-       // c.gridy = 4; infoPanel.add(locField, c);
         c.gridy = 4; infoPanel.add(provinceDistrField, c);
 
+        JPanel coordWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        coordWrapper.setOpaque(false);
+// Set a preferred height that matches a single row (approx 30-35 pixels)
+        coordWrapper.setPreferredSize(new Dimension(400, 35));
+        coordWrapper.setMinimumSize(new Dimension(400, 35));
+
+// Create the actual bar that we toggle
+        JPanel coordBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        coordBar.setOpaque(false);
+
+        coordBar.add(createFocusRow(rubinField, "Rubin", this::focusRubin, "RUBIN"));
+        coordBar.add(createFocusRow(rt90Field, "RT90", this::focusRT90, "RT90"));
+        coordBar.add(createFocusRow(swerefField, "SWEREF", this::focusSweref, "SWEREF"));
+        coordBar.add(createFocusRow(latLongField, "DMS", this::focusLatLong, "DMS"));
+
+        coordWrapper.add(coordBar);
+
+        c.gridy = 5;
+        c.weighty = 0; // Ensure this row doesn't grow
+        infoPanel.add(coordWrapper, c);
+
+        /*
         c.gridy = 5; infoPanel.add(createFocusRow(rubinField, "Focus Rubin", this::focusRubin, "RUBIN"), c);
         c.gridy = 6; infoPanel.add(createFocusRow(rt90Field, "Focus RT90", this::focusRT90, "RT90"), c);
         c.gridy = 7; infoPanel.add(createFocusRow(swerefField, "Focus SWEREF", this::focusSweref, "SWEREF"), c);
-        c.gridy = 8; infoPanel.add(createFocusRow(latLongField, "Focus DMS", this::focusLatLong, "DMS"), c);
+        c.gridy = 8; infoPanel.add(createFocusRow(latLongField, "Focus DMS", this::focusLatLong, "DMS"), c);*/
 
         topPanel.add(infoPanel, BorderLayout.CENTER);
         add(topPanel, BorderLayout.NORTH);
@@ -337,13 +358,16 @@ public class SpecimenBridgeDialog extends JDialog {
     private JPanel createFocusRow(JTextField field, String btnText, Runnable action, String type) {
         JPanel p = new JPanel(new BorderLayout(5, 0));
         p.setOpaque(false);
+
+        // Set field width to 0 or preferred size so they don't push the bar too wide
+        field.setPreferredSize(new Dimension(80, 20));
         p.add(field, BorderLayout.CENTER);
+
         JButton btn = new JButton(btnText);
         btn.setMargin(new Insets(1, 4, 1, 4));
         btn.setFocusable(false);
         btn.addActionListener(e -> action.run());
 
-        // Assign to class variables so we can toggle them later
         if (type.equals("RUBIN")) btnRubin = btn;
         else if (type.equals("RT90")) btnRT90 = btn;
         else if (type.equals("SWEREF")) btnSweref = btn;
@@ -447,7 +471,6 @@ public class SpecimenBridgeDialog extends JDialog {
         nameField.setText(s.getGenus() + " " + s.getSpecies());
         origTextField.setText(s.getOriginalText());
         collectorField.setText(s.getCollector() + " (" + s.getCollectionCode() + ")      " + String.format("%d-%02d-%02d", s.getYear(), s.getMonth(), s.getDay()));
-        //locField.setText(s.getSpecimenLocality());
         provinceDistrField.setText(s.getProvince() + ", " + s.getDistrict() + ", " + s.getSpecimenLocality());
         rubinField.setText(s.getRubin());
         rt90Field.setText("N: " + s.getRiketsN() + " O: " + s.getRiketsO());
@@ -487,7 +510,25 @@ public class SpecimenBridgeDialog extends JDialog {
         btnSweref.setEnabled(s.getSwerefN() > 0);
         btnLatLong.setEnabled(s.getLatDeg() != null && !s.getLatDeg().equals("0") && !s.getLatDeg().isEmpty());
 
+        toggleComponentVisibility(btnRubin, s.getRubin());
+        toggleComponentVisibility(btnRT90, s.getRiketsN()); // Checks if RT90 N exists
+        toggleComponentVisibility(btnSweref, s.getSwerefN() > 0 ? "exists" : "");
+
+        // For DMS, check if LatDeg has a value
+        String dmsValue = (s.getLatDeg() != null && !s.getLatDeg().isEmpty()) ? "exists" : "";
+        toggleComponentVisibility(btnLatLong, dmsValue);
+
+        // Ensure the panel redraws to account for hidden components
+        btnRubin.getParent().revalidate();
+        btnRubin.getParent().repaint();
+
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
+    }
+
+    private void toggleComponentVisibility(JButton btn, Object value) {
+        boolean hasData = value != null && !value.toString().trim().isEmpty() && !value.toString().equals("0");
+        // Hide the entire panel (button + field) created in createFocusRow
+        btn.getParent().setVisible(hasData);
     }
 
     public void updateLocalityList() {
