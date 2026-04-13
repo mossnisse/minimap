@@ -1,6 +1,5 @@
 import coords.CoordSystem;
 import coords.Coordinates;
-
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -20,6 +19,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private final GUI gui;
 	private final int localityID;
 	private final SpecimenBridgeDialog bridgeDialog;
+	private String oldName;
 
 	// Components
 	private JTextField name, altNames, province, district, coordinate_source, localitySize, zoomLevel, category;
@@ -190,7 +190,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			stmt.setInt(1, localityID);
 			try (ResultSet rs = stmt.executeQuery()) {
 				if (rs.next()) {
-					// Basic Fields
+					oldName = rs.getString(1);
 					name.setText(rs.getString(1));
 					altNames.setText(rs.getString(2));
 					province.setText(rs.getString(3));
@@ -202,7 +202,6 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					labelCreated.setText("Created: " + rs.getString(7) + " by " + rs.getString(8));
 					labelModified.setText("Modified: " + rs.getString(9) + " by " + rs.getString(10));
 
-					// Lower Fields
 					localitySize.setText(rs.getString(11));
 					category.setText(rs.getString(12));
 					zoomLevel.setText(rs.getString(13));
@@ -219,10 +218,25 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	}
 	
 	private void deleteLocality() {
-		int dialogResult = JOptionPane.showConfirmDialog (null, "Do you realy want to delete the local?","Warning",JOptionPane.YES_NO_OPTION);
-		if(dialogResult == JOptionPane.YES_OPTION){
+		int bridgeCount = localityBridgeUses(localityID);
+		int usesCount = localityUses();
+
+		String warning = "Are you sure you want to delete this locality?";
+		if (bridgeCount > 0) {
+			warning = "WARNING: This locality is linked to " + bridgeCount + " specimens bridges.\n" +
+					"Deleting it will break these links. Proceed?\n";
+		}
+
+		if (usesCount >0 ) {
+			warning += "This locality is used by " + usesCount + " specimen records.\n" +
+					"Deleting it will break these links. Proceed?";
+		}
+
+		int dialogResult = JOptionPane.showConfirmDialog(this, warning, "Confirm Delete", JOptionPane.YES_NO_OPTION);
+		if (dialogResult == JOptionPane.YES_OPTION) {
 			try {
 				Connection conn = DBConnection.getConn();
+
 				String sqlstmt = "DELETE FROM locality WHERE ID =?";
 				try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
 					statement.setInt(1, localityID);
@@ -244,19 +258,66 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			}
 		}
 	}
+
+	private int localityUses() {
+		try {
+			Connection conn = DBConnection.getConn();
+			String checkSql = "SELECT count(*) FROM specimens where province = ? AND district = ? AND locality = ? ";
+			try (PreparedStatement statem = conn.prepareStatement(checkSql)) {
+				statem.setString(1, province.getText());
+				statem.setString(2, district.getText());
+				statem.setString(3, oldName);
+				try (ResultSet rs = statem.executeQuery()) {
+					if (rs.next()) {
+						return rs.getInt(1);
+					}
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Error checking specimen locality usage: " + e.getMessage());
+		}
+		return -1;
+	}
+
+	private int localityBridgeUses(int localityID) {
+		try {
+			Connection conn = DBConnection.getConn();
+			String checkSql = "SELECT count(*) from specimen_locality where specimen_locality.locality_ID = ?";
+			try (PreparedStatement statem = conn.prepareStatement(checkSql)) {
+				statem.setInt(1, localityID);
+				try (ResultSet rs = statem.executeQuery()) {
+					if (rs.next()) {
+						return rs.getInt(1);
+					}
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Error checking bridge usage: " + e.getMessage());
+		}
+		return -1;
+	}
 	
 	private void updateLocality() {
-		// check if size is possitive integer
+		// check if size is positive integer
 		try {
 			int size = Integer.parseInt(localitySize.getText());
 			if (size < 0) throw new NumberFormatException();
 		} catch (NumberFormatException nfe) {
-			JOptionPane.showMessageDialog(null, "Size is not an possitive integer", "InfoBox: " + "Error", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(null, "Size is not an positive integer", "InfoBox: " + "Error", JOptionPane.INFORMATION_MESSAGE);
 			return;
 		}
 
 		try {
 			Connection conn = DBConnection.getConn();
+			if (oldName != null && !oldName.equals(name.getText())) {
+				int uses = localityUses();
+				JOptionPane.showMessageDialog(this,
+						"\"" + oldName + "\" is currently used in " + uses + " specimen records.\n" +
+								"Note: Changing this name here will NOT automatically update those specimens.");
+
+			}
+
+
 			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?, category = ?, zoomLevel =?, isPlace =?  WHERE ID =?";
 			try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
 				statement.setString(1, name.getText());

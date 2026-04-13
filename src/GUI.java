@@ -22,7 +22,7 @@ public class GUI  {
 	}
 
 	private void createAndShowGUI() {
-		// Setup the frame and canvas
+		// Set up the frame and canvas
 		frame = new JFrame("Minimap");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		canvas = new Canvas();

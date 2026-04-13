@@ -326,25 +326,29 @@ public class SpecimenService {
         String h2Update = "UPDATE tempspecimens SET "
                 + "locality_ID = ?, distance = ?, direction = ?, oDistrict = ?, oProvince = ? "
                 + "WHERE AccessionNo = ?";
+        try {
+            Connection h2Conn = DBConnection.getH2Conn();
+            try (
+                    PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
 
-        try (Connection h2Conn = DBConnection.getH2Conn();
-             PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
+                if (locId > 0) ps.setInt(1, locId);
+                else ps.setNull(1, java.sql.Types.INTEGER);
 
-            if (locId > 0) ps.setInt(1, locId);
-            else ps.setNull(1, java.sql.Types.INTEGER);
+                if (dist > 0) ps.setInt(2, dist);
+                else ps.setNull(2, java.sql.Types.INTEGER);
 
-            if (dist > 0) ps.setInt(2, dist);
-            else ps.setNull(2, java.sql.Types.INTEGER);
+                if (dir != null && !dir.isEmpty()) ps.setString(3, dir);
+                else ps.setNull(3, java.sql.Types.VARCHAR);
 
-            if (dir != null && !dir.isEmpty()) ps.setString(3, dir);
-            else ps.setNull(3, java.sql.Types.VARCHAR);
+                ps.setString(4, oDist);
+                ps.setString(5, oProv);
+                ps.setString(6, accessionNo);
 
-            ps.setString(4, oDist);
-            ps.setString(5, oProv);
-            ps.setString(6, accessionNo);
-
-            ps.executeUpdate();
-        } catch (SQLException e) {
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
