@@ -103,46 +103,15 @@ public class RubinLayer implements Layer {
 		this.name = name;
 	}
 
-	/*
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		if (hidden) return;
-
-		g2d.setColor(color);
-		Stroke originalStroke = g2d.getStroke();
-		g2d.setStroke(new BasicStroke(2));
-
-		// Convert map coordinates to screen coordinates
-		int x = (int) ((westBoundary * xScale) + xShift);
-		int y = (int) ((northBoundary * yScale) + yShift);
-
-		// Calculate width and height in pixels
-		int w = (int) (5000 * xScale);
-		int h = (int) Math.abs(5000 * yScale); // Height must be positive for drawRect
-
-		// If your map Y is inverted (North is up),
-		// the northBoundary is actually the top (smallest Y in screen space)
-		g2d.drawRect(x, y, w, h);
-		g2d.setStroke(originalStroke);
-	}*/
+	public boolean isHidden() { return hidden; }
 
 	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
+	public void setHidden(boolean hidden) { this.hidden = hidden; }
 
 	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
+	public void setCRS(CoordSystem cs) { this.cs = cs; }
 
 	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
+	public CoordSystem getCRS() { return cs; }
 }

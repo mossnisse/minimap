@@ -45,6 +45,7 @@ public class SpecimenBridgeDialog extends JDialog {
     JButton openSearchBtn = new JButton("Search & Cache...");
     private boolean isAdjusting = false;
     private JButton btnRubin, btnRT90, btnSweref, btnLatLong;
+    JPanel coordBar;
 
     public SpecimenBridgeDialog(Frame owner, SpecimenService service, Canvas canvas) {
         super(owner, "Link Specimen to Locality", false);
@@ -99,19 +100,16 @@ public class SpecimenBridgeDialog extends JDialog {
             public void windowClosing(java.awt.event.WindowEvent e) {
                 if (isDirty()) {
                     LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
+                    boolean wasPreviouslyLinked = (targetSpecimen != null && targetSpecimen.getLocalityId() > 0);
+
                     if (selected != null && selected.getId() > 0) {
-                        // Pass -1 to signify "don't navigate anywhere after saving, just close"
-                        saveBridge(-1);
+                        saveBridge(); // Save and stay (to close)
+                    } else if (wasPreviouslyLinked) {
+                        deleteBridge();
                     }
-                } else {
-                    try {
-                        Settings.setValue("cnr", String.valueOf(currentIndex));
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
-                    saveCurrentIndex();
-                    dispose();
                 }
+                saveCurrentIndex();
+                dispose();
             }
         });
 
@@ -146,13 +144,7 @@ public class SpecimenBridgeDialog extends JDialog {
         // --- TOP: NAVIGATION & SPECIMEN INFO ---
         JPanel topPanel = new JPanel(new BorderLayout());
 
-        // Row 1: Search Button (Full Width)
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        openSearchBtn.setPreferredSize(new Dimension(200, 30));
-        searchPanel.add(openSearchBtn);
-        topPanel.add(searchPanel, BorderLayout.NORTH);
-
-        // Row 2: Detailed Navigation
+        // Row 1: Detailed Navigation
         JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
 
         prevBtn = new JButton("<< Previous");
@@ -235,14 +227,13 @@ public class SpecimenBridgeDialog extends JDialog {
         c.gridy = 3; infoPanel.add(collectorField, c);
         c.gridy = 4; infoPanel.add(provinceDistrField, c);
 
-        JPanel coordWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        JPanel coordWrapper = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         coordWrapper.setOpaque(false);
-// Set a preferred height that matches a single row (approx 30-35 pixels)
-        coordWrapper.setPreferredSize(new Dimension(400, 35));
-        coordWrapper.setMinimumSize(new Dimension(400, 35));
+        coordWrapper.setPreferredSize(new Dimension(10, 32));
+        coordWrapper.setMinimumSize(new Dimension(10, 32));
 
-// Create the actual bar that we toggle
-        JPanel coordBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        // Use a FlowLayout with very tight gaps for the bar itself
+        coordBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         coordBar.setOpaque(false);
 
         coordBar.add(createFocusRow(rubinField, "Rubin", this::focusRubin, "RUBIN"));
@@ -296,15 +287,31 @@ public class SpecimenBridgeDialog extends JDialog {
         bridgePanel.add(overrideProvField, gbc);
 
         // Distance / Direction
-        JPanel distDirPanel = new JPanel(new GridLayout(1, 4, 5, 5));
+        JPanel distDirPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        distDirPanel.setOpaque(false);
+
+// Distance
         distDirPanel.add(new JLabel("Distance (m):"));
         distanceField = new JTextField();
+        distanceField.setColumns(8); // Fixed visual width for the input box
         distDirPanel.add(distanceField);
+
+// Spacer (Vertical pipe or extra gap)
+       // distDirPanel.add(Box.createHorizontalStrut(10));
+
+// Direction
         distDirPanel.add(new JLabel("Direction:"));
         directionCombo = new JComboBox<>(directions);
+// Combos in FlowLayout often shrink too much; give it a reasonable fixed width
+        directionCombo.setPreferredSize(new Dimension(60, 25));
         distDirPanel.add(directionCombo);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2;
+// Add to the main bridgePanel using your existing GridBag constraints
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        gbc.fill = GridBagConstraints.NONE; // CRITICAL: Don't let the FlowPanel stretch
+        gbc.anchor = GridBagConstraints.WEST; // Keep it aligned to the left
         bridgePanel.add(distDirPanel, gbc);
 
         add(bridgePanel, BorderLayout.CENTER);
@@ -312,7 +319,7 @@ public class SpecimenBridgeDialog extends JDialog {
         // --- BOTTOM: ACTION BUTTONS ---
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         linkBtn = new JButton("Create Link (Save to MySQL)");
-        linkBtn.addActionListener(e -> saveBridge(0));
+        linkBtn.addActionListener(e -> saveBridge());
 
         deleteBtn = new JButton("Delete Link");
         deleteBtn.setForeground(Color.RED);
@@ -320,9 +327,9 @@ public class SpecimenBridgeDialog extends JDialog {
         actionPanel.add(deleteBtn);
 
         JButton closeBtn = new JButton("Close");
-        closeBtn.addActionListener(e -> {
-            processWindowEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING));
-        });
+        closeBtn.addActionListener(e ->
+            processWindowEvent(new java.awt.event.WindowEvent(this, java.awt.event.WindowEvent.WINDOW_CLOSING))
+        );
 
         actionPanel.add(linkBtn);
         actionPanel.add(closeBtn);
@@ -381,24 +388,32 @@ public class SpecimenBridgeDialog extends JDialog {
 
     // Helper to keep UI creation clean
     private JPanel createFocusRow(JTextField field, String btnText, Runnable action, String type) {
-        JPanel p = new JPanel(new BorderLayout(5, 0));
+        // 5px gap between the text and its specific button
+        JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         p.setOpaque(false);
 
-        // Set field width to 0 or preferred size so they don't push the bar too wide
-        field.setPreferredSize(new Dimension(80, 20));
-        p.add(field, BorderLayout.CENTER);
+        field.setEditable(false);
+        field.setBorder(null);
+        field.setOpaque(false);
+
+        // IMPORTANT: Clear any previous fixed sizes
+        field.setPreferredSize(null);
+        // Setting columns to 0 or a very small number allows it to grow with text
+        field.setColumns(0);
 
         JButton btn = new JButton(btnText);
         btn.setMargin(new Insets(1, 4, 1, 4));
         btn.setFocusable(false);
         btn.addActionListener(e -> action.run());
 
+        // Link buttons to your class variables
         if (type.equals("RUBIN")) btnRubin = btn;
         else if (type.equals("RT90")) btnRT90 = btn;
         else if (type.equals("SWEREF")) btnSweref = btn;
         else if (type.equals("DMS")) btnLatLong = btn;
 
-        p.add(btn, BorderLayout.EAST);
+        p.add(field);
+        p.add(btn);
         return p;
     }
 
@@ -485,8 +500,8 @@ public class SpecimenBridgeDialog extends JDialog {
 
             if (isDirty()) {
                 if (hasSelectedLocality) {
-                    saveBridge(nextIndex); // This validates and saves
-                    return; // saveBridge will call handleNavigation again once clean, so stop here!
+                    boolean saved = saveBridge();
+                    if (!saved) return; // Halt navigation if validation/save failed
                 } else if(wasPreviouslyLinked) {
                     int choice = JOptionPane.showConfirmDialog(this,
                             "You cleared the locality. Delete this link?",
@@ -499,10 +514,19 @@ public class SpecimenBridgeDialog extends JDialog {
                     }
                 }
             }
-            loadSpecimen(nextIndex);
+
+            // Advance/Close logic moved here where it belongs
+            if (nextIndex != -1 && nextIndex < totalCount) {
+                loadSpecimen(nextIndex);
+            } else if (nextIndex >= totalCount) {
+                dispose();
+            }
+
+            // Always clear the canvas when moving off the record
             canvas.delLayer("Rubin");
             canvas.delLayer("distance");
             canvas.repaint();
+
         } finally {
             isNavigating = false;
         }
@@ -528,7 +552,7 @@ public class SpecimenBridgeDialog extends JDialog {
         directionCombo.setSelectedItem(s.getDirection() != null ? s.getDirection() : "");
 
         originalBridge = new BridgeData(
-                s.getLocalityId(),
+                s.getLocalityId() > 0 ? s.getLocalityId() : -1, // normalize 0 -> -1
                 s.getDistance() > 0 ? String.valueOf(s.getDistance()) : "",
                 s.getDirection() != null ? s.getDirection() : "",
                 s.getODistrict() != null ? s.getODistrict() : "",
@@ -562,28 +586,46 @@ public class SpecimenBridgeDialog extends JDialog {
         String dmsValue = (s.getLatDeg() != null && !s.getLatDeg().isEmpty()) ? "exists" : "";
         toggleComponentVisibility(btnLatLong, dmsValue);
 
+        // Force the fields to recalculate their width based on text
+        rubinField.invalidate();
+        rt90Field.invalidate();
+        swerefField.invalidate();
+        latLongField.invalidate();
+
         // Ensure the panel redraws to account for hidden components
         btnRubin.getParent().revalidate();
         btnRubin.getParent().repaint();
+
+        coordBar.revalidate();
+        coordBar.repaint();
 
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
     }
 
     private void toggleComponentVisibility(JButton btn, Object value) {
         boolean hasData = value != null && !value.toString().trim().isEmpty() && !value.toString().equals("0");
-        // Hide the entire panel (button + field) created in createFocusRow
+        // This hides/shows the sub-panel (p) created in createFocusRow
         btn.getParent().setVisible(hasData);
+
+        // Refresh the layout so buttons slide left/right without changing the bar's height
+        coordBar.revalidate();
+        coordBar.repaint();
     }
 
     public void updateLocalityList() {
         if (targetSpecimen == null) return;
-
-        isAdjusting = true; // Guard combo box events
+        boolean wasAdjusting = isAdjusting;
+        isAdjusting = true;
         try {
-            String targetDistrict = overrideDistField.getText().trim().isEmpty() ?
-                    targetSpecimen.getDistrict() : overrideDistField.getText().trim();
-            String targetProvince = overrideProvField.getText().trim().isEmpty() ?
-                    targetSpecimen.getProvince() : overrideProvField.getText().trim();
+            String targetDistrict = overrideDistField.getText().trim();
+            if (targetDistrict.isEmpty()) {
+                targetDistrict = targetSpecimen.getDistrict() != null ? targetSpecimen.getDistrict() : "";
+            }
+
+            String targetProvince = overrideProvField.getText().trim();
+            if (targetProvince.isEmpty()) {
+                targetProvince = targetSpecimen.getProvince() != null ? targetSpecimen.getProvince() : "";
+            }
 
             localityCombo.removeAllItems();
             localityCombo.addItem(new LocalityRecord(-1, "-- Select a Locality --"));
@@ -596,18 +638,18 @@ public class SpecimenBridgeDialog extends JDialog {
                 }
             }
         } finally {
-            isAdjusting = false;
+            isAdjusting = wasAdjusting;
         }
     }
 
-    private void saveBridge(int nextIndex) {
-        if (targetSpecimen == null) return;
+    private boolean saveBridge() {
+        if (targetSpecimen == null) return false;
 
         LocalityRecord selectedLoc = (LocalityRecord) localityCombo.getSelectedItem();
         // Check if a valid locality is selected (ignoring the "-- Select --" placeholder)
         if (selectedLoc == null || selectedLoc.getId() <= 0) {
             JOptionPane.showMessageDialog(this, "Please select a target locality.");
-            return;
+            return false;
         }
 
         // Extract and Validate Distance
@@ -623,12 +665,12 @@ public class SpecimenBridgeDialog extends JDialog {
                 JOptionPane.showMessageDialog(this, "Distance must be a positive whole number (meters).",
                         "Invalid Distance", JOptionPane.ERROR_MESSAGE);
                 distanceField.requestFocus();
-                return;
+                return false;
             }
         }
 
         // Extract Direction
-        String dir = (String) directionCombo.getSelectedItem();
+        String dir = directionCombo.getSelectedItem() != null ? (String) directionCombo.getSelectedItem() : "";
         boolean hasDirection = (dir != null && !dir.isEmpty());
 
         // Co-dependency Check (Both or Neither)
@@ -639,7 +681,7 @@ public class SpecimenBridgeDialog extends JDialog {
             JOptionPane.showMessageDialog(this, msg, "Incomplete Offset", JOptionPane.WARNING_MESSAGE);
             if (!hasDistance) distanceField.requestFocus();
             else directionCombo.requestFocus();
-            return;
+            return false;
         }
 
         // Collect bridge data for MySQL
@@ -667,14 +709,10 @@ public class SpecimenBridgeDialog extends JDialog {
             targetSpecimen.setODistrict(oDist);
             targetSpecimen.setOProvince(oProv);
 
-            // Auto-advance logic
-            if (nextIndex != -1 && nextIndex < totalCount) {
-                loadSpecimen(nextIndex);
-            } else if (nextIndex >= totalCount) {
-                dispose();
-            }
+            return true;
         } else {
             JOptionPane.showMessageDialog(this, "Error saving link to database.");
+            return false;
         }
     }
 
@@ -760,8 +798,6 @@ public class SpecimenBridgeDialog extends JDialog {
             }
         } catch (SQLException e) {
             e.printStackTrace();
-        } finally {
-            // GUI.setCursorDefault();
         }
     }
 

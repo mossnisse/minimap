@@ -96,6 +96,7 @@ public class SpecimenService {
         }
 
         String createSql = "CREATE TABLE tempspecimens ("
+                + "cache_id INT AUTO_INCREMENT PRIMARY KEY, "
                 + "AccessionNo VARCHAR(16), "
                 + "\"Year\" SMALLINT, "   // Quoted
                 + "\"Month\" TINYINT, "   // Quoted
@@ -135,7 +136,7 @@ public class SpecimenService {
     }
 
     public Specimen getSpecimenAt(int index) {
-        String sql = "SELECT * FROM tempspecimens LIMIT 1 OFFSET ?;";
+        String sql = "SELECT * FROM tempspecimens ORDER BY cache_id ASC LIMIT 1 OFFSET ?;";
         try (Connection conn = DBConnection.getH2Conn();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -152,8 +153,10 @@ public class SpecimenService {
     }
 
     public int getCacheCount() {
+        // Properly close the Statement by including it in the try-with-resources block
         try (Connection conn = DBConnection.getH2Conn();
-             ResultSet rs = conn.createStatement().executeQuery("SELECT COUNT(*) FROM tempspecimens")) {
+             java.sql.Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM tempspecimens")) {
             if (rs.next()) return rs.getInt(1);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -312,9 +315,7 @@ public class SpecimenService {
             if (mysqlSuccess) {
                 updateH2CacheLink(s.getAccessionNo(), -1, "", "", 0, "");
             }
-
             return mysqlSuccess;
-
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
