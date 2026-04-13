@@ -91,9 +91,9 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		JLabel lName = addField("Name:", name, content, layout, 10, content);
 		JLabel lAlt = addField("Alt Names:", altNames, content, layout, 10, lName);
 		JLabel lProv = addField("Province:", province, content, layout, 10, lAlt);
-		JLabel lSize = addField("Size:", localitySize, content, layout, 10, lProv);
-		JLabel lDist = addField("District:", district, content, layout, 10, lSize);
-		JLabel lSrc = addField("Source:", coordinate_source, content, layout, 10, lDist);
+		JLabel lDist = addField("District:", district, content, layout, 10, lProv);
+		JLabel lSize = addField("Size:", localitySize, content, layout, 10, lDist);
+		JLabel lSrc = addField("Source:", coordinate_source, content, layout, 10, lSize);
 
 		JLabel lComm = new JLabel("Comments:");
 		content.add(lComm);
@@ -106,44 +106,45 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		layout.putConstraint(SpringLayout.NORTH, scrollPane, 0, SpringLayout.NORTH, lComm);
 
 		// Comments is a JTextArea, so the next field needs a bigger gap (70-80px)
-		JLabel lCat = addField("Category:", category, content, layout, 80, scrollPane);
+		JLabel lCat = addField("Category:", category, content, layout, 10, scrollPane);
 		JLabel lZoom = addField("Zoom:", zoomLevel, content, layout, 10, lCat);
 
 		// Metadata Labels
 		add(labelCreated);
-		layout.putConstraint(SpringLayout.WEST, labelCreated, 10, SpringLayout.WEST, this.getContentPane());
+		layout.putConstraint(SpringLayout.WEST, labelCreated, 10, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, labelCreated, 15, SpringLayout.SOUTH, lZoom);
 
 		add(labelModified);
-		layout.putConstraint(SpringLayout.WEST, labelModified, 10, SpringLayout.WEST, this.getContentPane());
+		layout.putConstraint(SpringLayout.WEST, labelModified, 10, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, labelModified, 5, SpringLayout.SOUTH, labelCreated);
 
 		// Checkbox
 		add(isPlace);
-		layout.putConstraint(SpringLayout.WEST, isPlace, 10, SpringLayout.WEST, this.getContentPane());
+		layout.putConstraint(SpringLayout.WEST, isPlace, 10, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, isPlace, 10, SpringLayout.SOUTH, labelModified);
 
 		// Buttons
+		add(move);
 		add(cancel);
 		add(delete);
 		add(ok);
-		add(move);
 
-		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, this.getContentPane());
-		layout.putConstraint(SpringLayout.NORTH, cancel, 20, SpringLayout.SOUTH, isPlace);
+		layout.putConstraint(SpringLayout.WEST, move, 10, SpringLayout.WEST, content);
+		layout.putConstraint(SpringLayout.NORTH, move, 0, SpringLayout.SOUTH, isPlace);
+
+		// Bottom Row: Cancel, Delete, OK
+		layout.putConstraint(SpringLayout.WEST, cancel, 10, SpringLayout.WEST, content);
+		layout.putConstraint(SpringLayout.NORTH, cancel, 20, SpringLayout.SOUTH, move);
 
 		layout.putConstraint(SpringLayout.WEST, delete, 10, SpringLayout.EAST, cancel);
 		layout.putConstraint(SpringLayout.NORTH, delete, 0, SpringLayout.NORTH, cancel);
 
 		layout.putConstraint(SpringLayout.WEST, ok, 10, SpringLayout.EAST, delete);
 		layout.putConstraint(SpringLayout.NORTH, ok, 0, SpringLayout.NORTH, cancel);
-		layout.putConstraint(SpringLayout.WEST, move, 10, SpringLayout.EAST, ok);
-		layout.putConstraint(SpringLayout.NORTH, move, 0, SpringLayout.NORTH, cancel);
 
-		layout.putConstraint(SpringLayout.EAST, this.getContentPane(), 10, SpringLayout.EAST, name);
-		layout.putConstraint(SpringLayout.SOUTH, this.getContentPane(), 10, SpringLayout.SOUTH, cancel);
-		layout.putConstraint(SpringLayout.EAST, this.getContentPane(), 20, SpringLayout.EAST, scrollPane);
-		layout.putConstraint(SpringLayout.SOUTH, this.getContentPane(), 10, SpringLayout.SOUTH, cancel);
+		// Update content pane boundaries
+		layout.putConstraint(SpringLayout.EAST, content, 20, SpringLayout.EAST, scrollPane);
+		layout.putConstraint(SpringLayout.SOUTH, content, 10, SpringLayout.SOUTH, cancel);
 
 		// Listeners
 		cancel.addActionListener(this);
@@ -302,8 +303,6 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		int newE = p.x;
 
 		// Optional: Auto-lookup the new District/Province for the new spot
-		// (Reuse the logic from your CreateLocality code)
-
 		// Update the DB directly
 		try {
 			Connection conn = DBConnection.getConn();
@@ -352,6 +351,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		} else if ("move".equals(cmd)) {
 			// Minimize dialog or just tell the user to click
 			//this.setState(Frame.ICONIFIED); // Optional: hide dialog so they can see the map
+			this.setTitle("SELECT NEW LOCATION ON MAP...");
 			gui.enterMoveMode(this);
 		}
 	}
