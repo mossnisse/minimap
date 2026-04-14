@@ -317,7 +317,6 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 			}
 
-
 			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?, category = ?, zoomLevel =?, isPlace =?  WHERE ID =?";
 			try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
 				statement.setString(1, name.getText());
@@ -341,6 +340,8 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 				statement.setInt(12, localityID);
 
 				statement.execute();
+
+				// only do it if locality is renamed
 				if (bridgeDialog != null && bridgeDialog.isVisible()) {
 					bridgeDialog.updateLocalityList();
 				}
@@ -348,7 +349,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 				if (layer instanceof MYSQLTableLayer mysqlLayer) {
 					mysqlLayer.invalidateCache();
 				}
-			} catch (SQLException | IOException e) {
+			} catch (SQLException e) {
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
 			}

@@ -169,8 +169,8 @@ public class H2TableLayer implements Layer {
 	}
 
 	public String findNearest(Point p, int limit) {
-		int eastVal = p.y;
-		int northVal = p.x;
+		int eastVal = p.x;
+		int northVal = p.y;
 
 		String sqlstmt = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
 				" WHERE NORTH > " + (northVal - limit) +
@@ -185,8 +185,8 @@ public class H2TableLayer implements Layer {
 			String nearest = "";
 
 			while (result.next()) {
-				int north = result.getInt(2);
-				int east = result.getInt(1);
+				int north = result.getInt(1);
+				int east = result.getInt(2);
 				String name = result.getString(3);
 
 				// Ensure pc is created as (East, North) to match p

@@ -77,9 +77,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		JLabel label = new JLabel("Province");
 		contentPane.add(label);
 		provins = new JComboBox<>(prov);
-		try {
-			provins.setSelectedItem(Settings.getValue("landskap"));
-		} catch (IOException e) { e.printStackTrace(); }
+		provins.setSelectedItem(Settings.getValue("landskap"));
 		contentPane.add(provins);
 
 		// --- Buttons ---

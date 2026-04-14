@@ -30,29 +30,25 @@ public class DBConnection {
 			return;
 		}
 
-		try {
-			password = Settings.getValue("password");
-			if (password == null) {
-				PasswDialog l = new PasswDialog();
-				String input = l.open();
-				if (input != null && !input.equals("codeCancel")) {
-					password = input;
-					try {
-						openConn(password);
-						Settings.setValue("password", password);
-					} catch (SQLException e2) {
-						JOptionPane.showMessageDialog(null, "Login failed: " + e2.getMessage());
-						password = null; // Reset so we ask again
-						createConn();
-					} catch (IOException e1) {
-						System.err.println("Couldn't save password");
-					}
+		password = Settings.getValue("password");
+		if (password == null) {
+			PasswDialog l = new PasswDialog();
+			String input = l.open();
+			if (input != null && !input.equals("codeCancel")) {
+				password = input;
+				try {
+					openConn(password);
+					Settings.setValue("password", password);
+				} catch (SQLException e2) {
+					JOptionPane.showMessageDialog(null, "Login failed: " + e2.getMessage());
+					password = null; // Reset so we ask again
+					createConn();
+				} catch (IOException e1) {
+					System.err.println("Couldn't save password");
 				}
-			} else {
-				openConn(password);
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+		} else {
+			openConn(password);
 		}
 	}
 	

@@ -91,14 +91,9 @@ public class GUI  {
 		frame.setSize(1000, 1000);
 		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
-
-		// App State Recovery
-		try {
-			if ("open".equals(Settings.getValue("specimen dialog"))) {
-				searchSpecimens();
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
+		
+		if ("open".equals(Settings.getValue("specimen dialog"))) {
+			searchSpecimens();
 		}
 
 		Keyboard.activate();
@@ -382,8 +377,6 @@ public class GUI  {
 		RubinLayer r = new RubinLayer(s, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
 		canvas.addLayerTop(r);
-		//Point p2 = r.getMiddle();
-		//canvas.focus(p2);
 	}
 
 	public void distance() {
@@ -437,7 +430,6 @@ public class GUI  {
 		if (localityID != -1) {
 			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas);
 		}
-		//canvas.repaint();
 	}
 
 	public void enterMoveMode(EditLocalityDialog dialog) {
@@ -457,25 +449,8 @@ public class GUI  {
 	}
 
 	private void openCreateLocality(Point p) {
-		String province = "outside layer";
-		String district = "outside layer";
-
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.getLayer("socknar");
-
-		if (provinces != null) {
-			TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
-			if (pr != null) province = pr.getName();
-		}
-
-		if (districts != null) {
-			TNGPolygonFileLayer.Province so = districts.inPolygon(p);
-			if (so != null) district = so.getName();
-		}
-
-		CreateLocalityDialog d = new CreateLocalityDialog(frame, this, canvas, bridgeDialog, p.y, p.x, province, district);
+		CreateLocalityDialog d = new CreateLocalityDialog(frame, this, canvas, bridgeDialog, p);
 		d.setVisible(true);
-		canvas.repaint();
 	}
 
 	public void searchSpecimens() {

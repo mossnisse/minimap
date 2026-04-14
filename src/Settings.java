@@ -1,50 +1,60 @@
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map.Entry;
+import java.nio.charset.StandardCharsets;
 
 public class Settings {
-	private static HashMap<String,String> store;
-	private static final String filename = "settings.txt";
+	private static HashMap<String, String> store;
+	private static final String FILENAME = "settings.txt";
 
-	public static String getValue(String key) throws IOException {
-		if (store == null) readStore();
-		return store.get(key);
+	public static synchronized String getValue(String key) {
+		try {
+			if (store == null) readStore();
+			return store.get(key);
+		} catch (IOException e) {
+			return null; // Or handle as needed
+		}
 	}
 
-	public static void setValue(String key, String value) throws IOException {
-		if (store== null) readStore();
-		store.put(key, value);
-		PrintWriter writer = new PrintWriter(filename, "UTF-8");
-		Iterator<Entry<String,String>> it = store.entrySet().iterator();
-		while (it.hasNext()) {
-			Entry<String, String> e = it.next();
-			writer.println(e.getKey()+": "+e.getValue());
+	public static synchronized void setValue(String key, String value) throws IOException {
+		if (store == null) readStore();
+		// Prevent actual nulls from becoming the string "null"
+		store.put(key, value == null ? "" : value);
+		saveStore();
+	}
+
+	private static void saveStore() throws IOException {
+		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+				new FileOutputStream(FILENAME), StandardCharsets.UTF_8))) {
+			for (HashMap.Entry<String, String> entry : store.entrySet()) {
+				writer.println(entry.getKey() + ": " + entry.getValue());
+			}
 		}
-		writer.close();
 	}
 
 	private static void readStore() throws IOException {
-		store = new HashMap<String,String>();
-		BufferedReader br = new BufferedReader(
-				   new InputStreamReader(
-		                      new FileInputStream(filename), "UTF-8"));
-		String line = br.readLine();
-		while (line != null) {
-			System.out.println(line);
-			String[] parts = line.split(": ");
-			String key = parts[0]; 
-			String value = "";
-			if (parts.length>1) {
-				value = parts[1];
-			}
-			store.put(key, value);
-			line = br.readLine();
+		store = new HashMap<>();
+		File file = new File(FILENAME);
+
+		// If file doesn't exist, just return an empty store
+		if (!file.exists()) {
+			return;
 		}
-		br.close();
+
+		try (BufferedReader br = new BufferedReader(
+				new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
+
+			String line;
+			while ((line = br.readLine()) != null) {
+				if (line.trim().isEmpty()) continue;
+
+				// Use limit=2 to ensure values containing ": " don't get split up
+				String[] parts = line.split(": ", 2);
+				if (parts.length == 2) {
+					store.put(parts[0], parts[1]);
+				} else if (parts.length == 1) {
+					store.put(parts[0], "");
+				}
+			}
+		}
 	}
 }

@@ -1,3 +1,6 @@
+import coords.CoordSystem;
+
+import java.awt.*;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -237,13 +240,8 @@ public class SpecimenService {
         System.out.println("linkSpecimenToLocality() method called");
 
         // Assuming Settings.getValue("user") is available in your scope
-        String user = "unknown";
-        try {
-            user = Settings.getValue("user");
-            if (user == null) user = "unknown";
-        } catch(IOException e) {
-            e.printStackTrace();
-        }
+        String user = Settings.getValue("user") == null ? "unknown" : Settings.getValue("user") ;
+        if (user == null) user = "unknown";
 
         String sql = "INSERT INTO specimen_locality "
                 + "(specimen_ID, locality_ID, InstitutionCode, CollectionCode, AccessionNo, "
@@ -351,5 +349,24 @@ public class SpecimenService {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public Point getLocalityPoint(int localityID) {
+        try {
+            String query = "SELECT SWTMN, SWTME FROM locality WHERE ID = ?";
+            Connection conn = DBConnection.getConn();
+            try (PreparedStatement ps = conn.prepareStatement(query)) {
+                ps.setInt(1, localityID);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    int swN = rs.getInt("SWTMN");
+                    int swE = rs.getInt("SWTME");
+                    return new Point(swE, swN);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

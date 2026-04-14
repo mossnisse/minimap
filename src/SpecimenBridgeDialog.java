@@ -5,10 +5,6 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.List;
 
 public class SpecimenBridgeDialog extends JDialog {
@@ -52,12 +48,8 @@ public class SpecimenBridgeDialog extends JDialog {
         this.service = service;
         this.canvas = canvas;
         this.totalCount = service.getCacheCount(); // Only get the number, not the data
-        try {
-            currentIndex = Integer.parseInt(Settings.getValue("cnr"));
-        } catch (IOException e) {
-            currentIndex = 0;
-            e.printStackTrace();
-        }
+
+        currentIndex = Integer.parseInt(Settings.getValue("cnr"));
 
         initUI();
         loadSpecimen(currentIndex);
@@ -503,15 +495,7 @@ public class SpecimenBridgeDialog extends JDialog {
                     boolean saved = saveBridge();
                     if (!saved) return; // Halt navigation if validation/save failed
                 } else if(wasPreviouslyLinked) {
-                    int choice = JOptionPane.showConfirmDialog(this,
-                            "You cleared the locality. Delete this link?",
-                            "Confirm Unlink", JOptionPane.YES_NO_CANCEL_OPTION);
-
-                    if (choice == JOptionPane.YES_OPTION) {
-                        deleteBridge();
-                    } else if (choice == JOptionPane.CANCEL_OPTION) {
-                        return; // Stay on current record
-                    }
+                    deleteBridge();
                 }
             }
 
@@ -749,56 +733,37 @@ public class SpecimenBridgeDialog extends JDialog {
     public void focusLocality() {
         LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
         if (selected == null || selected.getId() == -1) return;
-        // Use your existing wait cursor utility
         // GUI.setCursorWait();
-        try {
+        Point p = service.getLocalityPoint(selected.getId());
 
-            // Note: Using Sweref99TMN/E to match your DistanceLayer requirement
-            String query = "SELECT SWTMN, SWTME FROM locality WHERE ID = ?";
+        // Center the map canvas
+        canvas.focus(p);
+        canvas.setCoordinate(p);
 
-            try (Connection conn = DBConnection.getConn();
-                 PreparedStatement ps = conn.prepareStatement(query)) {
+        // Handle Distance/Direction Visualization
+        String distText = distanceField.getText().trim();
+        String directionS = (String) directionCombo.getSelectedItem();
 
-                ps.setInt(1, selected.getId());
-                ResultSet rs = ps.executeQuery();
+        // Clear old distance layer regardless
+        canvas.delLayer("distance");
 
-                if (rs.next()) {
-                    int swN = rs.getInt("SWTMN");
-                    int swE = rs.getInt("SWTME");
-                    Point p = new Point(swE, swN);
-
-                    // Center the map canvas
-                    canvas.focus(p);
-                    canvas.setCoordinate(p);
-
-                    // Handle Distance/Direction Visualization
-                    String distText = distanceField.getText().trim();
-                    String directionS = (String) directionCombo.getSelectedItem();
-
-                    // Clear old distance layer regardless
-                    canvas.delLayer("distance");
-
-                    if (!distText.isEmpty() && directionS != null && !directionS.isEmpty()) {
-                        try {
-                            int distanceI = Integer.parseInt(distText);
-                            if (distanceI > 0) {
-                                // Add the visual vector layer
-                                canvas.addLayerTop(new DistanceLayer(
-                                        "distance", p, distanceI, directionS, CoordSystem.SWEREF99TM
-                                ));
-                            }
-                        } catch (NumberFormatException e) {
-                            // Silent fail for visualization if number is garbled
-                        }
-                    }
-
-                    // Repaint to show changes
-                    canvas.repaint();
+        if (!distText.isEmpty() && directionS != null && !directionS.isEmpty()) {
+            try {
+                int distanceI = Integer.parseInt(distText);
+                if (distanceI > 0) {
+                    // Add the visual vector layer
+                    canvas.addLayerTop(new DistanceLayer(
+                            "distance", p, distanceI, directionS, CoordSystem.SWEREF99TM
+                    ));
                 }
+            } catch (NumberFormatException e) {
+                // Silent fail for visualization if number is garbled
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
+
+        // Repaint to show changes
+        canvas.repaint();
+
     }
 
     public void focusRubin() {

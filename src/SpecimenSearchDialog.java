@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
 
 public class SpecimenSearchDialog extends JDialog {
     private final SpecimenService service;
@@ -120,13 +119,6 @@ public class SpecimenSearchDialog extends JDialog {
             statusLabel.setText("No results found.");
             statusLabel.setForeground(Color.RED);
         }
-
-        /*
-        try {
-            Settings.setValue("cnr", String.valueOf(0));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/
 
         searchButton.setEnabled(true);
         setCursor(Cursor.getDefaultCursor());

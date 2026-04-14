@@ -1,74 +1,79 @@
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.Serial;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
-import javax.swing.JTextField;
+import javax.swing.JPasswordField;
 
-public class PasswDialog extends JDialog implements ActionListener, PropertyChangeListener {
+public class PasswDialog extends JDialog implements PropertyChangeListener {
 
 	@Serial
 	private static final long serialVersionUID = 385404689327110960L;
-	private final JTextField passw;
+	private final JPasswordField passw; // Use JPasswordField for masking
 	private final JOptionPane optionPane;
-	
+	private String typedText = "codeCancel";
+
 	public PasswDialog() {
 		setTitle("Password to the VH db server");
-		this.passw = new JTextField();
-		//try {
-			//String user = Settings.getValue("user");
-			Object[] array = {"Password", passw};
-			
-			Object[] options = {"Cancel", "OK"};
+		this.passw = new JPasswordField(20);
 
-			optionPane = new JOptionPane(array,
-					JOptionPane.QUESTION_MESSAGE,
-					JOptionPane.YES_NO_OPTION,
-					null,
-					options,
-					options[0]);
+		Object[] array = {"Enter Password:", passw};
+		Object[] options = {"Cancel", "OK"};
 
-			//Make this dialog display it.
-			setContentPane(optionPane);
-			pack();
-			setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-			optionPane.addPropertyChangeListener(this);
-		/*} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			System.out.println("Kan inte läsa in user från settings.txt");
-		}*/
-		
-	}
+		optionPane = new JOptionPane(array,
+				JOptionPane.QUESTION_MESSAGE,
+				JOptionPane.YES_NO_OPTION,
+				null,
+				options,
+				options[1]); // Default to OK
 
-	String open() {
+		setContentPane(optionPane);
 		setModal(true);
-		this.setVisible(true);
-		return passw.getText();
+		pack();
+
+		// Handle the window 'X' button
+		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+		addWindowListener(new WindowAdapter() {
+			public void windowClosing(WindowEvent we) {
+				// Set value to simulate a Cancel click
+				optionPane.setValue("Cancel");
+			}
+		});
+
+		optionPane.addPropertyChangeListener(this);
 	}
-	
+
+	public String open() {
+		// Request focus on password field when shown
+		passw.requestFocusInWindow();
+		this.setVisible(true);
+		return typedText;
+	}
+
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
-		// TODO Auto-generated method stub
-		if(isVisible()){
-    		System.out.println(e.getNewValue());
-    		if (e.getNewValue()=="OK") {
-    			//setUser();
-    			setVisible(false);
-            	dispose();
-    		} else if (e.getNewValue()=="Cancel") {
-    			System.out.println("Stänger passw dialog");
-    			passw.setText("codeCancel");
-    			setVisible(false);
-            	dispose();
-    		} 
-    	}
-	}
+		String prop = e.getPropertyName();
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
+		if (isVisible() && (e.getSource() == optionPane)
+				&& (JOptionPane.VALUE_PROPERTY.equals(prop) ||
+				JOptionPane.INPUT_VALUE_PROPERTY.equals(prop))) {
+
+			Object value = optionPane.getValue();
+
+			if (value == JOptionPane.UNINITIALIZED_VALUE) return;
+
+			// Reset the value so that if the user clicks again, it triggers another event
+			optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
+
+			if ("OK".equals(value)) {
+				typedText = new String(passw.getPassword());
+				setVisible(false);
+			} else {
+				typedText = "codeCancel";
+				setVisible(false);
+			}
+		}
 	}
 }
