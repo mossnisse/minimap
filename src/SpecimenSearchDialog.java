@@ -3,7 +3,6 @@ import java.awt.*;
 
 public class SpecimenSearchDialog extends JDialog {
     private final SpecimenService service;
-
     // UI Components
     private JComboBox<String> provinceCombo;
     private JTextField districtField;

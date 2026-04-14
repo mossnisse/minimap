@@ -5,7 +5,9 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SpecimenBridgeDialog extends JDialog {
     private final SpecimenService service;
@@ -22,6 +24,40 @@ public class SpecimenBridgeDialog extends JDialog {
     private JTextField indexField; // For jumping to specific records
     private int pendingIndex = -1;
     private boolean isNavigating = false;
+
+    private static final Map<String, Integer> ISOF_PROVINCE_MAP = new HashMap<>();
+    static {
+        ISOF_PROVINCE_MAP.put("Skåne", 1);
+        ISOF_PROVINCE_MAP.put("Blekinge", 2);
+        ISOF_PROVINCE_MAP.put("Öland", 3);
+        ISOF_PROVINCE_MAP.put("Halland", 4);
+        ISOF_PROVINCE_MAP.put("Småland", 5);
+        ISOF_PROVINCE_MAP.put("Gotland", 6);
+        ISOF_PROVINCE_MAP.put("Västergötland", 7);
+        ISOF_PROVINCE_MAP.put("Östergötland", 8);
+        ISOF_PROVINCE_MAP.put("Bohuslän", 9);
+        ISOF_PROVINCE_MAP.put("Dalsland", 10);
+        ISOF_PROVINCE_MAP.put("Närke", 11);
+        ISOF_PROVINCE_MAP.put("Södermanland", 12);
+        ISOF_PROVINCE_MAP.put("Värmland", 13);
+        ISOF_PROVINCE_MAP.put("Västmanland", 14);
+        ISOF_PROVINCE_MAP.put("Uppland", 15);
+        ISOF_PROVINCE_MAP.put("Gästrikland", 16);
+        ISOF_PROVINCE_MAP.put("Dalarna", 17);
+        ISOF_PROVINCE_MAP.put("Hälsingland", 18);
+        ISOF_PROVINCE_MAP.put("Härjedalen", 19);
+        ISOF_PROVINCE_MAP.put("Medelpad", 20);
+        ISOF_PROVINCE_MAP.put("Ångermanland", 21);
+        ISOF_PROVINCE_MAP.put("Jämtland", 22);
+        ISOF_PROVINCE_MAP.put("Västerbotten", 23);
+        ISOF_PROVINCE_MAP.put("Norrbotten", 25);
+        ISOF_PROVINCE_MAP.put("Lappland", 24); // Note: Isof often groups Lappmarken under 'Lappland' ID 24
+        ISOF_PROVINCE_MAP.put("Torne lappmark", 24);
+        ISOF_PROVINCE_MAP.put("Lule lappmark", 24);
+        ISOF_PROVINCE_MAP.put("Pite lappmark", 24);
+        ISOF_PROVINCE_MAP.put("Lycksele lappmark", 24);
+        ISOF_PROVINCE_MAP.put("Åsele lappmark", 24);
+    }
 
     private JLabel totalLabel;
 
@@ -922,7 +958,7 @@ public class SpecimenBridgeDialog extends JDialog {
         Frame parentFrame = (Frame) javax.swing.SwingUtilities.getWindowAncestor(this);
 
         // Open and Position the Dialog
-        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, selectedText, canvas);
+        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, canvas, selectedText, province);
 
         // Pass the province if your dialog supports it
         //d.setProvince(province);
@@ -939,6 +975,8 @@ public class SpecimenBridgeDialog extends JDialog {
         }
 
         String placeName = "";
+        String provinceName = targetSpecimen.getProvince();
+
         Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
 
         // Get selected text from the focused component
@@ -964,12 +1002,21 @@ public class SpecimenBridgeDialog extends JDialog {
             System.err.println("Clipboard copy failed: " + e.getMessage());
         }
 
+        Integer provinceId = ISOF_PROVINCE_MAP.get(provinceName);
+
         try {
             // Encode the string for a URL (handles spaces and Swedish characters)
             String encodedName = java.net.URLEncoder.encode(placeName, "UTF-8");
-            String url = "https://ortnamnsregistret.isof.se/place-names?place-name=" + encodedName;
 
-            Desktop.getDesktop().browse(new java.net.URI(url));
+            // Build URL dynamically
+            StringBuilder urlBuilder = new StringBuilder("https://ortnamnsregistret.isof.se/place-names?place-name=");
+            urlBuilder.append(encodedName);
+
+            if (provinceId != null) {
+                urlBuilder.append("&province-id=").append(provinceId);
+            }
+
+            Desktop.getDesktop().browse(new java.net.URI(urlBuilder.toString()));
         } catch (Exception e) {
             e.printStackTrace();
         }

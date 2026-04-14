@@ -5,7 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
-import java.io.IOException;
 import java.io.Serial;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -22,16 +21,16 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	@Serial
 	private static final long serialVersionUID = 5830869660497471486L;
 	private final Canvas canvas;
-	private JButton searchb, closeb, zoomb;
-	private JTextField lokal;
-	private JComboBox<String> provins;
-	private Container contentPane;
 	private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
 			"Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
 			"Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
 			"Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
 	private final int[] provnr = {-1, 27, 25,26,28,24,29,22,23,19,20,21,18,17,16,13,12,14,10,9,11,15,6,8,5,3,2,1,4,7};
-
+	private String province;
+	private JButton searchb, closeb, zoomb;
+	private JTextField lokal;
+	private JComboBox<String> provinceBox;
+	private Container contentPane;
 	private SpringLayout layout;
 	private JPanel resultPanel;
 	private JScrollPane scrollPane;
@@ -52,9 +51,10 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		}
 	}
 
-	public SearchLocalityDialog(Frame aFrame, String text, Canvas canvas) {
+	public SearchLocalityDialog(Frame aFrame, Canvas canvas, String text, String province) {
 		super(aFrame, false);
 		this.canvas = canvas;
+		this.province = province;
 		setTitle("Search localities");
 		initGUI(text);
 		setLocationRelativeTo(aFrame);
@@ -76,9 +76,9 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		// --- Province Row ---
 		JLabel label = new JLabel("Province");
 		contentPane.add(label);
-		provins = new JComboBox<>(prov);
-		provins.setSelectedItem(Settings.getValue("landskap"));
-		contentPane.add(provins);
+		provinceBox = new JComboBox<>(prov);
+		provinceBox.setSelectedItem(province);
+		contentPane.add(provinceBox);
 
 		// --- Buttons ---
 		searchb = new JButton("Search");
@@ -114,14 +114,14 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		layout.putConstraint(SpringLayout.WEST, label2, 10, SpringLayout.WEST, contentPane);
 
 		// Province ComboBox (Aligns to label, stretches to scrollpane's right edge)
-		layout.putConstraint(SpringLayout.NORTH, provins, -3, SpringLayout.NORTH, label);
-		layout.putConstraint(SpringLayout.WEST, provins, 15, SpringLayout.EAST, label);
-		layout.putConstraint(SpringLayout.EAST, provins, 0, SpringLayout.EAST, scrollPane);
+		layout.putConstraint(SpringLayout.NORTH, provinceBox, -3, SpringLayout.NORTH, label);
+		layout.putConstraint(SpringLayout.WEST, provinceBox, 15, SpringLayout.EAST, label);
+		layout.putConstraint(SpringLayout.EAST, provinceBox, 0, SpringLayout.EAST, scrollPane);
 
 		// Locality TextField (Matches Combobox's left and right edges perfectly)
 		layout.putConstraint(SpringLayout.NORTH, lokal, -3, SpringLayout.NORTH, label2);
-		layout.putConstraint(SpringLayout.WEST, lokal, 0, SpringLayout.WEST, provins);
-		layout.putConstraint(SpringLayout.EAST, lokal, 0, SpringLayout.EAST, provins);
+		layout.putConstraint(SpringLayout.WEST, lokal, 0, SpringLayout.WEST, provinceBox);
+		layout.putConstraint(SpringLayout.EAST, lokal, 0, SpringLayout.EAST, provinceBox);
 
 		// Buttons (Anchored Left, allowed to take their natural widths)
 		layout.putConstraint(SpringLayout.NORTH, searchb, 20, SpringLayout.SOUTH, lokal);
@@ -142,7 +142,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		layout.putConstraint(SpringLayout.SOUTH, contentPane, 10, SpringLayout.SOUTH, scrollPane);
 
 		getRootPane().setDefaultButton(searchb);
-		provins.addItemListener(this);
+		provinceBox.addItemListener(this);
 		pack();
 	}
 
@@ -179,7 +179,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		String altmid   = "%, " + searchPattern + ",%";
 		String altClause = "(alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ?)";
 
-		String selectedProv = provins.getSelectedItem().toString();
+		String selectedProv = provinceBox.getSelectedItem().toString();
 		String query = "*".equals(selectedProv)
 				? "SELECT lat, `long`, locality, district FROM Locality WHERE (locality LIKE ?) OR " + altClause
 				: "SELECT lat, `long`, locality, district FROM Locality WHERE province = ? AND ((locality LIKE ?) OR " + altClause + ")";
@@ -188,7 +188,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
              PreparedStatement statement = conn.prepareStatement(query)) {
 
 			int idx = 1;
-			if (!(provins.getSelectedItem()).equals("*")) statement.setString(idx++, (String)provins.getSelectedItem());
+			if (!(provinceBox.getSelectedItem()).equals("*")) statement.setString(idx++, (String)provinceBox.getSelectedItem());
 			statement.setString(idx++, searchPattern);
 			statement.setString(idx++, altonly);
 			statement.setString(idx++, altfirst);
@@ -204,7 +204,9 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 					allNames.add(result.getString("locality") + " (" + result.getString("district") + ")");
 				}
 			}
-		} catch (SQLException ex) { ex.printStackTrace(); }
+		} catch (SQLException ex) {
+			ex.printStackTrace();
+		}
 
 		// --- H2 ---
 		H2TableLayer od = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
@@ -236,6 +238,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		resultPanel.revalidate();
 		resultPanel.repaint();
 		scrollPane.getVerticalScrollBar().setValue(0);
+		SwingUtilities.invokeLater(() -> scrollPane.getVerticalScrollBar().setValue(0));
 		canvas.repaint();
 	}
 
@@ -249,9 +252,11 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		resultPanel.add(btn);
 	}
 
-	@Override public void itemStateChanged(ItemEvent ev) {}
+	@Override
+	public void itemStateChanged(ItemEvent ev) {}
+
 	public int getProvinsNr() {
-		String provstr = (String) provins.getSelectedItem();
+		String provstr = (String) provinceBox.getSelectedItem();
 		for(int i=0; i<prov.length; i++) if(prov[i].equals(provstr)) return provnr[i];
 		return -1;
 	}

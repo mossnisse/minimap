@@ -335,7 +335,7 @@ public class GUI  {
 	}
 
 	public void searchLocality() {
-		SearchLocalityDialog d = new SearchLocalityDialog(frame, "", canvas);
+		SearchLocalityDialog d = new SearchLocalityDialog(frame, canvas, "", "");
 		d.setVisible(true);
 	}
 

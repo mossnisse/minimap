@@ -247,14 +247,6 @@ public class H2TableLayer implements Layer {
 						statmt2.setDouble(2, swtm.getEast());
 						statmt2.setInt(3, result.getInt(3));
 						statmt2.execute();
-						//System.out.println("rt90: "+rt90 +" swtm: "+swtm );
-						
-						//System.out.println("wgs84: "+wgs84);
-						//Coordinates 
-						//System.out.println("swtm: "+swtm);
-						//Coordinates swtm = new Coordinates(result.getDouble(1), result.getDouble(2)).convertToRT90FromSweref99TM();
-						//Coordinates swtm =rt90.convertToRT90FromSweref99TM();
-						//System.out.println("i "+i+", ID "+result.getInt(3));
 					} else {
 						//swtm = rt90;
 						System.out.println("not valid rt90: "+rt90);
@@ -288,7 +280,6 @@ public class H2TableLayer implements Layer {
 				System.out.println();
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
