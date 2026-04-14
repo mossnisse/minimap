@@ -611,13 +611,23 @@ public class SpecimenBridgeDialog extends JDialog {
                 targetProvince = targetSpecimen.getProvince() != null ? targetSpecimen.getProvince() : "";
             }
 
+            // Capture the desired ID before clearing the list
+            int desiredLocalityId = targetSpecimen.getLocalityId(); // Fallback default
+            LocalityRecord currentSelection = (LocalityRecord) localityCombo.getSelectedItem();
+            if (currentSelection != null && currentSelection.getId() > 0) {
+                desiredLocalityId = currentSelection.getId(); // Prioritize what the user just clicked
+            }
+
+            // Clear and rebuild the list
             localityCombo.removeAllItems();
             localityCombo.addItem(new LocalityRecord(-1, "-- Select a Locality --"));
 
             List<LocalityRecord> localities = service.getLocalitiesInDistrict(targetDistrict, targetProvince);
             for (LocalityRecord l : localities) {
                 localityCombo.addItem(l);
-                if (l.getId() == targetSpecimen.getLocalityId()) {
+
+                // Restore the captured selection
+                if (l.getId() == desiredLocalityId) {
                     localityCombo.setSelectedItem(l);
                 }
             }

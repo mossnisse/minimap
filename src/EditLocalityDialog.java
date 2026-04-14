@@ -5,7 +5,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -341,9 +340,10 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 				statement.execute();
 
-				// only do it if locality is renamed
-				if (bridgeDialog != null && bridgeDialog.isVisible()) {
-					bridgeDialog.updateLocalityList();
+				if (!oldName.equals(name.getText())) {
+					if (bridgeDialog != null && bridgeDialog.isVisible()) {
+						bridgeDialog.updateLocalityList();
+					}
 				}
 				Layer layer = canvas.getLayer("LokalDB");
 				if (layer instanceof MYSQLTableLayer mysqlLayer) {
