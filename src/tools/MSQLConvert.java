@@ -13,7 +13,7 @@ public class MSQLConvert {
         String sql1 = "SELECT lat, `long`, id FROM locality where country = 'Sweden' limit ?,1";
         String sql2 = "update locality set SWTMN = ?, SWTME = ? where id =?";
         try {
-            Connection conn = DBConnection.getConn();
+            Connection conn = core.DBConnection.getConn();
             PreparedStatement statmt1= conn.prepareStatement(sql1);
             PreparedStatement statmt2= conn.prepareStatement(sql2);
 
@@ -44,7 +44,7 @@ public class MSQLConvert {
     }
 
     static void main(String[] args) {
-        MYSQLTableLayer MT = new MYSQLTableLayer();
+        layers.MYSQLTableLayer MT = new layers.MYSQLTableLayer();
         MT.convCoord();
     }*/
 }

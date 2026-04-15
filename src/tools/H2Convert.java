@@ -9,7 +9,7 @@ public class H2Convert {
     /*
     public void saveConvert() {
         try {
-            Connection conn = DBConnection.getH2Conn();
+            Connection conn = core.DBConnection.getH2Conn();
             conn.setAutoCommit(false); // Enable manual transaction for speed
 
             Statement st = conn.createStatement();
