@@ -13,8 +13,8 @@ import java.util.List;
 
 public class SpecimenService {
 
-    // creates the H2 chache and reports found specimens
-    public int refreshCache(String province, String district, String collector, String accession, String year) {
+    // creates the H2 cache and reports found specimens
+    public int refreshCache(String province, String district, String collector, String accession, String year, String locality, String genus, String herbarium, String coordSource, int coordPrecision, boolean lackBridgeOnly) {
         int count = 0;
         List<Object> params = new ArrayList<>();
 
@@ -52,6 +52,30 @@ public class SpecimenService {
             mysqlSql.append(" AND specimens.Year = ?");
             params.add(year);
         }
+        if (locality != null && !locality.equals("*")) {
+            mysqlSql.append(" AND specimens.Locality = ?");
+            params.add(locality);
+        }
+        if (genus != null && !genus.equals("*")) {
+            mysqlSql.append(" AND specimens.Genus = ?");
+            params.add(genus);
+        }
+        if (herbarium != null && !herbarium.equals("*")) {
+            mysqlSql.append(" AND specimens.InstitutionCode = ?");
+            params.add(herbarium);
+        }
+        if (coordSource!= null && !coordSource.equals("*")) {
+            mysqlSql.append(" AND specimens.CSource = ?");
+            params.add(coordSource);
+        }
+        if (coordPrecision > 0) {
+            mysqlSql.append(" AND (specimens.CPrec >= ? OR CPrec = 0 OR CPrec IS NULL)");
+            params.add(coordPrecision);
+        }
+        if (lackBridgeOnly) {
+            mysqlSql.append(" AND specimen_locality.locality_id IS NULL");
+        }
+
 
         mysqlSql.append(" ORDER BY Year ASC, Month ASC, Day ASC");
 
@@ -79,11 +103,11 @@ public class SpecimenService {
                 h2Conn.setAutoCommit(false);
                 while (rs.next()) {
                     for (int i = 1; i <= 32; i++) {
-                        insertStmt.setString(i, rs.getString(i));
+                        insertStmt.setObject(i, rs.getObject(i));
                     }
                     insertStmt.addBatch();
                     count++;
-                    if (count % 100 == 0) insertStmt.executeBatch();
+                    if (count % 500 == 0) insertStmt.executeBatch();
                 }
                 insertStmt.executeBatch();
                 h2Conn.commit();

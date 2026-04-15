@@ -7,10 +7,9 @@ public class SpecimenSearchDialog extends JDialog {
     private final SpecimenService service;
     // UI Components
     private JComboBox<String> provinceCombo;
-    private JTextField districtField;
-    private JTextField collectorField;
-    private JTextField accessionField;
-    private JTextField yearField;
+    private JTextField districtField, collectorField, accessionField, yearField;
+    private JTextField localityField, genusField, herbariumField, coordSourceField, precisionField;
+    private JCheckBox lackBridgeOnly;
     private JLabel statusLabel;
     private JButton searchButton;
 
@@ -18,6 +17,10 @@ public class SpecimenSearchDialog extends JDialog {
             "Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
             "Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
             "Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
+
+    private final String[] InstCodes = {"*", "GB", "LD", "OHN", "S", "UME", "UPS"};
+
+    private final String[] CSources = {"District(*)", "LocalityVH", "None", "UPS Database", "RT90-coordinates", "RUBIN", "Latitude / Longitude", "Locality", "OHN Database"};
 
     public SpecimenSearchDialog(Dialog owner, SpecimenService service) {
         super(owner, "Search Specimens", false);
@@ -33,70 +36,54 @@ public class SpecimenSearchDialog extends JDialog {
         JPanel searchPanel = new JPanel(new GridBagLayout());
         searchPanel.setBorder(BorderFactory.createTitledBorder("Search Criteria"));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 8, 4, 8);
+        gbc.insets = new Insets(2, 8, 2, 8);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Row 0: Province
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0;
-        searchPanel.add(new JLabel("Province:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        provinceCombo = new JComboBox<>(prov);
-        searchPanel.add(provinceCombo, gbc);
+        // --- Column 1 Labels & Column 2 Fields ---
+        addLabelField(searchPanel, gbc, 0, "Province:", provinceCombo = new JComboBox<>(prov));
+        addLabelField(searchPanel, gbc, 1, "District:", districtField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 2, "Locality Name:", localityField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 3, "Genus:", genusField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 4, "Collector:", collectorField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 5, "Accession No:", accessionField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 6, "Year:", yearField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 7, "Herbarium (Code):", herbariumField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 8, "Coord Source:", coordSourceField = new JTextField("*", 15));
+        addLabelField(searchPanel, gbc, 9, "Precision > (m):", precisionField = new JTextField("0", 15));
 
-        // Row 1: District
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0;
-        searchPanel.add(new JLabel("District:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        districtField = new JTextField("*", 15);
-        searchPanel.add(districtField, gbc);
+        // Lack Bridge Checkbox
+        gbc.gridx = 1; gbc.gridy = 10;
+        lackBridgeOnly = new JCheckBox("Only show specimens lacking locality bridge");
+        searchPanel.add(lackBridgeOnly, gbc);
 
-        // Row 2: Collector
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0;
-        searchPanel.add(new JLabel("Collector:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        collectorField = new JTextField("*", 15);
-        searchPanel.add(collectorField, gbc);
-
-        // Row 3: Accession
-        gbc.gridx = 0; gbc.gridy = 3; gbc.weightx = 0;
-        searchPanel.add(new JLabel("Accession No:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        accessionField = new JTextField("*", 15);
-        searchPanel.add(accessionField, gbc);
-
-        // Row 4: Year
-        gbc.gridx = 0; gbc.gridy = 4; gbc.weightx = 0;
-        searchPanel.add(new JLabel("Year:"), gbc);
-        gbc.gridx = 1; gbc.weightx = 1.0;
-        yearField = new JTextField("*", 15);
-        searchPanel.add(yearField, gbc);
-
-        // Row 5: Search Button
+        // Search Button
         searchButton = new JButton("Search & Cache");
         searchButton.addActionListener(e -> performSearch());
-        gbc.gridx = 1; gbc.gridy = 5; gbc.fill = GridBagConstraints.NONE;
+        gbc.gridy = 11; gbc.fill = GridBagConstraints.NONE;
         gbc.anchor = GridBagConstraints.EAST;
         searchPanel.add(searchButton, gbc);
 
         add(searchPanel, BorderLayout.NORTH);
 
-        // --- CENTER: Status Information ---
-        JPanel centerPanel = new JPanel(new GridBagLayout());
-        centerPanel.setPreferredSize(new Dimension(400, 80));
-        statusLabel = new JLabel("Results will replace current H2 cache.");
+        statusLabel = new JLabel("Results will replace current H2 cache.", SwingConstants.CENTER);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.ITALIC));
-        centerPanel.add(statusLabel);
-        add(centerPanel, BorderLayout.CENTER);
+        add(statusLabel, BorderLayout.CENTER);
 
-        // --- BOTTOM: Actions ---
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton closeButton = new JButton("Close");
         closeButton.addActionListener(e -> dispose());
-
         actionPanel.add(closeButton);
         add(actionPanel, BorderLayout.SOUTH);
 
         getRootPane().setDefaultButton(searchButton);
+    }
+
+    private void addLabelField(JPanel panel, GridBagConstraints gbc, int y, String label, JComponent field) {
+        gbc.gridy = y;
+        gbc.gridx = 0; gbc.weightx = 0;
+        panel.add(new JLabel(label), gbc);
+        gbc.gridx = 1; gbc.weightx = 1.0;
+        panel.add(field, gbc);
     }
 
     private void performSearch() {
@@ -104,14 +91,26 @@ public class SpecimenSearchDialog extends JDialog {
         searchButton.setEnabled(false);
         statusLabel.setText("Updating H2 cache...");
 
-        String selectedProv = (String) provinceCombo.getSelectedItem();
-        String dist = districtField.getText().trim();
-        String coll = collectorField.getText().trim();
-        String acc = accessionField.getText().trim();
-        String year = yearField.getText().trim();
+        // Parse precision safely
+        int precision = 0;
+        try {
+            precision = Integer.parseInt(precisionField.getText().trim());
+        } catch (NumberFormatException ignored) {}
 
-        // Update your Service method signature to accept these new parameters
-        int hitCount = service.refreshCache(selectedProv, dist, coll, acc, year);
+        // Call refreshed service method
+        int hitCount = service.refreshCache(
+                (String) provinceCombo.getSelectedItem(),
+                districtField.getText().trim(),
+                collectorField.getText().trim(),
+                accessionField.getText().trim(),
+                yearField.getText().trim(),
+                localityField.getText().trim(),
+                genusField.getText().trim(),
+                herbariumField.getText().trim(),
+                coordSourceField.getText().trim(),
+                precision,
+                lackBridgeOnly.isSelected()
+        );
 
         if (hitCount > 0) {
             statusLabel.setText("Found " + hitCount + " specimens. Cache updated.");
