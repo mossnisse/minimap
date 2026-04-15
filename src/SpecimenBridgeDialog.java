@@ -826,7 +826,7 @@ public class SpecimenBridgeDialog extends JDialog {
     public void focusRT90() {
         String nStr = targetSpecimen.getRiketsN();
         String oStr = targetSpecimen.getRiketsO();
-        // Validate that we have strings and they aren't just "0" or empty
+        // Validate that we have strings, and they aren't just "0" or empty
         if (nStr != null && oStr != null && !nStr.equals("0") && !nStr.isEmpty()) {
             try {
                 double n = Double.parseDouble(nStr);

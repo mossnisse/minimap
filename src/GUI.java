@@ -272,7 +272,7 @@ public class GUI  {
 			//System.out.println("Open: " + file.getName());
 			try {
 				RasterFilLayer rFile = new RasterFilLayer(file.getPath());
-				canvas.addLayerBotom(rFile);
+				canvas.addLayerBottom(rFile);
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();

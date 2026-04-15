@@ -9,7 +9,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-
 public class MYSQLTableLayer implements Layer {
 	private String name;
 	private Color color;
@@ -19,7 +18,7 @@ public class MYSQLTableLayer implements Layer {
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
 	private List<LocalityRec> cache = new CopyOnWriteArrayList<>();
 	private final Object dbLock = new Object();
-	private BoundingBox cachedBounds = null;
+	private volatile BoundingBox cachedBounds = null;
 	private PreparedStatement activeStatement = null;
 
 	private record LocalityRec(int n, int e, String name, int precision) {}
@@ -185,7 +184,6 @@ public class MYSQLTableLayer implements Layer {
 				return nID;
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		return -1;
@@ -197,46 +195,5 @@ public class MYSQLTableLayer implements Layer {
 	@Override
 	public CoordSystem getCRS() {
 		return cs;
-	}
-
-	private void convCoord() {
-		String sql1 = "SELECT lat, `long`, id FROM locality where country = 'Sweden' limit ?,1";
-		String sql2 = "update locality set SWTMN = ?, SWTME = ? where id =?";
-		try {
-			Connection conn = DBConnection.getConn();
-			PreparedStatement statmt1= conn.prepareStatement(sql1);
-			PreparedStatement statmt2= conn.prepareStatement(sql2);
-		
-			for (int i=1; i< 46028; i++) {
-				System.out.println("i: "+i);
-				statmt1.setInt(1, i);
-				ResultSet result = statmt1.executeQuery();
-				result.next();
-				double lat = result.getDouble(1);
-				double longi = result.getDouble(2);
-				int id = result.getInt(3);
-				System.out.println("id: "+id);
-				Coordinates c = new Coordinates(lat,longi);
-				Coordinates swtm = c.toProjected(CoordSystem.SWEREF99TM);
-				int swtmN = (int)Math.round(swtm.getNorth());
-				int swtmE = (int)Math.round(swtm.getEast());
-				statmt2.setInt(1,swtmN);
-				statmt2.setInt(2,swtmE);
-			
-				statmt2.setInt(3,id);
-				statmt2.execute();
-			}
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-			
-	}
-
-
-	
-	static void main(String[] args) {
-		MYSQLTableLayer MT = new MYSQLTableLayer();
-		MT.convCoord();
 	}
 }

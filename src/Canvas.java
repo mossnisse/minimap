@@ -13,7 +13,6 @@ public class Canvas extends JPanel {
 	BoundingBox bounds;
 	Point coord;
 	private final ArrayList<Layer> layers;
-
 	
 	public Canvas() {
 		cs = CoordSystem.SWEREF99TM;
@@ -25,43 +24,43 @@ public class Canvas extends JPanel {
 		int yMax = 7700000;
 		bounds = new BoundingBox(xMin,yMin,xMax,yMax);
 		coord = null;
-		
 		layers = new ArrayList<Layer>();
+		initialize();
+	}
+
+	private void initialize() {
 		try {
-			
 			TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng");
 			prFile.setColor(Color.black);
 			prFile.setName("provinser");
-			addLayerBotom(prFile);
+			addLayerBottom(prFile);
 
 			TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng");
 			socFile.setColor(Color.red);
 			socFile.setName("socknar");
 			socFile.setHidden(false);
-			addLayerBotom(socFile);
+			addLayerBottom(socFile);
 
 			H2TableLayer od = new H2TableLayer("ortnamnSWTM");
-			od.setColor(Color.green);
+			od.setColor(Color.black);
 			od.setName("Ortnamnsdb");
 			od.setHidden(false);
 			od.setMaxZoomL(5);
-			addLayerBotom(od);
-			
+			addLayerBottom(od);
+
 			MYSQLTableLayer md = new MYSQLTableLayer();
 			md.setColor(Color.red);
 			md.setName("LokalDB");
 			md.setHidden(false);
 			md.setMaxZoomL(40);
-			addLayerBotom(md);
-			
+			addLayerBottom(md);
+
 			TopowebLayer tb = new TopowebLayer(this);
 			tb.setName("TopoWeb");
-			md.setHidden(false);
-			addLayerBotom(tb);
-			
+			tb.setHidden(false);
+			addLayerBottom(tb);
+
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			//System.out.println("sss");
 			e.printStackTrace();
 		}
 	}
@@ -80,7 +79,7 @@ public class Canvas extends JPanel {
 		repaint();
 	}
 	
-	public void addLayerBotom(Layer l) {
+	public void addLayerBottom(Layer l) {
 		layers.addFirst(l);
 		repaint();
 	}
