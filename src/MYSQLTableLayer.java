@@ -1,13 +1,15 @@
 import coords.*;
 import geometry.BoundingBox;
 import java.awt.*;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MYSQLTableLayer implements Layer {
 	private String name;
@@ -15,40 +17,44 @@ public class MYSQLTableLayer implements Layer {
 	private boolean hidden;
 	private int maxZoom, minZoom;
 	private CoordSystem cs;
+
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
-	private List<LocalityRec> cache = new CopyOnWriteArrayList<>();
-	private final Object dbLock = new Object();
+
+	// Volatile ensures the new list is immediately visible to the drawing thread
+	private volatile List<LocalityRec> cache = Collections.emptyList();
 	private volatile BoundingBox cachedBounds = null;
-	private PreparedStatement activeStatement = null;
+
+	// Prevents spawning 100 queries if the user drags the map wildly
+	private final AtomicBoolean isFetching = new AtomicBoolean(false);
+
+	// Callback to tell the canvas to repaint when async load finishes
+	private Runnable repaintCallback;
 
 	private record LocalityRec(int n, int e, String name, int precision) {}
 
-	MYSQLTableLayer() {}
+	public MYSQLTableLayer() {}
 
-	@Override
-	public void setColor(Color c) {
-		this.color =c;
+	/**
+	 * Pass in your canvas.repaint() so the layer can trigger a refresh when data arrives.
+	 */
+	public void setRepaintCallback(Runnable repaintCallback) {
+		this.repaintCallback = repaintCallback;
 	}
 
 	@Override
-	public Color getColor() {
-		return color;
-	}
+	public void setColor(Color c) { this.color = c; }
 
 	@Override
-	public String getName() {
-		return name;
-	}
+	public Color getColor() { return color; }
 
 	@Override
-	public void setMinZoomL(int zoomLevel) {
-		minZoom = zoomLevel;
-	}
+	public String getName() { return name; }
 
 	@Override
-	public void setMaxZoomL(int zoomLevel) {
-		maxZoom = zoomLevel;
-	}
+	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
+
+	@Override
+	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
@@ -56,33 +62,34 @@ public class MYSQLTableLayer implements Layer {
 	}
 
 	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
+	public void setName(String name) { this.name = name; }
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
-	                 double yShift, double yScale, BoundingBox bounds) throws SQLException {
+	                 double yShift, double yScale, BoundingBox bounds) {
 		if (hidden) return;
 
-		// Check if we need to refresh the cache
+		// Trigger background fetch if needed, but don't block the UI!
 		if (shouldRefreshCache(bounds)) {
-			refreshCache(bounds);
+			refreshCacheAsync(bounds);
 		}
 
-		// Draw from RAM (Super Fast!)
+		// Draw whatever is currently in RAM
 		g2d.setColor(color);
 		Font old = g2d.getFont();
 		g2d.setFont(LABEL_FONT);
 
-		for (LocalityRec rec : cache) {
+		// Grabbing the rectangle once is much faster than checking the Shape
+		Rectangle clipBounds = g2d.getClipBounds();
+		// Capture local reference to avoid list changing mid-draw
+		List<LocalityRec> localCache = this.cache;
+
+		for (LocalityRec rec : localCache) {
 			int x = (int) ((rec.e * xScale) + xShift);
 			int y = (int) ((rec.n * yScale) + yShift);
 
-			// Optimization: Only draw if actually on screen (clipping)
-			//if (x < -10 || x > g2d.getClipBounds().width + 10) continue;
-			Shape clip = g2d.getClip();
-			if (clip != null && !clip.contains(x, y)) continue;
+			// Fast clipping
+			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
 
 			g2d.drawOval(x - 3, y - 3, 6, 6);
 			if (rec.precision > 0) {
@@ -99,86 +106,92 @@ public class MYSQLTableLayer implements Layer {
 		return !cachedBounds.isInside(currentBounds);
 	}
 
-	private void refreshCache(BoundingBox bounds) { // Removed 'throws SQLException'
-		// Use a lock to ensure only one thread touches the DB/Statement at a time
-		synchronized (dbLock) {
+	private void refreshCacheAsync(BoundingBox bounds) {
+		// CompareAndSet ensures only ONE background thread fetches at a time.
+		if (!isFetching.compareAndSet(false, true)) {
+			return;
+		}
+
+		BoundingBox bufferedArea = bounds.grow(0.5);
+
+		CompletableFuture.runAsync(() -> {
 			try {
 				Connection conn = DBConnection.getConn();
+				try (
+						PreparedStatement pstmt = conn.prepareStatement(
+								"SELECT SWTMN, SWTME, locality, Coordinateprecision FROM locality " +
+										"WHERE SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?")) {
 
-				// Fixed typo here: checking activeStatement.isClosed() instead of connection twice
-				if (activeStatement == null || activeStatement.isClosed() || activeStatement.getConnection().isClosed()) {
-					String sql = "SELECT SWTMN, SWTME, locality, Coordinateprecision FROM locality " +
-							"WHERE SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?;";
-					activeStatement = conn.prepareStatement(sql);
-				}
+					pstmt.setInt(1, Math.min(bufferedArea.getY1(), bufferedArea.getY2()));
+					pstmt.setInt(2, Math.max(bufferedArea.getY1(), bufferedArea.getY2()));
+					pstmt.setInt(3, Math.min(bufferedArea.getX1(), bufferedArea.getX2()));
+					pstmt.setInt(4, Math.max(bufferedArea.getX1(), bufferedArea.getX2()));
 
-				BoundingBox bufferedArea = bounds.grow(0.5);
+					try (ResultSet rs = pstmt.executeQuery()) {
+						// Build a completely new list in the background
+						List<LocalityRec> temp = new ArrayList<>();
+						while (rs.next()) {
+							temp.add(new LocalityRec(
+									rs.getInt("SWTMN"),
+									rs.getInt("SWTME"),
+									rs.getString("locality"),
+									rs.getInt("Coordinateprecision")
+							));
+						}
 
-				activeStatement.setInt(1, Math.min(bufferedArea.getY1(), bufferedArea.getY2()));
-				activeStatement.setInt(2, Math.max(bufferedArea.getY1(), bufferedArea.getY2()));
-				activeStatement.setInt(3, Math.min(bufferedArea.getX1(), bufferedArea.getX2()));
-				activeStatement.setInt(4, Math.max(bufferedArea.getX1(), bufferedArea.getX2()));
-
-				try (ResultSet rs = activeStatement.executeQuery()) {
-					List<LocalityRec> temp = new ArrayList<>();
-					while (rs.next()) {
-						temp.add(new LocalityRec(
-								rs.getInt("SWTMN"),
-								rs.getInt("SWTME"),
-								rs.getString("locality"),
-								rs.getInt("Coordinateprecision")
-						));
+						// Swap the references atomically
+						this.cache = temp;
+						this.cachedBounds = bufferedArea;
 					}
-					// Update the thread-safe list all at once
-					cache.clear();
-					cache.addAll(temp);
-					this.cachedBounds = bufferedArea;
+				} catch (SQLException e) {
+					System.err.println("=== SQL ERROR IN MYSQLTableLayer ===");
+					System.err.println("Message: " + e.getMessage());
+					e.printStackTrace();
+				} finally {
+					// Always release the lock so future pan/zooms can trigger fetches
+					isFetching.set(false);
+
+					// Tell the UI thread that new data is ready to be drawn
+					if (repaintCallback != null) {
+						repaintCallback.run();
+					}
 				}
 			} catch (SQLException e) {
-				// THIS WILL TELL US EXACTLY WHAT IS WRONG
-				System.err.println("=== SQL ERROR IN MYSQLTableLayer ===");
-				System.err.println("Message: " + e.getMessage());
-				System.err.println("SQL State: " + e.getSQLState());
+				System.err.println("=== Couldn't connect to the VH MySQL server ===");
 				e.printStackTrace();
-				System.err.println("====================================");
 			}
-		}
+		});
 	}
 
 	public void invalidateCache() {
 		this.cachedBounds = null;
-		//this.cache.clear();
 	}
 
 	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
+	public boolean isHidden() { return hidden; }
 
 	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
-	
+	public void setHidden(boolean hidden) { this.hidden = hidden; }
+
 	public int findNearest(Point p, int limit) {
-		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN > ? and SWTMN < ? and SWTME > ? and SWTME < ?;";
-		try (PreparedStatement statement = DBConnection.getConn().prepareStatement(sqlstmt)) {
-			statement.setInt(1, p.y-limit);
-			statement.setInt(2, p.y+limit);
-			statement.setInt(3, p.x-limit);
-			statement.setInt(4, p.x+limit);
+		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?";
+		try (Connection conn = DBConnection.getConn();
+		     PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
+
+			statement.setInt(1, p.y - limit);
+			statement.setInt(2, p.y + limit);
+			statement.setInt(3, p.x - limit);
+			statement.setInt(4, p.x + limit);
+
 			try (ResultSet result = statement.executeQuery()) {
 				double ndist = Double.MAX_VALUE;
 				int nID = -1;
 				while (result.next()) {
-					int north = result.getInt(1);
-					int east = result.getInt(2);
-					int ID = result.getInt(3);
-					Point pc = new Point(east, north);
+					Point pc = new Point(result.getInt(2), result.getInt(1));
 					double dist = p.distance(pc);
 					if (dist < ndist) {
 						ndist = dist;
-						nID = ID;
+						nID = result.getInt(3);
 					}
 				}
 				return nID;
@@ -193,7 +206,5 @@ public class MYSQLTableLayer implements Layer {
 	public void setCRS(CoordSystem cs) { this.cs = cs;  }
 
 	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
+	public CoordSystem getCRS() { return cs; }
 }

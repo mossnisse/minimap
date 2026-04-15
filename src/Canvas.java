@@ -4,7 +4,7 @@ import java.awt.*;
 import java.io.IOException;
 import java.io.Serial;
 import java.util.ArrayList;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 public class Canvas extends JPanel {
 	@Serial
@@ -53,6 +53,10 @@ public class Canvas extends JPanel {
 			md.setName("LokalDB");
 			md.setHidden(false);
 			md.setMaxZoomL(40);
+			md.setRepaintCallback(() -> {
+				// Force the map to redraw on the Swing thread when data arrives
+				SwingUtilities.invokeLater(() -> this.repaint());
+			});
 			addLayerBottom(md);
 
 			TopowebLayer tb = new TopowebLayer(this);
