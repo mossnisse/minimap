@@ -54,7 +54,7 @@ public class Keyboard {
 		}
 
 		public String toString() {
-			return "keyCode: "+Integer.toString(keyCode) + " modifiers: "+Integer.toString(modifiers);
+			return "keyCode: " + keyCode + " modifiers: " + modifiers;
 		}
 	}
 	

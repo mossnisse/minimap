@@ -1,4 +1,7 @@
 package coords;
+
+import geometry.BoundingBox;
+
 // ENUM for dealing with transverse mercator projections
 public enum CoordSystem {
 
@@ -83,5 +86,9 @@ public enum CoordSystem {
 
     public String getName() {
         return name;
+    }
+
+    public BoundingBox getBoundingBox() {
+        return new BoundingBox((int) Math.floor(Emin), (int) Math.ceil(Emax), (int) Math.floor(Nmin), (int) Math.ceil(Nmax));
     }
 }

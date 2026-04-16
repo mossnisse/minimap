@@ -1,5 +1,6 @@
 package coords;
 
+import java.awt.*;
 import java.util.Locale;
 
 public class Coordinates {
@@ -10,6 +11,11 @@ public class Coordinates {
         this.east = east;
     }
 
+    public Coordinates(Point p) {
+        this.north = p.y;
+        this.east = p.x;
+    }
+
     public double getNorth() {
         return north;
     }
@@ -18,9 +24,16 @@ public class Coordinates {
         return east;
     }
 
+    public Point getPoint() { return new Point((int)Math.round(east), (int)Math.round(north)); }
+
     public void set(double north, double east) {
         this.north = north;
         this.east = east;
+    }
+
+    public void set(Point p) {
+        this.north = p.y;
+        this.east = p.x;
     }
 
     private static double atanh(double x) {
@@ -123,10 +136,7 @@ public class Coordinates {
      * Core reverse Gauss-Krüger engine.
      * Converts Northing/Easting back to WGS84 Coordinates.
      */
-    private static Coordinates toWGS84(CoordSystem cs,
-                                                           double n, double e,
-                                                           double centralMeridianDeg,
-                                                           double fn, double fe, double k0) {
+    private static Coordinates toWGS84(CoordSystem cs, double n, double e, double centralMeridianDeg, double fn, double fe, double k0) {
 
         double xi = (n - fn) / (k0 * cs.a_roof);
         double eta = (e - fe) / (k0 * cs.a_roof);
@@ -168,7 +178,6 @@ public class Coordinates {
     public Coordinates convertToSweref99TMFromRT90() {
         Coordinates wgs84 = toWGS84(CoordSystem.RT90);
         return wgs84.toProjected(CoordSystem.SWEREF99TM);
-
     }
 
     // lat long degrees, minutes conversion functions
@@ -189,7 +198,6 @@ public class Coordinates {
      */
     public void setFromDMS(String latD, String latM, String latS, String latDir,
                            String lonD, String lonM, String lonS, String lonDir) {
-
         setFromDMS(
                 parseDouble(latD), parseDouble(latM), parseDouble(latS), latDir,
                 parseDouble(lonD), parseDouble(lonM), parseDouble(lonS), lonDir
@@ -255,7 +263,7 @@ public class Coordinates {
         int minutes = (int) remainderMinutes;
         double seconds = (remainderMinutes - minutes) * 60.0;
 
-        // The \u00B0 is the unicode for the degree symbol °
+        // The \u00B0 is the Unicode for the degree symbol °
         return String.format(Locale.US, "%d\u00B0 %d' %.2f\" %s", degrees, minutes, seconds, direction);
     }
 
@@ -398,7 +406,78 @@ public class Coordinates {
         };
     }
 
-    // UTM convertion methods
+    public static boolean isValidRUBIN(String rubin, boolean strict) {
+        if (rubin == null || rubin.trim().isEmpty()) {
+            return false;
+        }
+
+        // Strict Mode: Compare directly against the formatting logic of toRUBIN
+        if (strict) {
+            // Strict matches:
+            // 50km: "21K"
+            // 5km:  "21K8b"
+            // 1km:  "21K8b 4-3-"
+            // 100m: "21K8b 4321"
+            return rubin.matches("^(0[1-9]|[12]\\d|3[0-3])[A-N](\\d[a-j](\\s(\\d-\\d-|\\d{4}))?)?$");
+        }
+
+        // Loose Mode: Check if it's parsable by setFromRUBIN
+        try {
+            testParse(rubin);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * A helper that mirrors setFromRUBIN logic but doesn't change state.
+     * Throws exceptions if parsing fails.
+     */
+    private static void testParse(String rubin) {
+
+        String clean = rubin.replaceAll("[\\s\\u00A0-]", "");
+
+        if (!clean.isEmpty() && clean.length() >= 2 && !Character.isDigit(clean.charAt(1))) {
+            clean = "0" + clean;
+        }
+
+        int len = clean.length();
+        // Valid lengths after cleaning: 3, 5, 7 (1km), 9 (100m)
+        if (!(len == 3 || len == 5 || len == 7 || len == 9)) {
+            throw new IllegalArgumentException("Invalid RUBIN length: " + len);
+        }
+
+        // Level 1 (50km): NNX
+        int n1 = Integer.parseInt(clean.substring(0, 2));
+        if (n1 < 1 || n1 > 33) throw new IllegalArgumentException("N1 out of bounds (1-33)");
+
+        char e1 = clean.charAt(2);
+        int e1Val = alphaToNum(e1);
+        if (e1Val < 0 || e1Val > 13) throw new IllegalArgumentException("E1 out of range (A-N)");
+
+        // Level 2 (5km): nx
+        if (len >= 5) {
+            char n2Char = clean.charAt(3);
+            char e2Char = clean.charAt(4);
+
+            if (!Character.isDigit(n2Char)) throw new IllegalArgumentException("n2 must be a digit");
+
+            int e2Val = alphaToNum(e2Char);
+            if (e2Val < 0 || e2Val > 9) throw new IllegalArgumentException("e2 out of range (a-j)");
+        }
+
+        // Level 3 (1km or 100m)
+        if (len == 7) {
+            // "21K8b 4-3-" cleaned to "21K8b43". The last two are "43"
+            Integer.parseInt(clean.substring(5, 7));
+        } else if (len == 9) {
+            // "21K8b 4321" cleaned to "21K8b4321". The last four are "4321"
+            Integer.parseInt(clean.substring(5, 9));
+        }
+    }
+
+    // UTM conversion methods
 
     /**
      * Converts WGS84 to UTM.
@@ -524,11 +603,11 @@ public class Coordinates {
      * Example input: "33V UC 12345 67890" or "33VUC1234567890"
      */
     public static Coordinates fromMGRS(String mgrsStr) {
-        // 1. Clean the string
+        // Clean the string
         String cleanStr = mgrsStr.replaceAll("\\s+", "").toUpperCase();
         if (cleanStr.length() < 5) throw new IllegalArgumentException("Invalid MGRS string");
 
-        // 2. Extract components
+        // Extract components
         // Find where the letters start (usually index 1 or 2)
         int firstLetterIdx = Character.isLetter(cleanStr.charAt(1)) ? 1 : 2;
         int zone = Integer.parseInt(cleanStr.substring(0, firstLetterIdx));
@@ -553,7 +632,7 @@ public class Coordinates {
         double eMeters = Double.parseDouble(eStr) * Math.pow(10, 5 - precisionLength);
         double nMeters = Double.parseDouble(nStr) * Math.pow(10, 5 - precisionLength);
 
-        // 3. Calculate Easting
+        // Calculate Easting
         // MGRS Columns repeat every 3 zones: A, J, S
         int setCol = zone % 3;
         int e100kBase = (setCol == 1) ? mgrsAlphaToNum('A') :
@@ -567,7 +646,7 @@ public class Coordinates {
         // Total UTM Easting
         double utmEasting = (e100kSteps + 1) * 100000.0 + eMeters;
 
-        // 4. Calculate Northing
+        // Calculate Northing
         // MGRS Rows start at A or F and repeat every 2,000,000 meters (20 letters * 100k)
         int rowBase = (zone % 2 != 0) ? mgrsAlphaToNum('A') : mgrsAlphaToNum('F');
         int n100kSteps = mgrsAlphaToNum(rowLetter) - rowBase;
@@ -575,7 +654,7 @@ public class Coordinates {
 
         double utmNorthing = n100kSteps * 100000.0 + nMeters;
 
-        // 5. Resolving the 2,000km ambiguity using actual Latitude
+        // Resolving the 2,000km ambiguity using actual Latitude
         // We calculate the minimum possible northing for this UTM Latitude Band.
         // 'C' starts at -80 deg. Each band is 8 degrees.
         int bandIndex = utmNumToAlphaRev(latBand); // 1-indexed (C=1, D=2, etc.)
@@ -593,7 +672,7 @@ public class Coordinates {
             utmNorthing += 2000000.0;
         }
 
-        // 6. Convert the finalized UTM coordinate back to WGS84
+        // Convert the finalized UTM coordinate back to WGS84
         double centralMeridian = (zone * 6.0) - 183.0;
         double falseNorthing = (latBand < 'N') ? 10000000.0 : 0.0;
 
