@@ -249,7 +249,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		    preparedStmt.executeUpdate();
 
 			if (bridgeDialog != null && bridgeDialog.isVisible()) {
-				bridgeDialog.updateLocalityList();
+				bridgeDialog.invalidateLocalityList() ;
 			}
 			// invalidate the MySQLLayer cache
 			Layer layer = canvas.getLayer("LokalDB");

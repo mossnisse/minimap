@@ -247,7 +247,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					statement.setInt(1, localityID);
 					statement.execute();
 					if (bridgeDialog != null && bridgeDialog.isVisible()) {
-						bridgeDialog.updateLocalityList();
+						bridgeDialog.invalidateLocalityList();
 					}
 					Layer layer = canvas.getLayer("LokalDB");
 					if (layer instanceof MYSQLTableLayer mysqlLayer) {
@@ -367,7 +367,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 				if (oldName != null && !oldName.equals(name.getText())) {
 					if (bridgeDialog != null && bridgeDialog.isVisible()) {
-						bridgeDialog.updateLocalityList();
+						bridgeDialog.invalidateLocalityList();
 					}
 				}
 				Layer layer = canvas.getLayer("LokalDB");

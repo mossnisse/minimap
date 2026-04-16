@@ -398,7 +398,7 @@ public class SpecimenBridgeDialog extends JDialog {
             private void checkUpdate() {
                 // Only trigger if the user is typing, not when loadSpecimen() is running
                 if (!isAdjusting && targetSpecimen != null) {
-                    SwingUtilities.invokeLater(() -> updateLocalityList());
+                    SwingUtilities.invokeLater(() -> updateLocalityList(-1));
                 }
             }
         };
@@ -639,44 +639,78 @@ public class SpecimenBridgeDialog extends JDialog {
         coordBar.repaint();
     }
 
-    public void updateLocalityList() {
+    public void updateLocalityList(int idToSelect) {
         if (targetSpecimen == null) return;
+
+        // Determine which District/Province to filter by
+        String targetDistrict = overrideDistField.getText().trim();
+        if (targetDistrict.isEmpty()) {
+            targetDistrict = targetSpecimen.getDistrict() != null ? targetSpecimen.getDistrict() : "";
+        }
+
+        String targetProvince = overrideProvField.getText().trim();
+        if (targetProvince.isEmpty()) {
+            targetProvince = targetSpecimen.getProvince() != null ? targetSpecimen.getProvince() : "";
+        }
+
+        final String finalDist = targetDistrict;
+        final String finalProv = targetProvince;
+        final int finalId = idToSelect; // Use the passed-in ID
+
+        // Set to Loading state
         boolean wasAdjusting = isAdjusting;
         isAdjusting = true;
-        try {
-            String targetDistrict = overrideDistField.getText().trim();
-            if (targetDistrict.isEmpty()) {
-                targetDistrict = targetSpecimen.getDistrict() != null ? targetSpecimen.getDistrict() : "";
+        localityCombo.removeAllItems();
+        localityCombo.addItem(new LocalityRecord(-1, "Loading..."));
+        isAdjusting = wasAdjusting;
+
+        SwingWorker<List<LocalityRecord>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<LocalityRecord> doInBackground() {
+                return service.getLocalitiesInDistrict(finalDist, finalProv);
             }
 
-            String targetProvince = overrideProvField.getText().trim();
-            if (targetProvince.isEmpty()) {
-                targetProvince = targetSpecimen.getProvince() != null ? targetSpecimen.getProvince() : "";
-            }
+            @Override
+            protected void done() {
+                try {
+                    List<LocalityRecord> localities = get();
 
-            // Capture the desired ID before clearing the list
-            int desiredLocalityId = targetSpecimen.getLocalityId(); // Fallback default
-            LocalityRecord currentSelection = (LocalityRecord) localityCombo.getSelectedItem();
-            if (currentSelection != null && currentSelection.getId() > 0) {
-                desiredLocalityId = currentSelection.getId(); // Prioritize what the user just clicked
-            }
+                    // Block listeners while we rebuild the list
+                    isAdjusting = true;
 
-            // Clear and rebuild the list
-            localityCombo.removeAllItems();
-            localityCombo.addItem(new LocalityRecord(-1, "-- Select a Locality --"));
+                    localityCombo.removeAllItems();
+                    localityCombo.addItem(new LocalityRecord(-1, "-- Select a Locality --"));
 
-            List<LocalityRecord> localities = service.getLocalitiesInDistrict(targetDistrict, targetProvince);
-            for (LocalityRecord l : localities) {
-                localityCombo.addItem(l);
+                    LocalityRecord toSelect = null;
+                    for (LocalityRecord l : localities) {
+                        localityCombo.addItem(l);
+                        // Match by ID
+                        if (l.getId() == finalId) {
+                            toSelect = l;
+                        }
+                    }
 
-                // Restore the captured selection
-                if (l.getId() == desiredLocalityId) {
-                    localityCombo.setSelectedItem(l);
+                    if (toSelect != null) {
+                        localityCombo.setSelectedItem(toSelect);
+                    } else {
+                        localityCombo.setSelectedIndex(0); // Default to placeholder
+                    }
+
+                    // CRITICAL: Only turn off isAdjusting AFTER the selection is set
+                    isAdjusting = false;
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    isAdjusting = false;
                 }
             }
-        } finally {
-            isAdjusting = wasAdjusting;
-        }
+        };
+        worker.execute();
+    }
+
+    public void invalidateLocalityList() {
+        service.invalidateLocalityCache();
+        updateLocalityList(-1);
     }
 
     private boolean saveBridge() {
@@ -908,23 +942,13 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     private void applyBridgeToUI(BridgeData data) {
-        isAdjusting = true;
         distanceField.setText(data.distance);
         directionCombo.setSelectedItem(data.direction);
         overrideDistField.setText(data.oDistrict);
         overrideProvField.setText(data.oProvince);
 
-        // This triggers the locality list reload based on overrides
-        updateLocalityList();
-
-        // Find the right ID in the newly loaded list
-        for (int i = 0; i < localityCombo.getItemCount(); i++) {
-            if (localityCombo.getItemAt(i).getId() == data.localityId) {
-                localityCombo.setSelectedIndex(i);
-                break;
-            }
-        }
-        isAdjusting = false;
+        // Tell the list to select the locality ID from the specimen bridge record
+        updateLocalityList(targetSpecimen.getLocalityId());
     }
 
     public void searchLocality() {

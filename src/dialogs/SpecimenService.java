@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SpecimenService {
+    private final java.util.Map<String, List<LocalityRecord>> localityCache = new java.util.HashMap<>();
 
     // creates the H2 cache and reports found specimens
     public int refreshCache(String province, String district, String collector, String accession, String year, String locality, String genus, String herbarium, String coordSource, int coordPrecision, boolean lackBridgeOnly) {
@@ -245,6 +246,7 @@ public class SpecimenService {
         return s;
     }
 
+    /*
     public List<LocalityRecord> getLocalitiesInDistrict(String district, String province) {
         List<LocalityRecord> list = new ArrayList<>();
         String sql = "SELECT ID, locality FROM locality WHERE District = ? AND Province = ? ORDER BY locality ASC";
@@ -259,6 +261,38 @@ public class SpecimenService {
             }
         } catch (SQLException e) { e.printStackTrace(); }
         return list;
+    }*/
+
+    public List<LocalityRecord> getLocalitiesInDistrict(String district, String province) {
+        String cacheKey = district + "|" + province;
+
+        // Check if we already fetched these localities
+        if (localityCache.containsKey(cacheKey)) {
+            return localityCache.get(cacheKey);
+        }
+
+        // If not, fetch from MySQL
+        List<LocalityRecord> list = new ArrayList<>();
+        String sql = "SELECT ID, locality FROM locality WHERE District = ? AND Province = ? ORDER BY locality ASC";
+        try (Connection conn = DBConnection.getConn();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, district);
+            ps.setString(2, province);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(new LocalityRecord(rs.getInt("ID"), rs.getString("locality")));
+                }
+            }
+            // Save to cache
+            localityCache.put(cacheKey, list);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public void invalidateLocalityCache() {
+        localityCache.clear();
     }
 
     // Handles the bridging and coordinate calculation
