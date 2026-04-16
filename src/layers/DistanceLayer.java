@@ -6,7 +6,9 @@ import geometry.BoundingBox;
 import java.awt.*;
 
 public class DistanceLayer implements Layer {
-	private Color color;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private String name;
 	private final String direction;
 	private boolean hidden;
@@ -19,14 +21,13 @@ public class DistanceLayer implements Layer {
 		this.c=c;
 		this.dist = dist;
 		this.direction = direction;
-		this.color = Color.orange;
 		hidden = false;
 		this.cs = cs;
 	}
-	
+
 	@Override
-	public void setColor(Color c) {
-		this.color = c;
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -40,16 +41,16 @@ public class DistanceLayer implements Layer {
 	}
 
 	@Override
-	public void setMinZoomL(int zoomLevel) {
-	}
+	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
 
 	@Override
-	public void setMaxZoomL(int zoomLevel) {
-	}
+	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

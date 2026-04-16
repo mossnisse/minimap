@@ -6,19 +6,17 @@ import geometry.BoundingBox;
 import geometry.Polygon;
 import java.awt.*;
 import java.io.BufferedInputStream;
-import java.io.DataOutputStream;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-
 import shapeFile.DataInputStreamSE;
 
 public class TNGPolygonFileLayer implements Layer {
 	private final String fileName;
 	private String name;
 	private int nameLength;
-	private Color color;
-	private int maxZoom, minZoom;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private Province[] provinces;
 	private boolean hidden;
 	private CoordSystem cs;
@@ -55,7 +53,7 @@ public class TNGPolygonFileLayer implements Layer {
 	}
 	
 	public TNGPolygonFileLayer(String fileName) throws IOException {
-		this.fileName=fileName;
+		this.fileName = fileName;
 		this.name = fileName;
 		readFile();
 		cs = CoordSystem.SWEREF99TM;
@@ -66,12 +64,13 @@ public class TNGPolygonFileLayer implements Layer {
 			        new DataInputStreamSE(
 			          new BufferedInputStream(
 			            new FileInputStream(fileName)));
-		in.readInt();
+		int shapeType = in.readInt();
+		if (shapeType != 5) throw new IOException("wrong shape type");
 		int nrRecords = in.readInt();
-		System.out.println("fileName: "+fileName);
-		System.out.println("Read nrRecords: "+nrRecords);
+		//System.out.println("fileName: "+fileName);
+		//System.out.println("Read nrRecords: "+nrRecords);
 		nameLength = in.readInt();
-		System.out.println("read nameLenght: "+nameLength);
+		//System.out.println("read nameLenght: "+nameLength);
 		provinces = new Province[nrRecords];
 		for (int i = 0; i < nrRecords; i++) {
 			//System.out.println("ReccordNr: "+i);
@@ -101,37 +100,6 @@ public class TNGPolygonFileLayer implements Layer {
 		//System.out.println("Read nrRecords: "+nrRecords);
 		in.close();
 	}
-
-	public void saveFile(String filename) throws IOException {
-		DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
-		out.writeInt(5);  // shape type == Polygon
-		out.writeInt(provinces.length);  // number of Polygons
-		System.out.println("Save length: "+provinces.length);
-		out.writeInt(nameLength);  // name field length
-		System.out.println("Save namelength: "+nameLength);
-		for (Province prov : provinces) {
-			//int padlength = 50-prov.getName().length();
-			String name = String.format("%1$-" +  nameLength + "s", prov.getName());
-			//System.out.println("padded name:" + "\""+name+ "\"" + " lenght =" + prov.getName().length()+ " padlenght: "+padlength+ " padded lenght: "+  name.length());
-			out.writeBytes(name);
-			// System.out.println(record.getField(nameField));
-			BoundingBox box = prov.getBoundingBox();
-			out.writeInt(box.getX1());
-			out.writeInt(box.getY1());
-			out.writeInt(box.getX2());
-			out.writeInt(box.getY2());
-			out.writeInt(prov.getNumParts());
-			out.writeInt(prov.getNumPoints());
-			for (int part : prov.getParts()) {
-				out.writeInt(part);
-			}
-			for (Point point : prov.getPoints()) {
-				out.writeInt(point.x);
-				out.writeInt(point.y);
-			}
-		}
-		out.close();
-	}
 	
 	public Province[] getProvinces()
 	{
@@ -140,7 +108,7 @@ public class TNGPolygonFileLayer implements Layer {
 
 	@Override
 	public void setColor(Color color) {
-		this.color = color;
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -169,37 +137,35 @@ public class TNGPolygonFileLayer implements Layer {
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
 		if (hidden || provinces == null) return;
 
-		Stroke s = g2d.getStroke();
-		g2d.setStroke(new BasicStroke(1.5f));
+		// Use the guaranteed non-null color
 		g2d.setColor(color);
 
+		Stroke oldStroke = g2d.getStroke();
+		g2d.setStroke(new BasicStroke(1.5f));
+
 		for (Province pr : provinces) {
-			// Spatial Clipping: Only draw if the province is actually visible on screen
 			if (bounds.intersects(pr.getBoundingBox())) {
 				Point[] pts = pr.getPoints();
 				int[] parts = pr.getParts();
 
-				// Loop through each "part" (ring) of the polygon
 				for (int i = 0; i < parts.length; i++) {
 					int start = parts[i];
 					int end = (i == parts.length - 1) ? pts.length : parts[i + 1];
 
-					// Draw the lines for this part
-					for (int j = start; j < end - 1; j++) {
-						Point p1 = pts[j];
-						Point p2 = pts[j + 1];
+					// Performance Tip: Use drawPolyline for faster rendering of rings
+					int[] xPoints = new int[end - start];
+					int[] yPoints = new int[end - start];
 
-						int x1 = (int) (p1.getX() * xScale + xShift);
-						int y1 = (int) (p1.getY() * yScale + yShift);
-						int x2 = (int) (p2.getX() * xScale + xShift);
-						int y2 = (int) (p2.getY() * yScale + yShift);
-
-						g2d.drawLine(x1, y1, x2, y2);
+					for (int j = 0; j < (end - start); j++) {
+						Point p = pts[start + j];
+						xPoints[j] = (int) (p.getX() * xScale + xShift);
+						yPoints[j] = (int) (p.getY() * yScale + yShift);
 					}
+					g2d.drawPolyline(xPoints, yPoints, xPoints.length);
 				}
 			}
 		}
-		g2d.setStroke(s);
+		g2d.setStroke(oldStroke);
 	}
 
 	@Override
@@ -210,8 +176,9 @@ public class TNGPolygonFileLayer implements Layer {
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		// TODO Auto-generated method stub
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

@@ -23,9 +23,9 @@ public class TopowebLayer implements Layer {
 	private final static int TILEMATRIX_LIMIT = 12;
 	private String name;
 	private boolean hidden;
-	private Color color;
-	private int minZoomL;
-	private int maxZoomL;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private final TileBuffer tileBuffer;
 	private CoordSystem cs;
 	
@@ -173,10 +173,10 @@ public class TopowebLayer implements Layer {
 		tileBuffer = new TileBuffer();
 		cs = CoordSystem.SWEREF99TM;
 	}
-	
+
 	@Override
-	public void setColor(Color c) {
-		this.color = c;
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -191,18 +191,19 @@ public class TopowebLayer implements Layer {
 
 	@Override
 	public void setMinZoomL(int zoomLevel) {
-		this.minZoomL = zoomLevel;
+		this.minZoom = zoomLevel;
 	}
 
 	@Override
 	public void setMaxZoomL(int zoomLevel) {
-		this.maxZoomL = zoomLevel;
+		this.maxZoom = zoomLevel;
 	}
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		if (zoomLevel > maxZoomL && maxZoomL != 0) return false;
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

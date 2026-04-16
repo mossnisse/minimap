@@ -18,11 +18,12 @@ import shapeFile.DataInputStreamSE;
 
 public class RasterFilLayer implements Layer {
 	private String name;
-	private Color color;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private final String fileName;
 	private Image img;
 	private BoundingBox box;
-	private int maxZoom, minZoom;
 	private boolean hidden;
 	private CoordSystem cs;
 
@@ -87,8 +88,8 @@ public class RasterFilLayer implements Layer {
 	}
 
 	@Override
-	public void setColor(Color c) {
-		this.color = c;
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -129,9 +130,11 @@ public class RasterFilLayer implements Layer {
 		this.maxZoom = zoomLevel;
 	}
 
+	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		if (zoomLevel > maxZoom && maxZoom != 0) return false;
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

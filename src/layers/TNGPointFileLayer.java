@@ -13,8 +13,9 @@ import shapeFile.DataInputStreamSE;
 
 public class TNGPointFileLayer implements Layer {
 	private String fileName, name;
-	private Color color;
-	private int maxZoom, minZoom;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private Locality[] localities;
 	private boolean hidden;
 	private CoordSystem cs;
@@ -108,7 +109,7 @@ public class TNGPointFileLayer implements Layer {
 
 	@Override
 	public void setColor(Color color) {
-		this.color=color;
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -155,8 +156,9 @@ public class TNGPointFileLayer implements Layer {
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		// TODO Auto-generated method stub
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

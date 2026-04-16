@@ -3,6 +3,7 @@ package tools;
 import coords.Coordinates;
 import geometry.BoundingBox;
 import geometry.Line;
+import layers.TNGPolygonFileLayer;
 
 import java.awt.*;
 import java.io.DataOutputStream;
@@ -105,4 +106,36 @@ public class TNGPolygonFileTool {
 			e.printStackTrace();
 		}*/
 //    }
+/*
+public void saveFile(String filename) throws IOException {
+    DataOutputStream out = new DataOutputStream(new FileOutputStream(filename));
+    out.writeInt(5);  // shape type == Polygon
+    out.writeInt(provinces.length);  // number of Polygons
+    System.out.println("Save length: "+provinces.length);
+    out.writeInt(nameLength);  // name field length
+    System.out.println("Save namelength: "+nameLength);
+    for (TNGPolygonFileLayer.Province prov : provinces) {
+        //int padlength = 50-prov.getName().length();
+        String name = String.format("%1$-" +  nameLength + "s", prov.getName());
+        //System.out.println("padded name:" + "\""+name+ "\"" + " lenght =" + prov.getName().length()+ " padlenght: "+padlength+ " padded lenght: "+  name.length());
+        out.writeBytes(name);
+        // System.out.println(record.getField(nameField));
+        BoundingBox box = prov.getBoundingBox();
+        out.writeInt(box.getX1());
+        out.writeInt(box.getY1());
+        out.writeInt(box.getX2());
+        out.writeInt(box.getY2());
+        out.writeInt(prov.getNumParts());
+        out.writeInt(prov.getNumPoints());
+        for (int part : prov.getParts()) {
+            out.writeInt(part);
+        }
+        for (Point point : prov.getPoints()) {
+            out.writeInt(point.x);
+            out.writeInt(point.y);
+        }
+    }
+    out.close();
+}*/
+
 //}

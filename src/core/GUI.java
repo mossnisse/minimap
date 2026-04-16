@@ -421,7 +421,7 @@ public class GUI  {
 		int localityID = ldb.findNearest(p, 1000);
 
 		if (localityID != -1) {
-			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas);
+			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
 		}
 	}
 	
@@ -430,7 +430,7 @@ public class GUI  {
 		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
 		int localityID = ldb.findNearest(p,1000);
 		if (localityID != -1) {
-			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas);
+			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
 		}
 	}
 

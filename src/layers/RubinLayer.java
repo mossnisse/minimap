@@ -10,7 +10,9 @@ import java.util.List;
 
 public class RubinLayer implements Layer {
 	private String name, rubin;
-	private Color color;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private boolean hidden;
 	private CoordSystem cs;
 
@@ -74,10 +76,10 @@ public class RubinLayer implements Layer {
 		c.setFromRUBIN(rubin, true); // true converts to Sweref inside the method
 		return new Point((int) c.getEast(), (int) c.getNorth());
 	}
-	
+
 	@Override
-	public void setColor(Color c) {
-		this.color = c;
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -98,7 +100,9 @@ public class RubinLayer implements Layer {
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

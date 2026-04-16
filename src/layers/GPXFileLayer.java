@@ -17,8 +17,9 @@ import org.xml.sax.SAXException;
 
 public class GPXFileLayer implements Layer {
 	private CoordSystem cs = CoordSystem.RT90;
-	Color color;
-	private int maxZoom, minZoom;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	
 	public class GPXKoordinat {
 		double latitude, longitude, elevation;
@@ -59,7 +60,9 @@ public class GPXFileLayer implements Layer {
 	}
 
 	@Override
-	public void setColor(Color c) { this.color =c; }
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
 
 	@Override
 	public Color getColor() { return color; }
@@ -96,8 +99,9 @@ public class GPXFileLayer implements Layer {
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		// TODO Auto-generated method stub
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

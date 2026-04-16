@@ -19,8 +19,9 @@ import shapeFile.dbfRecord;
 
 public class ShapePointFileLayer implements Layer {
 	private String name, fileName;
-	private Color color;
-	private int maxZoom, minZoom;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private int fileLength, shpVersion, shapeType, nrRecords, nrFields;
 	//private byte dbfVersion;
 	private boolean hidden;
@@ -113,10 +114,10 @@ public class ShapePointFileLayer implements Layer {
 			desc.print();
 		}
 	}
-	
+
 	@Override
-	public void setColor(Color c) {
-		this.color =c;
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -173,8 +174,9 @@ public class ShapePointFileLayer implements Layer {
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		// TODO Auto-generated method stub
-		return true;
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 	
 	public TNGPointFileLayer find(String kname, String value) {

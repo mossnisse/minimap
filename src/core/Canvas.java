@@ -38,25 +38,25 @@ public class Canvas extends JPanel {
 	private void initialize() {
 		try {
 			TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng");
-			prFile.setColor(Color.black);
+			prFile.setColor(Color.BLACK);
 			prFile.setName("provinser");
 			addLayerBottom(prFile);
 
 			TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng");
-			socFile.setColor(Color.red);
+			socFile.setColor(Color.RED);
 			socFile.setName("socknar");
 			socFile.setHidden(false);
 			addLayerBottom(socFile);
 
 			H2TableLayer od = new H2TableLayer("ortnamnSWTM");
-			od.setColor(Color.black);
+			od.setColor(Color.BLACK);
 			od.setName("Ortnamnsdb");
 			od.setHidden(false);
 			od.setMaxZoomL(5);
 			addLayerBottom(od);
 
 			MYSQLTableLayer md = new MYSQLTableLayer();
-			md.setColor(Color.red);
+			md.setColor(Color.BLACK);
 			md.setName("LokalDB");
 			md.setHidden(false);
 			md.setMaxZoomL(40);

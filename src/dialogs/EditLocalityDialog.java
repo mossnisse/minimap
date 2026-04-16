@@ -26,11 +26,11 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private String oldName;
 
 	// Components
-	private JTextField name, altNames, province, district, coordinate_source, localitySize, zoomLevel, category;
+	private JTextField name, altNames, province, district, coordinateSource, localitySize, zoomLevel, category;
 	private JTextArea comments;
 	private JCheckBox isPlace;
 	private JLabel labelCreated, labelModified;
-	public JButton cancel, delete, ok, move;
+	private JButton cancel, delete, ok, move;
 
 	public EditLocalityDialog(GUI gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, Canvas canvas) {
 		// 'false' makes it non-modal, 'true' would stop interaction with map
@@ -57,7 +57,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 				cancel.requestFocusInWindow();
 			}
 		});
-		this.setVisible(true);
+		//this.setVisible(true);
 	}
 
 	private void initComponents() {
@@ -70,7 +70,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		province = new JTextField(15);
 		district = new JTextField(15);
 		localitySize = new JTextField(10);
-		coordinate_source = new JTextField(20);
+		coordinateSource = new JTextField(20);
 		category = new JTextField(15);
 		zoomLevel = new JTextField(5);
 		comments = new JTextArea(4, 30);
@@ -97,7 +97,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		JLabel lProv = addField("Province:", province, content, layout, 10, lAlt);
 		JLabel lDist = addField("District:", district, content, layout, 10, lProv);
 		JLabel lSize = addField("Size:", localitySize, content, layout, 10, lDist);
-		JLabel lSrc = addField("Source:", coordinate_source, content, layout, 10, lSize);
+		JLabel lSrc = addField("Source:", coordinateSource, content, layout, 10, lSize);
 
 		JLabel lComm = new JLabel("Comments:");
 		content.add(lComm);
@@ -187,32 +187,33 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		String sql = "SELECT locality, alternative_names, province, district, " +
 				"coordinate_source, lcomments, created, createdBy, modified, modifiedBy, " +
 				"Coordinateprecision, category, zoomLevel, isPlace FROM locality WHERE ID = ?";
+		try {
+			Connection conn = DBConnection.getConn();
+			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-		try (Connection conn = DBConnection.getConn();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+				stmt.setInt(1, localityID);
+				try (ResultSet rs = stmt.executeQuery()) {
+					if (rs.next()) {
+						oldName = rs.getString(1);
+						name.setText(rs.getString(1));
+						altNames.setText(rs.getString(2));
+						province.setText(rs.getString(3));
+						district.setText(rs.getString(4));
+						coordinateSource.setText(rs.getString(5));
+						comments.setText(rs.getString(6));
 
-			stmt.setInt(1, localityID);
-			try (ResultSet rs = stmt.executeQuery()) {
-				if (rs.next()) {
-					oldName = rs.getString(1);
-					name.setText(rs.getString(1));
-					altNames.setText(rs.getString(2));
-					province.setText(rs.getString(3));
-					district.setText(rs.getString(4));
-					coordinate_source.setText(rs.getString(5));
-					comments.setText(rs.getString(6));
+						// Metadata Labels (Columns 9, 10, 11, 12)
+						labelCreated.setText("Created: " + rs.getString(7) + " by " + rs.getString(8));
+						labelModified.setText("Modified: " + rs.getString(9) + " by " + rs.getString(10));
 
-					// Metadata Labels (Columns 9, 10, 11, 12)
-					labelCreated.setText("Created: " + rs.getString(7) + " by " + rs.getString(8));
-					labelModified.setText("Modified: " + rs.getString(9) + " by " + rs.getString(10));
+						localitySize.setText(rs.getString(11));
+						category.setText(rs.getString(12));
+						zoomLevel.setText(rs.getString(13));
 
-					localitySize.setText(rs.getString(11));
-					category.setText(rs.getString(12));
-					zoomLevel.setText(rs.getString(13));
+						isPlace.setSelected(rs.getInt(14) == 1);
 
-					isPlace.setSelected(rs.getInt(14) == 1);
-
-					setTitle("View Locality: " + name.getText());
+						setTitle("View Locality: " + name.getText());
+					}
 				}
 			}
 		} catch (SQLException e) {
@@ -231,7 +232,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					"Deleting it will break these links. Proceed?\n";
 		}
 
-		if (usesCount >0 ) {
+		if (usesCount > 0) {
 			warning += "This locality is used by " + usesCount + " specimen records.\n" +
 					"Deleting it will break these links. Proceed?";
 		}
@@ -252,6 +253,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					if (layer instanceof MYSQLTableLayer mysqlLayer) {
 						mysqlLayer.invalidateCache();
 					}
+					this.dispose();
 				} catch (SQLException e) {
 					e.printStackTrace();
 					JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
@@ -300,25 +302,43 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		}
 		return -1;
 	}
-	
+
 	private void updateLocality() {
 		// check if size is positive integer
 		try {
 			int size = Integer.parseInt(localitySize.getText());
 			if (size < 0) throw new NumberFormatException();
 		} catch (NumberFormatException nfe) {
-			JOptionPane.showMessageDialog(null, "Size is not an positive integer", "InfoBox: " + "Error", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Size is not a positive integer", "InfoBox: Error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
 		try {
 			Connection conn = DBConnection.getConn();
+
+			// Check if the user is attempting to change the name
 			if (oldName != null && !oldName.equals(name.getText())) {
 				int uses = localityUses();
-				JOptionPane.showMessageDialog(this,
-						"\"" + oldName + "\" is currently used in " + uses + " specimen records.\n" +
-								"Note: Changing this name here will NOT automatically update those specimens.");
 
+				// Only show the warning if the locality is actually used, or if the check failed (-1)
+				if (uses > 0 || uses == -1) {
+					String warningMsg;
+					if (uses > 0) {
+						warningMsg = "\"" + oldName + "\" is currently used in " + uses + " specimen records.\n" +
+								"Note: Changing this name here will NOT automatically update those specimens.\n\n" +
+								"Do you want to proceed with the name change?";
+					} else {
+						warningMsg = "Could not verify if \"" + oldName + "\" is used by any specimens due to a database error.\n\n" +
+								"Do you want to proceed with the name change anyway?";
+					}
+
+					// Give the user the option to cancel
+					int confirm = JOptionPane.showConfirmDialog(this, warningMsg, "Confirm Name Change", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+					if (confirm != JOptionPane.YES_OPTION) {
+						return; // Abort the update process
+					}
+				}
 			}
 
 			String sqlstmt = "UPDATE locality SET locality = ?, district = ?, province = ?, alternative_names = ?, coordinate_source = ?, lcomments = ?, modified = NOW(), modifiedBy = ?, Coordinateprecision = ?, category = ?, zoomLevel =?, isPlace =?  WHERE ID =?";
@@ -327,7 +347,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 				statement.setString(2, district.getText());
 				statement.setString(3, province.getText());
 				statement.setString(4, altNames.getText());
-				statement.setString(5, coordinate_source.getText());
+				statement.setString(5, coordinateSource.getText());
 				statement.setString(6, comments.getText());
 				statement.setString(7, Settings.getValue("user"));
 				statement.setString(8, localitySize.getText());
@@ -345,7 +365,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 				statement.execute();
 
-				if (!oldName.equals(name.getText())) {
+				if (oldName != null && !oldName.equals(name.getText())) {
 					if (bridgeDialog != null && bridgeDialog.isVisible()) {
 						bridgeDialog.updateLocalityList();
 					}
@@ -414,7 +434,6 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		} else if ("delete".equals(cmd)) {
 			deleteLocality();
 			canvas.repaint();
-			this.dispose();
 		} else if ("move".equals(cmd)) {
 			// Minimize dialog or just tell the user to click
 			//this.setState(Frame.ICONIFIED); // Optional: hide dialog so they can see the map

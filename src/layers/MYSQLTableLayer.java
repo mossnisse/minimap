@@ -18,9 +18,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MYSQLTableLayer implements Layer {
 	private String name;
-	private Color color;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private boolean hidden;
-	private int maxZoom, minZoom;
 	private CoordSystem cs;
 
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
@@ -47,7 +48,9 @@ public class MYSQLTableLayer implements Layer {
 	}
 
 	@Override
-	public void setColor(Color c) { this.color = c; }
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
 
 	@Override
 	public Color getColor() { return color; }
@@ -63,7 +66,9 @@ public class MYSQLTableLayer implements Layer {
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		return !(zoomLevel > maxZoom && maxZoom != 0);
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override

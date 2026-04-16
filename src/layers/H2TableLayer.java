@@ -15,9 +15,10 @@ import java.util.ArrayList;
 public class H2TableLayer implements Layer {
 	private final String tableName;
 	private String name;
-	private Color color;
+	private Color color = Color.BLACK;
+	private int maxZoom = 0; // 0 indicates unset
+	private int minZoom = 0;
 	private boolean hidden;
-	private int maxZoom, minZoom;
 	private CoordSystem cs = CoordSystem.SWEREF99TM;
 	private final ArrayList<Locality> cache = new ArrayList<>();
 	private BoundingBox lastQueryBounds;
@@ -30,7 +31,7 @@ public class H2TableLayer implements Layer {
 
 	@Override
 	public void setColor(Color c) {
-		this.color =c;
+		this.color = (color != null) ? color : Color.BLACK;
 	}
 
 	@Override
@@ -55,7 +56,9 @@ public class H2TableLayer implements Layer {
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
-		return !(zoomLevel > maxZoom && maxZoom != 0);
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
 	}
 
 	@Override
