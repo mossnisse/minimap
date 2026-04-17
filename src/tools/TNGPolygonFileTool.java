@@ -1,15 +1,5 @@
 package tools;
 
-import coords.Coordinates;
-import geometry.BoundingBox;
-import geometry.Line;
-import layers.TNGPolygonFileLayer;
-
-import java.awt.*;
-import java.io.DataOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-
 /*
 public class TNGPolygonFileTool {
     public void calcSizes() {

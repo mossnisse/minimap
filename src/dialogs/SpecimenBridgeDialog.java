@@ -1,7 +1,7 @@
 package dialogs;
 
 import coords.CoordSystem;
-import coords.Coordinates;
+import coords.Coordinate;
 import core.Canvas;
 import core.Settings;
 import layers.DistanceLayer;
@@ -572,7 +572,7 @@ public class SpecimenBridgeDialog extends JDialog {
         rubinField.setText(s.getRubin());
         rt90Field.setText("N: " + s.getRiketsN() + " O: " + s.getRiketsO());
         swerefField.setText(s.getSweref());
-        latLongField.setText(Coordinates.formatDMS(s.getLatDeg(), s.getLatMin(), s.getLatSec(), s.getLatDir(), s.getLongDeg(), s.getLongMin(), s.getLongSec(), s.getLongDir()));
+        latLongField.setText(Coordinate.formatDMS(s.getLatDeg(), s.getLatMin(), s.getLatSec(), s.getLatDir(), s.getLongDeg(), s.getLongMin(), s.getLongSec(), s.getLongDir()));
 
         // Clear/Update Bridge fields
         overrideDistField.setText(s.getODistrict() != null ? s.getODistrict() : "");
@@ -880,12 +880,11 @@ public class SpecimenBridgeDialog extends JDialog {
                 while (n < 1000000) n *= 10;
                 while (o < 1000000) o *= 10;
 
-                Coordinates rt90 = new Coordinates(n, o);
-                Coordinates swtm = rt90.convertToSweref99TMFromRT90();
-                Point p = new Point((int)swtm.getEast(), (int)swtm.getNorth());
+                Coordinate wgs84 = CoordSystem.RT90.toWGS84(n, o);
+                Point swtm = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
-                canvas.focus(p);
-                canvas.setCoordinate(p);
+                canvas.focus(swtm);
+                canvas.setCoordinate(swtm);
             } catch (NumberFormatException e) {
                 System.err.println("Invalid RT90 format");
             }
@@ -912,17 +911,16 @@ public class SpecimenBridgeDialog extends JDialog {
         if (lat == null || lat.isEmpty() || lat.equals("0")) return;
 
         try {
-            Coordinates c = new Coordinates(0, 0);
+            Coordinate c = new Coordinate(0, 0);
             c.setFromDMS(
                     targetSpecimen.getLatDeg(), targetSpecimen.getLatMin(), targetSpecimen.getLatSec(), targetSpecimen.getLatDir(),
                     targetSpecimen.getLongDeg(), targetSpecimen.getLongMin(), targetSpecimen.getLongSec(), targetSpecimen.getLongDir()
             );
 
-            Coordinates projected = c.toProjected(CoordSystem.SWEREF99TM);
-            Point p = new Point((int)projected.getEast(), (int)projected.getNorth());
+            Point sweref = CoordSystem.SWEREF99TM.toProjected(c);
 
-            canvas.focus(p);
-            canvas.setCoordinate(p);
+            canvas.focus(sweref);
+            canvas.setCoordinate(sweref);
         } catch (Exception e) {
             System.err.println("Lat/Long conversion failed");
         }

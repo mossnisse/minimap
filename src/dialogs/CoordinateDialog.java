@@ -12,15 +12,14 @@ public class CoordinateDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	public CoordinateDialog(Frame owner, Canvas canvas, Point p) {
+	public CoordinateDialog(Frame owner, Canvas canvas, Point sweref) {
 		super(owner, "Coordinate Details", false);
 
-		Coordinates sweref = new Coordinates(p.y, p.x);
-		Coordinates wgs84 = sweref.toWGS84(CoordSystem.SWEREF99TM);
-		Coordinates rt90 = wgs84.toProjected(CoordSystem.RT90);
-		String rubin = rt90.toRUBIN(false);
-		UTMResult utm = wgs84.toUTM();
-		String mgrs = wgs84.toMGRS();
+		Coordinate wgs84 = CoordSystem.SWEREF99TM.toWGS84(sweref);
+		Point rt90 = CoordSystem.RT90.toProjected(wgs84);
+		String rubin = RUBIN.fromRT90(rt90);
+		UTM utm = UTM.fromWGS84(wgs84);
+		String mgrs = utm.toMGRS();
 
 		// Get Layers
 		String prov = "outside layer";
@@ -29,12 +28,12 @@ public class CoordinateDialog extends JDialog {
 		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.getLayer("socknar");
 
 		if (provinces != null) {
-			TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
+			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
 			if (pr != null) prov = pr.getName();
 		}
 
 		if (districts != null) {
-			TNGPolygonFileLayer.Province di = districts.inPolygon(p);
+			TNGPolygonFileLayer.Province di = districts.inPolygon(sweref);
 			if (di != null) dist = di.getName();
 		}
 
@@ -46,9 +45,9 @@ public class CoordinateDialog extends JDialog {
 		// Initialize and add fields
 		JTextField provF = createReadOnlyField(prov);
 		JTextField distF = createReadOnlyField(dist);
-		JTextField swerefF = createReadOnlyField(Math.round(sweref.getNorth()) + ", " + Math.round(sweref.getEast()));
-		JTextField rt90F = createReadOnlyField(Math.round(rt90.getNorth()) + ", " + Math.round(rt90.getEast()));
-		JTextField wgs84F = createReadOnlyField(String.format(java.util.Locale.US, "%.5f, %.5f", wgs84.getNorth(), wgs84.getEast()));
+		JTextField swerefF = createReadOnlyField(sweref.y + ", " + sweref.x);
+		JTextField rt90F = createReadOnlyField(rt90.y + ", " + rt90.x);
+		JTextField wgs84F = createReadOnlyField(wgs84.toString());
 		JTextField rubinF = createReadOnlyField(rubin);
 		JTextField utmF = createReadOnlyField(utm.toString());
 		JTextField mgrsF = createReadOnlyField(mgrs);

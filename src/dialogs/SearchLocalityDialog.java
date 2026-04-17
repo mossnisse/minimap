@@ -204,10 +204,9 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 			try (ResultSet result = statement.executeQuery()) {
 				while (result.next()) {
-					Coordinates c = new Coordinates(result.getDouble("lat"), result.getDouble("long"));
-					Coordinates swer = c.toProjected(CoordSystem.SWEREF99TM);
-					Point p = new Point((int) swer.getEast(), (int) swer.getNorth());
-					allPoints.add(p);
+					Coordinate wgs84 = new Coordinate(result.getDouble("lat"), result.getDouble("long"));
+					Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+					allPoints.add(sweref);
 					allNames.add(result.getString("locality") + " (" + result.getString("district") + ")");
 				}
 			}

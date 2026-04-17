@@ -93,71 +93,60 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		String northS = north.getText().trim();
 		String eastS = east.getText().trim();
 
-		Coordinates sweref;
-		Coordinates rt90;
-		Coordinates wgs84;
-		String rubin;
+		Coordinate wgs84;
 
 		try {
-			double n = Double.parseDouble(northS);
-			double e = Double.parseDouble(eastS);
-
-			// SWEREF 99 TM detection
-			if (n > 6000000 && n < 8000000 && e > 100000 && e < 1000000) {
+			Coordinate c = new Coordinate(Double.parseDouble(northS), Double.parseDouble(eastS));
+			CoordSystem cs;
+			if (CoordSystem.SWEREF99TM.isValid(c)) {
 				coordinateSys.setText("Sweref99TM");
-				sweref = new Coordinates(n, e);
-				wgs84 = sweref.toWGS84(CoordSystem.SWEREF99TM);
-				rt90 = wgs84.toProjected(CoordSystem.RT90);
+				cs = CoordSystem.SWEREF99TM;
 			}
-			// RT90 detection
-			else if (n > 6000000 && n < 8000000 && e > 1000000 && e < 2000000) {
+			else if (CoordSystem.RT90.isValid(c)) {
 				coordinateSys.setText("RT90");
-				rt90 = new Coordinates(n, e);
-				wgs84 = rt90.toWGS84(CoordSystem.RT90);
-				sweref = wgs84.toProjected(CoordSystem.SWEREF99TM);
+				cs = CoordSystem.RT90;
 			}
-			// WGS84 detection
-			else if (Math.abs(n) <= 90 && Math.abs(e) <= 180) {
+			else if (CoordSystem.WGS84.isValid(c)) {
 				coordinateSys.setText("WGS84");
-				wgs84 = new Coordinates(n, e);
-				sweref = wgs84.toProjected(CoordSystem.SWEREF99TM);
-				rt90 = wgs84.toProjected(CoordSystem.RT90);
+				cs = CoordSystem.SWEREF99TM;
 			} else {
 				coordinateSys.setText("Unknown Range");
 				return; // Stop here
 			}
-			rubin = rt90.toRUBIN(false);
+			wgs84 = cs.toWGS84(c);
+
 
 		} catch (NumberFormatException ex) {
 			// Assume RUBIN
 			coordinateSys.setText("RUBIN");
-			rubin = northS;
-			rt90 = new Coordinates(0, 0);
-			rt90.setFromRUBIN(rubin, false);
-			wgs84 = rt90.toWGS84(CoordSystem.RT90);
-			sweref = wgs84.toProjected(CoordSystem.SWEREF99TM);
+			String rubin = northS;
+			Coordinate rt90r = RUBIN.toRT90(rubin);
+			wgs84 = CoordSystem.RT90.toWGS84(rt90r);
 
 			RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
 			canvas.delLayer("Rubin");
 			canvas.addLayerTop(r);
 		}
 
+		Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+		Point rt90 = CoordSystem.RT90.toProjected(wgs84);
+		String rubin = RUBIN.fromRT90(rt90);
+
 		// Update UI
-		swerefF.setText(Math.round(sweref.getNorth()) + ", " + Math.round(sweref.getEast()));
-		rt90F.setText(Math.round(rt90.getNorth()) + ", " + Math.round(rt90.getEast()));
-		wgs84F.setText(String.format(java.util.Locale.US, "%.5f, %.5f", wgs84.getNorth(), wgs84.getEast()));
+		swerefF.setText(sweref.y + ", " + sweref.x);
+		rt90F.setText(rt90.y + ", " + rt90.x);
+		wgs84F.setText(wgs84.toString());
 		rubinF.setText(rubin);
 
-		Point p = new Point((int) sweref.getEast(), (int) sweref.getNorth());
-		canvas.focus(p);
-		canvas.setCoordinate(p);
-		TNGPolygonFileLayer.Province pr = provinces.inPolygon(p);
+		canvas.focus(sweref);
+		canvas.setCoordinate(sweref);
+		TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
     	if (pr != null) {
     		provinceF.setText(pr.getName());
     	} else {
     		provinceF.setText("utanför lager");
     	}
-    	TNGPolygonFileLayer.Province so = district.inPolygon(p);
+    	TNGPolygonFileLayer.Province so = district.inPolygon(sweref);
     	if (so != null) {
     		districtF.setText(so.getName());
     	} else {

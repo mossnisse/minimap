@@ -395,15 +395,14 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			Connection conn = DBConnection.getConn();
 			String sql = "UPDATE locality SET SWTMN = ?, SWTME = ?, lat = ?, `long` = ?, RT90N = ?, RT90E = ? WHERE ID = ?";
 			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-				Coordinates SWTMc = new Coordinates(newN, newE);
-				Coordinates wgs84c = SWTMc.toWGS84(CoordSystem.SWEREF99TM);
-				Coordinates rt90c = wgs84c.toProjected(CoordSystem.RT90);
+				Coordinate wgs84c = CoordSystem.SWEREF99TM.toWGS84(newN, newE);
+				Point rt90c = CoordSystem.RT90.toProjected(wgs84c);
 				stmt.setInt(1, newN);
 				stmt.setInt(2, newE);
 				stmt.setDouble(3, wgs84c.getNorth());
 				stmt.setDouble(4, wgs84c.getEast());
-				stmt.setInt(5, (int) Math.round(rt90c.getNorth()));
-				stmt.setInt(6, (int) Math.round(rt90c.getEast()));
+				stmt.setInt(5, rt90c.y);
+				stmt.setInt(6, rt90c.x);
 				stmt.setInt(7, localityID);
 				stmt.executeUpdate();
 

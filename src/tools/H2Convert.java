@@ -1,10 +1,5 @@
 package tools;
 
-import coords.CoordSystem;
-import coords.Coordinates;
-
-import java.sql.*;
-
 public class H2Convert {
     /*
     public void saveConvert() {

@@ -29,20 +29,16 @@ public class RubinLayer implements Layer {
 		this.rubin = rubin;
 		this.swerefCorners.clear();
 
-		Coordinates coordTool = new Coordinates(0, 0);
-		int[][] rt90Corners = coordTool.getRUBINCorners(rubin);
+		int[][] rt90Corners = RUBIN.getCorners(rubin);
 
 		if (rt90Corners != null) {
 			for (int[] corner : rt90Corners) {
 				// Set current corner in RT90
-				coordTool.set(corner[0], corner[1]);
-
-				// Convert RT90 -> WGS84 -> SWEREF99TM
-				Coordinates sweref = coordTool.toWGS84(CoordSystem.RT90)
-						.toProjected(CoordSystem.SWEREF99TM);
+				Coordinate wgs84 = CoordSystem.RT90.toWGS84(corner[0], corner[1]);
+				Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
 				// Store the Sweref coordinates
-				swerefCorners.add(new Point((int)sweref.getEast(), (int)sweref.getNorth()));
+				swerefCorners.add(sweref);
 			}
 		}
 	}
@@ -72,9 +68,7 @@ public class RubinLayer implements Layer {
 	}
 
 	public Point getMiddle() {
-		Coordinates c = new Coordinates(0,0);
-		c.setFromRUBIN(rubin, true); // true converts to Sweref inside the method
-		return new Point((int) c.getEast(), (int) c.getNorth());
+		return RUBIN.toSweref99TM(rubin);
 	}
 
 	@Override

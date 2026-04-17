@@ -373,10 +373,10 @@ public class GUI  {
 
 	public void showRubin(MouseEvent e) {
 		System.out.print("show RUBIN: ");
-		Point p = canvas.translatePoint(new Point(e.getX(), e.getY()));
-		Coordinates c = new Coordinates(p.getY(), p.getX());
-		String s = c.toRUBIN(true);
-		RubinLayer r = new RubinLayer(s, "Rubin", Color.green);
+
+		Point p = canvas.translatePoint(e.getPoint());
+		String rubin = RUBIN.fromSweref99TM(p);
+		RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
 		canvas.addLayerTop(r);
 	}
@@ -487,7 +487,7 @@ public class GUI  {
 		bridgeDialog.setVisible(true);
 	}
 
-	private void OpenKartbildcom(MouseEvent arg0) {
+	private void OpenKartbildcom(MouseEvent me) {
 		if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
 			System.err.println("Opening a browser is not supported on this system.");
 			return;
@@ -498,11 +498,10 @@ public class GUI  {
 			int zoomLevel = 12;
 
 			// Translate screen click to map coordinates
-			Point point = canvas.translatePoint(new Point(arg0.getX(), arg0.getY()));
+			Point point = canvas.translatePoint(me.getPoint());
 
 			// Convert SWEREF99TM (Projected) to WGS84 (Geographic)
-			Coordinates sweref = new Coordinates(point.getY(), point.getX());
-			Coordinates wgs84 = sweref.toWGS84(CoordSystem.SWEREF99TM);
+			Coordinate wgs84  = CoordSystem.SWEREF99TM.toWGS84(point);
 
 			// Format the URI string. Format: #zoom/lat/lon/type  //https://kartbild.com/?marker=58.88545,11.02363#14/58.88545/11.02363+/0x20"
 			String uriString = String.format(Locale.US, "https://kartbild.com/?marker=%f,%f#%d/%f/%f/0x%d",

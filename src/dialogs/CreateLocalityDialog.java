@@ -180,11 +180,10 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 			zl = "-1";
 		}
 
-		Coordinates SWTMc = new Coordinates(SWTM.y, SWTM.x);
-		Coordinates wgs84c = SWTMc.toWGS84(CoordSystem.SWEREF99TM);
-		Coordinates rt90c = wgs84c.toProjected(CoordSystem.RT90);
-		String RT90Nt = Long.toString(Math.round(rt90c.getNorth()));
-		String RT90Et = Long.toString(Math.round(rt90c.getEast()));
+		Coordinate wgs84c = CoordSystem.SWEREF99TM.toWGS84(SWTM);
+		Point rt90c = CoordSystem.RT90.toProjected(wgs84c);
+		String RT90Nt = Integer.toString(rt90c.y);
+		String RT90Et = Integer.toString(rt90c.x);
 		
 		//check if locality already exists and show message
 		String sqltestifU = "SELECT COUNT(1) FROM locality WHERE locality = ? AND district = ? AND province = ? AND country = 'Sweden';";

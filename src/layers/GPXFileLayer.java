@@ -80,9 +80,8 @@ public class GPXFileLayer implements Layer {
 		if (!hidden) {
 			g2d.setColor(color);
 			for(GPXKoordinat koord:koordinates) {
-				Coordinates c = new Coordinates(koord.latitude, koord.longitude);
-				Coordinates rt90 = c.toProjected(CoordSystem.RT90);
-				Point l = new Point((int)Math.round(rt90.getEast()), (int)Math.round(rt90.getNorth()));
+				Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(koord.latitude, koord.longitude);
+				Point l = sweref.getPoint();
 				int x = (int) ((l.getY()*xScale)+xShift);
 				int y = (int) ((l.getX()*yScale)+yShift);
 					g2d.drawOval(x, y, 5, 5);
