@@ -690,6 +690,8 @@ public class Coordinates {
         return code - 66;
     }
 
+    // check if MGRS is valid
+
     @Override
     public String toString() { return String.format(Locale.US, "(%.5f, %.5f)", north, east); }
 }

@@ -87,34 +87,50 @@ public class SpecimenService {
                 + "locality_ID,  distance, direction, oDistrict, oProvince) "
                 + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
-        try (Connection mysqlConn = DBConnection.getConn();
-             Connection h2Conn = DBConnection.getH2Conn();
-             PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
 
-            prepareH2Table(h2Conn);
+        try {
+            Connection mysqlConn = DBConnection.getConn();
+            Connection h2Conn = DBConnection.getH2Conn();
 
-            // Map dynamic parameters to the PreparedStatement
-            for (int i = 0; i < params.size(); i++) {
-                selectStmt.setObject(i + 1, params.get(i));
-            }
+            try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
+                prepareH2Table(h2Conn);
 
-            try (ResultSet rs = selectStmt.executeQuery();
-                 PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
-
-                h2Conn.setAutoCommit(false);
-                while (rs.next()) {
-                    for (int i = 1; i <= 32; i++) {
-                        insertStmt.setObject(i, rs.getObject(i));
-                    }
-                    insertStmt.addBatch();
-                    count++;
-                    if (count % 500 == 0) insertStmt.executeBatch();
+                // Map dynamic parameters to the PreparedStatement
+                for (int i = 0; i < params.size(); i++) {
+                    selectStmt.setObject(i + 1, params.get(i));
                 }
-                insertStmt.executeBatch();
-                h2Conn.commit();
-                h2Conn.setAutoCommit(true);
+
+                try (ResultSet rs = selectStmt.executeQuery();
+                     PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
+
+                    h2Conn.setAutoCommit(false); // Start transaction
+                    try {
+                        while (rs.next()) {
+                            for (int i = 1; i <= 32; i++) {
+                                insertStmt.setObject(i, rs.getObject(i));
+                            }
+                            insertStmt.addBatch();
+                            count++;
+
+                            // Execute batch every 500 records to manage memory
+                            if (count % 500 == 0) {
+                                insertStmt.executeBatch();
+                            }
+                        }
+
+                        // Finalize remaining records
+                        insertStmt.executeBatch();
+                        h2Conn.commit(); // Single commit at the very end
+
+                    } catch (SQLException e) {
+                        h2Conn.rollback(); // Critical: Roll back if something goes wrong!
+                        throw e;
+                    } finally {
+                        h2Conn.setAutoCommit(true); // Reset state for the connection pool
+                    }
+                }
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return count;
@@ -246,23 +262,6 @@ public class SpecimenService {
         return s;
     }
 
-    /*
-    public List<LocalityRecord> getLocalitiesInDistrict(String district, String province) {
-        List<LocalityRecord> list = new ArrayList<>();
-        String sql = "SELECT ID, locality FROM locality WHERE District = ? AND Province = ? ORDER BY locality ASC";
-        try (Connection conn = DBConnection.getConn();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, district);
-            ps.setString(2, province);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(new LocalityRecord(rs.getInt("ID"), rs.getString("locality")));
-                }
-            }
-        } catch (SQLException e) { e.printStackTrace(); }
-        return list;
-    }*/
-
     public List<LocalityRecord> getLocalitiesInDistrict(String district, String province) {
         String cacheKey = district + "|" + province;
 
@@ -300,8 +299,8 @@ public class SpecimenService {
         System.out.println("linkSpecimenToLocality() method called");
 
         // Assuming core.Settings.getValue("user") is available in your scope
-        String user = Settings.getValue("user") == null ? "unknown" : Settings.getValue("user") ;
-        if (user == null) user = "unknown";
+        String raw = Settings.getValue("user");
+        String user = (raw != null && !raw.isBlank()) ? raw : "unknown";
 
         String sql = "INSERT INTO specimen_locality "
                 + "(specimen_ID, locality_ID, InstitutionCode, CollectionCode, AccessionNo, "

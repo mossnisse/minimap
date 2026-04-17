@@ -36,4 +36,9 @@ public class BridgeData {
                 oDistrict.equals(other.oDistrict) &&
                 oProvince.equals(other.oProvince);
     }
+
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hash(localityId, distance, direction, oDistrict, oProvince);
+    }
 }

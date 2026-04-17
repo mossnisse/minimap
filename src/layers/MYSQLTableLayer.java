@@ -23,6 +23,7 @@ public class MYSQLTableLayer implements Layer {
 	private int minZoom = 0;
 	private boolean hidden;
 	private CoordSystem cs;
+	private Integer selectedLocalityID = null;
 
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
 
@@ -36,7 +37,7 @@ public class MYSQLTableLayer implements Layer {
 	// Callback to tell the canvas to repaint when async load finishes
 	private Runnable repaintCallback;
 
-	private record LocalityRec(int n, int e, String name, int precision) {}
+	private record LocalityRec(int n, int e, String name, int precision, int id) {}
 
 	public MYSQLTableLayer() {}
 
@@ -101,12 +102,25 @@ public class MYSQLTableLayer implements Layer {
 			// Fast clipping
 			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
 
-			g2d.drawOval(x - 3, y - 3, 6, 6);
-			if (rec.precision > 0) {
+			if (selectedLocalityID != null && rec.id == selectedLocalityID) {
+				g2d.setColor(Color.RED);
+				g2d.setStroke(new BasicStroke(2));
+				g2d.drawOval(x - 8, y - 8, 16, 16); // Draw a larger "target" circle
 				int r = (int) (rec.precision * xScale);
-				if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
+				g2d.drawOval(x - r, y - r, r * 2, r * 2);
+
+				// Always draw the name for the selected item, even if zoomed out
+				g2d.drawString(rec.name, x + 10, y);
+				g2d.setColor(color);
+				g2d.setStroke(new BasicStroke(1)); // Reset stroke
+			} else {
+				g2d.drawOval(x - 3, y - 3, 6, 6);
+				if (rec.precision > 0) {
+					int r = (int) (rec.precision * xScale);
+					if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
+				}
+				if (xScale > 0.02) g2d.drawString(rec.name, x + 5, y);
 			}
-			if (xScale > 0.02) g2d.drawString(rec.name, x + 5, y);
 		}
 		g2d.setFont(old);
 	}
@@ -127,9 +141,8 @@ public class MYSQLTableLayer implements Layer {
 		CompletableFuture.runAsync(() -> {
 			try {
 				Connection conn = DBConnection.getConn();
-				try (
-						PreparedStatement pstmt = conn.prepareStatement(
-								"SELECT SWTMN, SWTME, locality, Coordinateprecision FROM locality " +
+				try (PreparedStatement pstmt = conn.prepareStatement(
+								"SELECT SWTMN, SWTME, locality, Coordinateprecision, id FROM locality " +
 										"WHERE SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?")) {
 
 					pstmt.setInt(1, Math.min(bufferedArea.getY1(), bufferedArea.getY2()));
@@ -145,7 +158,8 @@ public class MYSQLTableLayer implements Layer {
 									rs.getInt("SWTMN"),
 									rs.getInt("SWTME"),
 									rs.getString("locality"),
-									rs.getInt("Coordinateprecision")
+									rs.getInt("Coordinateprecision"),
+									rs.getInt("id")
 							));
 						}
 
@@ -182,6 +196,15 @@ public class MYSQLTableLayer implements Layer {
 
 	@Override
 	public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+	// point should be in world coordinate
+	public void selectNearest(Point p) {
+		// We search within a "tolerance" (e.g., 10 pixels converted to world units)
+		int tolerance = 1000 ;
+		this.selectedLocalityID = findNearest(p, tolerance);
+
+		// The canvas should repaint after calling this
+	}
 
 	public int findNearest(Point p, int limit) {
 		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?";

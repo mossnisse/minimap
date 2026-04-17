@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,12 +88,13 @@ public class SpecimenBridgeDialog extends JDialog {
     JPanel coordBar;
 
     public SpecimenBridgeDialog(Frame owner, SpecimenService service, Canvas canvas) {
-        super(owner, "Link dialogs.Specimen to Locality", false);
+        super(owner, "Link Specimen to Locality", false);
         this.service = service;
         this.canvas = canvas;
         this.totalCount = service.getCacheCount(); // Only get the number, not the data
 
-        currentIndex = Integer.parseInt(Settings.getValue("cnr"));
+        String cnr = Settings.getValue("cnr");
+        currentIndex = (cnr != null) ? Integer.parseInt(cnr) : 0;
 
         initUI();
         loadSpecimen(currentIndex);
@@ -206,7 +208,7 @@ public class SpecimenBridgeDialog extends JDialog {
         });
 
         navPanel.add(prevBtn);
-        navPanel.add(new JLabel("dialogs.Specimen:"));
+        navPanel.add(new JLabel("Specimen:"));
         navPanel.add(indexField);
         navPanel.add(totalLabel);
         navPanel.add(nextBtn);
@@ -216,7 +218,7 @@ public class SpecimenBridgeDialog extends JDialog {
         // dialogs.Specimen Data Display
         JPanel infoPanel = new JPanel(new GridBagLayout());
         infoPanel.setBackground(Color.WHITE);
-        infoPanel.setBorder(BorderFactory.createTitledBorder("dialogs.Specimen Info"));
+        infoPanel.setBorder(BorderFactory.createTitledBorder("Specimen Info"));
 
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(4, 10, 4, 10); // Spacing between lines
@@ -626,7 +628,7 @@ public class SpecimenBridgeDialog extends JDialog {
         coordBar.revalidate();
         coordBar.repaint();
 
-        setTitle("Link dialogs.Specimen " + (currentIndex + 1) + " of " + totalCount);
+        setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
     }
 
     private void toggleComponentVisibility(JButton btn, Object value) {
@@ -822,6 +824,7 @@ public class SpecimenBridgeDialog extends JDialog {
         if (selected == null || selected.getId() == -1) return;
         // core.GUI.setCursorWait();
         Point p = service.getLocalityPoint(selected.getId());
+        if (p == null) return;
 
         // Center the map canvas
         canvas.focus(p);
@@ -948,7 +951,7 @@ public class SpecimenBridgeDialog extends JDialog {
         overrideProvField.setText(data.oProvince);
 
         // Tell the list to select the locality ID from the specimen bridge record
-        updateLocalityList(targetSpecimen.getLocalityId());
+        updateLocalityList(data.localityId);
     }
 
     public void searchLocality() {
@@ -1037,7 +1040,7 @@ public class SpecimenBridgeDialog extends JDialog {
 
         try {
             // Encode the string for a URL (handles spaces and Swedish characters)
-            String encodedName = java.net.URLEncoder.encode(placeName, "UTF-8");
+            String encodedName = java.net.URLEncoder.encode(placeName, StandardCharsets.UTF_8);
 
             // Build URL dynamically
             StringBuilder urlBuilder = new StringBuilder("https://ortnamnsregistret.isof.se/place-names?place-name=");

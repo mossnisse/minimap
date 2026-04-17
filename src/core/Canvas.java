@@ -78,6 +78,8 @@ public class Canvas extends JPanel {
 	
 	public void setCoordinate(Point p) {
 		coord = p;
+		MYSQLTableLayer ort = (MYSQLTableLayer) getLayer("LokalDB");
+		ort.selectNearest(p);
 		repaint();
 	}
 	
@@ -170,10 +172,10 @@ public class Canvas extends JPanel {
 	
 	public void focus(Point coord) {
 		bounds.focus(coord);
-		System.out.println(bounds);
 		repaint();
 	}
 
+	// translates p from pixels to world coordinates
 	public Point translatePoint(Point p) {
 		Dimension size = getSize();
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return p;
