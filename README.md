@@ -1,5 +1,5 @@
 # minimap
-A Map software with tools to add coordinates to specimens in "Virtuella herbariet"
+A Map software with test.tools to add coordinates to specimens in "Virtuella herbariet"
 Writen in Java
 Can open shape files (points and polygons)
 Can open GPC files (only Waypoints from GPS)
