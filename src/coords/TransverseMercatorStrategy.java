@@ -53,9 +53,12 @@ public class TransverseMercatorStrategy implements ProjectionStrategy {
 
         double deltaLambda = lambda - lambdaZero;
         double xiPrim = Math.atan(Math.tan(phiStar) / Math.cos(deltaLambda));
+        double x = Math.cos(phiStar) * Math.sin(deltaLambda);
+        double etaPrim = 0.5 * Math.log((1.0 + x) / (1.0 - x));
+        /*
         double etaPrim = Math.log(Math.cos(phiStar) * Math.sin(deltaLambda) +
                 Math.sqrt(Math.pow(Math.cos(phiStar) * Math.sin(deltaLambda), 2) + 1));
-        // Replaced your atanh for stability
+        // Replaced your atanh for stability*/
 
         double n = scale * aRoof * (xiPrim +
                 beta1 * Math.sin(2 * xiPrim) * Math.cosh(2 * etaPrim) +

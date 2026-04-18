@@ -11,30 +11,31 @@ import java.awt.event.ComponentEvent;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.io.Serial;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.JTextField;
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 
-public class MarkCoordinateDialog extends JDialog implements PropertyChangeListener{
+public class MarkCoordinateDialog extends JDialog implements PropertyChangeListener {
 	@Serial
 	private static final long serialVersionUID = 1L;
 	private final JTextField north, east, coordinateSys, swerefF, rt90F, wgs84F, provinceF, districtF, rubinF;
 	private final JOptionPane optionPane;
-	private final TNGPolygonFileLayer provinces, district;
+	private final TNGPolygonFileLayer provinces, districts;
 	private final Canvas canvas;
-	
-	public MarkCoordinateDialog(Frame aFrame, core.Canvas canvas, TNGPolygonFileLayer provinces, TNGPolygonFileLayer district) {
-        super(aFrame, true);
-        setTitle("Mark Coordinate");
-        this.canvas = canvas;
-        this.provinces = provinces;
-        this.district = district;
 
-		// Editable input fields
-        north = new JTextField(10);
-        east = new JTextField(10);
+	public MarkCoordinateDialog(Frame aFrame, core.Canvas canvas) {
+		super(aFrame, false);
+		setTitle("Mark Coordinate");
+		this.canvas = canvas;
 
-		// Result fields - Selectable but NOT editable
+		// Safely fetch layers
+		provinces = (canvas.getLayer("provinser") instanceof TNGPolygonFileLayer l) ? l : null;
+		districts = (canvas.getLayer("socknar") instanceof TNGPolygonFileLayer l) ? l : null;
+
+		// Input fields
+		north = new JTextField(15);
+		east = new JTextField(15);
+
+		// Result fields
 		coordinateSys = createResultField();
 		swerefF = createResultField();
 		rt90F = createResultField();
@@ -43,23 +44,35 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		provinceF = createResultField();
 		districtF = createResultField();
 
-		Object[] array = {
-				"North / Index / RUBIN:", north,
-				"East:", east,
-				"--- Results ---", null,
-				"Detected System:", coordinateSys,
-				"Sweref99TM (N, E):", swerefF,
-				"RT90 (N, E):", rt90F,
-				"WGS84 (Lat, Lon):", wgs84F,
-				"RUBIN Code:", rubinF,
-				"Province:", provinceF,
-				"District:", districtF
-		};
+		// Create the form panel
+		JPanel formPanel = new JPanel(new GridBagLayout());
+		GridBagConstraints gbc = new GridBagConstraints();
+		gbc.insets = new Insets(4, 4, 4, 4);
+		gbc.fill = GridBagConstraints.HORIZONTAL;
+
+		int row = 0;
+		addFormRow(formPanel, "North / Index / RUBIN:", north, gbc, row++);
+		addFormRow(formPanel, "East:", east, gbc, row++);
+
+		// Separator
+		gbc.gridx = 0; gbc.gridy = row++;
+		gbc.gridwidth = 2;
+		JSeparator sep = new JSeparator();
+		sep.setBorder(new EmptyBorder(10, 0, 10, 0));
+		formPanel.add(sep, gbc);
+
+		gbc.gridwidth = 1; // Reset width
+		addFormRow(formPanel, "Detected System:", coordinateSys, gbc, row++);
+		addFormRow(formPanel, "Sweref99TM (N, E):", swerefF, gbc, row++);
+		addFormRow(formPanel, "RT90 (N, E):", rt90F, gbc, row++);
+		addFormRow(formPanel, "WGS84 (Lat, Lon):", wgs84F, gbc, row++);
+		addFormRow(formPanel, "RUBIN Code:", rubinF, gbc, row++);
+		addFormRow(formPanel, "Province:", provinceF, gbc, row++);
+		addFormRow(formPanel, "District:", districtF, gbc, row++);
 
 		Object[] options = {"Mark", "Close"};
-
-		optionPane = new JOptionPane(array,
-				JOptionPane.QUESTION_MESSAGE,
+		optionPane = new JOptionPane(formPanel,
+				JOptionPane.PLAIN_MESSAGE,
 				JOptionPane.YES_NO_OPTION,
 				null,
 				options,
@@ -67,7 +80,6 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 
 		setContentPane(optionPane);
 		pack();
-
 		setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 
 		addComponentListener(new ComponentAdapter() {
@@ -79,13 +91,27 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 	}
 
 	/**
-	 * Helper to create a text field that looks like a result
+	 * Helper to add a label and field to the same row
 	 */
+	private void addFormRow(JPanel panel, String labelText, JTextField field, GridBagConstraints gbc, int row) {
+		gbc.gridy = row;
+
+		// Label
+		gbc.gridx = 0;
+		gbc.weightx = 0;
+		JLabel label = new JLabel(labelText, SwingConstants.RIGHT);
+		panel.add(label, gbc);
+
+		// Field
+		gbc.gridx = 1;
+		gbc.weightx = 1.0;
+		panel.add(field, gbc);
+	}
+
 	private JTextField createResultField() {
-		JTextField field = new JTextField(10);
+		JTextField field = new JTextField(15);
 		field.setEditable(false);
-		field.setFocusable(true); // Allows the user to click into it to copy text
-		field.setBackground(Color.decode("#EEEEEE")); // Light gray to signify read-only
+		field.setBackground(new Color(240, 240, 240));
 		return field;
 	}
 
@@ -108,24 +134,28 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 			}
 			else if (CoordSystem.WGS84.isValid(c)) {
 				coordinateSys.setText("WGS84");
-				cs = CoordSystem.SWEREF99TM;
+				cs = CoordSystem.WGS84;
 			} else {
 				coordinateSys.setText("Unknown Range");
 				return; // Stop here
 			}
 			wgs84 = cs.toWGS84(c);
-
-
 		} catch (NumberFormatException ex) {
 			// Assume RUBIN
-			coordinateSys.setText("RUBIN");
 			String rubin = northS;
-			Coordinate rt90r = RUBIN.toRT90(rubin);
-			wgs84 = CoordSystem.RT90.toWGS84(rt90r);
+			if (RUBIN.isValidRUBIN(rubin, false)) {
+				coordinateSys.setText("RUBIN");
 
-			RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
-			canvas.delLayer("Rubin");
-			canvas.addLayerTop(r);
+				Coordinate rt90r = RUBIN.toRT90(rubin);
+				wgs84 = CoordSystem.RT90.toWGS84(rt90r);
+
+				RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
+				canvas.delLayer("Rubin");
+				canvas.addLayerTop(r);
+			} else {
+				coordinateSys.setText("Invalid Input");
+				return;
+			}
 		}
 
 		Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
@@ -144,28 +174,38 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
     	if (pr != null) {
     		provinceF.setText(pr.getName());
     	} else {
-    		provinceF.setText("utanför lager");
+    		provinceF.setText("outside the layer");
     	}
-    	TNGPolygonFileLayer.Province so = district.inPolygon(sweref);
+    	TNGPolygonFileLayer.Province so = districts.inPolygon(sweref);
     	if (so != null) {
     		districtF.setText(so.getName());
     	} else {
-    		districtF.setText("utanför lager");
+    		districtF.setText("outside the layer");
     	}
 	}
 
 	@Override
 	public void propertyChange(PropertyChangeEvent e) {
-		System.out.println("Property change");
-    	//JOptionPane source = (JOptionPane) e.getSource();
-    	if(isVisible()){
-    		System.out.println(e.getNewValue());
-    		if (e.getNewValue().equals("Mark")) {
-    			mark();
-    		} else {
-    			setVisible(false);
-            	dispose();
-    		}
-    	}
+		String prop = e.getPropertyName();
+
+		// Check if the property change is actually a button click
+		if (isVisible() && e.getSource() == optionPane &&
+				(JOptionPane.VALUE_PROPERTY.equals(prop) || JOptionPane.INPUT_VALUE_PROPERTY.equals(prop))) {
+
+			Object value = optionPane.getValue();
+
+			if (value == JOptionPane.UNINITIALIZED_VALUE) {
+				return; // Ignore the reset event
+			}
+
+			if ("Mark".equals(value)) {
+				mark();
+				// Reset so the button can be clicked again without closing
+				optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
+			} else if ("Close".equals(value)) {
+				setVisible(false);
+				dispose();
+			}
+		}
 	}
 }

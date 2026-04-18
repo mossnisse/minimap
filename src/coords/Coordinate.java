@@ -84,13 +84,19 @@ public class Coordinate {
     private double dmsToDecimal(double deg, double min, double sec, String direction) {
         double decimal = Math.abs(deg) + (min / 60.0) + (sec / 3600.0);
 
-        // Normalize direction string
         String dir = (direction == null) ? "" : direction.trim().toUpperCase();
 
-        if (dir.equals("S") || dir.equals("W") || deg < 0 || Double.doubleToRawLongBits(deg) == 0x8000000000000000L) {
-            return -decimal;
+        boolean isNegative = false;
+
+        if (dir.equals("S") || dir.equals("W")) {
+            isNegative = true;
+        } else if (dir.equals("N") || dir.equals("E")) {
+            isNegative = false;
+        } else {
+            isNegative = (deg < 0 || Double.compare(deg, -0.0) == 0);
         }
-        return decimal;
+
+        return isNegative ? -decimal : decimal;
     }
 
     /**

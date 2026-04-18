@@ -521,32 +521,9 @@ public class GUI  {
 	}
 
 	public void MarkCoordDialog() {
-		System.out.println("Opening dialogs.MarkCoordinateDialog...");
-
-		// Safely fetch layers with null checks
-		TNGPolygonFileLayer provLayer = null;
-		TNGPolygonFileLayer sockenLayer = null;
-
-		Object p = canvas.getLayer("provinser");
-		if (p instanceof TNGPolygonFileLayer) {
-			provLayer = (TNGPolygonFileLayer) p;
-		}
-
-		Object s = canvas.getLayer("socknar");
-		if (s instanceof TNGPolygonFileLayer) {
-			sockenLayer = (s instanceof TNGPolygonFileLayer) ? (TNGPolygonFileLayer) s : null;
-		}
-
-		// Initialize and show
-		MarkCoordinateDialog d = new MarkCoordinateDialog(frame, canvas, provLayer, sockenLayer);
-
-		// Position it relative to the main window so it doesn't pop up on a different monitor
+		MarkCoordinateDialog d = new MarkCoordinateDialog(frame, canvas);
 		d.setLocationRelativeTo(frame);
-
 		d.setVisible(true);
-
-		// Note: Because d is modal, the code pauses here until d.dispose() is called.
-		canvas.repaint();
 	}
 
 	public static void main(String[] args) {

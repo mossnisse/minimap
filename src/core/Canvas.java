@@ -75,11 +75,12 @@ public class Canvas extends JPanel {
 			e.printStackTrace();
 		}
 	}
-	
+
+	// todo use the MYSQLTableLayer concurently with the UI thread. check for null?
 	public void setCoordinate(Point p) {
 		coord = p;
-		MYSQLTableLayer ort = (MYSQLTableLayer) getLayer("LokalDB");
-		ort.selectNearest(p);
+		//MYSQLTableLayer ort = (MYSQLTableLayer) getLayer("LokalDB");
+		//ort.selectNearest(p);
 		repaint();
 	}
 	

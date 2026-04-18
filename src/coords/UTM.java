@@ -65,12 +65,12 @@ public class UTM {
     }
 
     private static String calculateGZD(double lat, double lon) {
-        int zn = (int) Math.ceil((lon + 180) / 6.0);
+        int zn = (int) Math.floor((lon + 180) / 6.0) + 1;
         if (lon == 180) zn = 60;
 
         char zl;
         if (lat >= 72) zl = 'X';
-        else if (lat < -80) zl = 'C';
+        else if (lat <= -80) zl = 'C';
         else {
             int index = (int) Math.ceil((lat + 80) / 8.0);
             zl = utmNumToAlpha(index);
