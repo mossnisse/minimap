@@ -79,6 +79,8 @@ public class GUI  {
 					createLocalityDialog(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_K)) {
 					OpenKartbildcom(e);
+				} else if (Keyboard.isKeyDown(KeyEvent.VK_D)) {
+					distance(e);
 				} else {
 					Point p = canvas.translatePoint(new Point(e.getX(), e.getY()));
 					canvas.setCoordinate(p);
@@ -183,7 +185,7 @@ public class GUI  {
 		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K, InputEvent.CTRL_DOWN_MASK));
-		menuItem6.addActionListener(e->showCoordinateInfoAtCoordinate());
+		menuItem6.addActionListener(e->showCoordinateInfoAtCoord());
 		menu2.add(menuItem6);
 
 		menuItem8 = new JMenuItem("View Rubin", KeyEvent.VK_R);
@@ -201,7 +203,7 @@ public class GUI  {
 		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK));
-		menuItem8.addActionListener(e->distance());
+		menuItem8.addActionListener(e->distanceAtCoord());
 		menu2.add(menuItem8);
 		
 		menuItem9 = new JMenuItem("Search specimens", KeyEvent.VK_E);
@@ -337,11 +339,10 @@ public class GUI  {
 	}
 
 	public void searchLocality() {
-		SearchLocalityDialog d = new SearchLocalityDialog(frame, canvas, "", "");
-		d.setVisible(true);
+		new SearchLocalityDialog(frame, canvas, "", "").setVisible(true);
 	}
 
-	public void showCoordinateInfoAtCoordinate() {
+	public void showCoordinateInfoAtCoord() {
 		Point p = canvas.getCoordinate();
 		new CoordinateDialog(frame, canvas, p).setVisible(true);
 	}
@@ -372,8 +373,6 @@ public class GUI  {
 	}
 
 	public void showRubin(MouseEvent e) {
-		System.out.print("show RUBIN: ");
-
 		Point p = canvas.translatePoint(e.getPoint());
 		String rubin = RUBIN.fromSweref99TM(p);
 		RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
@@ -381,27 +380,18 @@ public class GUI  {
 		canvas.addLayerTop(r);
 	}
 
-	public void distance() {
-		DistanceDialog dlg = new DistanceDialog(frame);
-		dlg.setVisible(true);
-
-		if (!dlg.wasCancelled()) {
-			String direction = dlg.getDirection();
-			String distStr = dlg.getDistance();
-
-			try {
-				int distVal = Integer.parseInt(distStr);
-				DistanceLayer dist = new DistanceLayer("dist", canvas.getCoordinate(), distVal, direction, CoordSystem.SWEREF99TM);
-				dist.setColor(Color.red);
-				dist.setHidden(false);
-				canvas.delLayer("dist");
-				canvas.addLayerTop(dist);
-				canvas.repaint(); // Don't forget to repaint!
-			} catch (NumberFormatException e) {
-				JOptionPane.showMessageDialog(frame, "Please enter a valid numeric distance.");
-			}
+	public void distanceAtCoord() {
+		Point p = canvas.getCoordinate();
+		if (p == null) {
+			JOptionPane.showMessageDialog(canvas, "Please select a point on the map first.");
+			return;
 		}
-		dlg.dispose();
+		new DistanceDialog(frame, canvas, p).setVisible(true);
+	}
+
+	public void distance(MouseEvent me) {
+		Point p = canvas.translatePoint(new Point(me.getX(), me.getY()));
+		new DistanceDialog(frame, canvas, p).setVisible(true);
 	}
 
 	public void userDialog() {

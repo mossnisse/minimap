@@ -1,6 +1,10 @@
 package main.dialogs;
 
-import java.awt.Frame;
+import main.coords.CoordSystem;
+import main.layers.DistanceLayer;
+import main.core.Canvas;
+
+import java.awt.*;
 import java.awt.event.*;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
@@ -10,52 +14,47 @@ import javax.swing.*;
 public class DistanceDialog extends JDialog implements PropertyChangeListener {
 	@Serial
 	private static final long serialVersionUID = 2464657686998213912L;
+	private final Canvas canvas;
+	private final Point origin;
 	private final JTextField distance;
 	private final JComboBox<String> direction;
 	private final JOptionPane optionPane;
-	private String btnValue = null; // Track which button was pressed
 
-	public DistanceDialog(Frame aFrame) {
+	public DistanceDialog(Frame aFrame, Canvas canvas, Point p) {
 		super(aFrame, true); // Modal
 		setTitle("Distance and Direction");
+		this.canvas = canvas;
+		this.origin = p;
 
-		String[] dirStrings = { "N", "E", "S", "W", "NE", "SE", "NW", "SW", "NNE", "ENE", "ESE", "SSE", "SSW", "WSW", "WNW", "NNW" };
+		String[] dirStrings = {"N", "E", "S", "W", "NE", "SE", "NW", "SW", "NNE", "ENE", "ESE", "SSE", "SSW", "WSW", "WNW", "NNW"};
 		direction = new JComboBox<>(dirStrings);
 		distance = new JTextField(10);
 
 		// UI Components inside the Pane
-		Object[] array = { "Direction:", direction, "Distance (m):", distance };
-		Object[] options = { "Enter", "Cancel" };
+		Object[] array = {"Direction:", direction, "Distance (m):", distance};
+		Object[] options = {"Enter", "Cancel"};
 
 		optionPane = new JOptionPane(array,
 				JOptionPane.QUESTION_MESSAGE,
 				JOptionPane.YES_NO_OPTION,
 				null,
 				options,
-				options[0]);
+				options[1]);
 
 		setContentPane(optionPane);
-
-		// Ensure the distance field gets focus when the dialog opens
-		addComponentListener(new ComponentAdapter() {
-			@Override
-			public void componentShown(ComponentEvent ce) {
-				distance.requestFocusInWindow();
-			}
-		});
 
 		// Handle button clicks
 		optionPane.addPropertyChangeListener(this);
 
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowOpened(WindowEvent e) {
+				optionPane.selectInitialValue();
+			}
+		});
+
 		pack();
 		setLocationRelativeTo(aFrame);
-	}
-
-	/**
-	 * Call this after setVisible(true) to see if user clicked Enter
-	 */
-	public boolean wasCancelled() {
-		return btnValue == null || btnValue.equals("Cancel");
 	}
 
 	public String getDirection() {
@@ -70,27 +69,43 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 	public void propertyChange(PropertyChangeEvent e) {
 		String prop = e.getPropertyName();
 
-		// Check if the user clicked a button or closed the dialog
-		if (isVisible() && (e.getSource() == optionPane)
-				&& (prop.equals(JOptionPane.VALUE_PROPERTY))) {
+		// Only react to the JOptionPane's value changing
+		if (isVisible() && (e.getSource() == optionPane) && (prop.equals(JOptionPane.VALUE_PROPERTY))) {
 
 			Object value = optionPane.getValue();
+			if (value == JOptionPane.UNINITIALIZED_VALUE) return;
 
-			if (value == JOptionPane.UNINITIALIZED_VALUE) {
-				return;
-			}
-
-			// Reset value so the next click triggers the listener
+			// Reset the value so the same button can be clicked again if the dialog stays open
 			optionPane.setValue(JOptionPane.UNINITIALIZED_VALUE);
 
 			if (value.equals("Enter")) {
-				btnValue = "Enter";
-				// Add validation here if needed (e.g., check if distance is numeric)
-				setVisible(false);
+				if (processInput()) {
+					dispose(); // Only close if input is valid
+				}
 			} else {
-				btnValue = "Cancel";
-				setVisible(false);
+				// User clicked "Cancel" or closed the dialog
+				dispose();
 			}
+		}
+	}
+
+	private boolean processInput() {
+		try {
+			int distVal = Integer.parseInt(getDistance());
+			String dir = getDirection();
+			
+			DistanceLayer distLayer = new DistanceLayer("dist", origin, distVal, dir, CoordSystem.SWEREF99TM);
+			distLayer.setColor(Color.RED);
+
+			canvas.delLayer("dist");
+			canvas.addLayerTop(distLayer);
+			canvas.repaint();
+			return true;
+		} catch (NumberFormatException ex) {
+			JOptionPane.showMessageDialog(this, "Please enter a valid numeric distance (e.g., 500).");
+			distance.selectAll();
+			distance.requestFocusInWindow();
+			return false; // Keep dialog open so user can fix the error
 		}
 	}
 }
