@@ -60,9 +60,10 @@ public class UTM {
      */
     public static UTM fromWGS84(double lat, double lon) {
         if (lat < -80 || lat > 84) return null;
+        if (lon < -180.0 || lon > 180.0) { return null; }
 
         int zone = (int) Math.floor((lon + 180) / 6.0) + 1;
-        if (lon == 180) zone = 60;
+        if (lon >= 180) zone = 60;
 
         // Apply Norway/Svalbard zone overrides
         zone = applyZoneExceptions(lat, lon, zone);
@@ -80,6 +81,7 @@ public class UTM {
     }
 
     public static UTM fromWGS84(Coordinate wgs84) {
+        if (wgs84 == null) return null;
         return fromWGS84(wgs84.getNorth(), wgs84.getEast());
     }
 
@@ -111,8 +113,18 @@ public class UTM {
 
     // Helper to keep the calculateGZD logic for display/MGRS purposes
     private static String calculateGZD(double lat, double lon) {
+        if (lat < -80 || lat > 84) return null;
         int zn = applyZoneExceptions(lat, lon, (int) Math.floor((lon + 180) / 6.0) + 1);
-        char zl = (lat >= 72) ? 'X' : (lat <= -80) ? 'C' : utmNumToAlpha((int) Math.ceil((lat + 80) / 8.0));
+        if (lon >= 180) zn = 60; // Handle the 180 meridian wrap
+
+        char zl;
+        if (lat >= 72) zl = 'X';      // Band X is 12 degrees high (72 to 84)
+        else if (lat < -80) zl = 'C'; // Anything south of -80 is Polar (UPS)
+        else {
+            // We use floor to ensure -80 to -72 is index 0, -72 to -64 is index 1, etc.
+            int index = (int) Math.floor((lat + 80) / 8.0);
+            zl = utmNumToAlpha(index + 1); // index + 1 because 'C' is the 1st band
+        }
         return zn + String.valueOf(zl);
     }
 
@@ -165,7 +177,7 @@ public class UTM {
 
     @Override
     public String toString() {
-        return String.format(Locale.US, "Zone %d%s %.0f E %.0f N",
+        return String.format(Locale.US, "%d%s %.0fE %.0fN",
                 zone, isNorthern ? "N" : "S", easting, northing);
     }
 }

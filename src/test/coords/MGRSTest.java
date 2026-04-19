@@ -6,10 +6,11 @@ import main.coords.UTM;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MGRSTest {
 
@@ -61,5 +62,25 @@ class MGRSTest {
 
         assertEquals(lat, wgs84.getNorth(), TOLERANCE_DEGREES, "Easting mismatch at " + name);
         assertEquals(lon, wgs84.getEast(), TOLERANCE_DEGREES, "Easting mismatch at " + name);
+    }
+
+    @ParameterizedTest(name = "Valid MGRS strings")
+    @MethodSource("mgrsProvider")
+    void testIsValidPositive(String name, double lat, double lon, String mgrsStr) {
+        assertTrue(MGRS.isValid(mgrsStr), "Should be valid: " + name);
+    }
+
+    @ParameterizedTest(name = "Invalid MGRS strings")
+    @ValueSource(strings = {
+            "99VCL3334879846",   // Invalid Zone
+            "34YCL3334879846",   // Invalid Band (Y)
+            "34VIL3334879846",   // Illegal Letter I
+            "34VCL333487984",    // Odd number of digits
+            "34V AA 12345 12345", // Zone 34 Column Set starts at S, A is impossible
+            "ABCDE",             // Not a coordinate
+            "1VUC1234"           // Single digit zone (if your parser doesn't pad, check logic)
+    })
+    void testIsValidNegative(String invalidMgrs) {
+        assertFalse(MGRS.isValid(invalidMgrs), "Should be invalid: " + invalidMgrs);
     }
 }
