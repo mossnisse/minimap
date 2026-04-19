@@ -3,16 +3,15 @@ package main.coords;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
-// Todo: write a function that returns the corners, handle different precision, 100km to 1m squares
 // handle the old AL sheme
-// coordinates should be truncated not rounded but I think the midle of the square should be returned when converting to UTM.
-// Porar regions instead uses "Universal Polar Stereographic"
+// Polar regions instead uses "Universal Polar Stereographic" above 84 and below -80
 
 public class MGRS {
     private static final double MGRS_REPEAT_CYCLE = 2_000_000.0;
     private static final double MGRS_SQUARE_SIZE  = 100_000.0;
     private static final double UTM_FALSE_NORTHING = 10_000_000.0;
     private static final double LAT_METERS_PER_DEGREE = 111_132.0;
+    private static final int[] RESOLUTIONS = {100_000, 10_000, 1_000, 100, 10, 1};
 
     private static char mgrsNumToAlpha(int num) {
         int code = num + 'A';
@@ -66,69 +65,125 @@ public class MGRS {
         return String.format(Locale.US, "%s %c%c %05d %05d", utm.getGZD(), columnId, rowId, finalE, finalN);
     }
 
-    public static UTM toUTM(String mgrsStr) {
+    /**
+     * Internal result class to hold the decoded grid data.
+     */
+    private static class DecodedGrid {
+        UTM swCorner;
+        int resolution;
+
+        DecodedGrid(UTM swCorner, int resolution) {
+            this.swCorner = swCorner;
+            this.resolution = resolution;
+        }
+    }
+
+    /**
+     * The core engine: Decodes the MGRS string into a SW UTM coordinate and a square size.
+     */
+    private static DecodedGrid decodeMGRS(String mgrsStr) {
         String cleanStr = mgrsStr.replaceAll("\\s+", "").toUpperCase();
         if (cleanStr.length() < 5) throw new IllegalArgumentException("Invalid MGRS string");
 
-        // Extract GZD components
+        // Extract GZD
         int firstLetterIdx = Character.isLetter(cleanStr.charAt(1)) ? 1 : 2;
         int zone = Integer.parseInt(cleanStr.substring(0, firstLetterIdx));
         char latBand = cleanStr.charAt(firstLetterIdx);
 
-        if (latBand < 'C' || latBand > 'X') throw new IllegalArgumentException("Unsupported UTM Band");
-
+        // Extract Square ID
         char colLetter = cleanStr.charAt(firstLetterIdx + 1);
         char rowLetter = cleanStr.charAt(firstLetterIdx + 2);
 
-        // Extract precision numbers
+        // Determine Resolution (Size of the square)
         String numPart = cleanStr.substring(firstLetterIdx + 3);
-        if (numPart.length() % 2 != 0) throw new IllegalArgumentException("Invalid precision length");
         int precisionLength = numPart.length() / 2;
+        int resolution = RESOLUTIONS[precisionLength];
 
-        double eMeters = Double.parseDouble(numPart.substring(0, precisionLength)) * Math.pow(10, 5 - precisionLength);
-        double nMeters = Double.parseDouble(numPart.substring(precisionLength)) * Math.pow(10, 5 - precisionLength);
+        // Calculate Numerical Offsets
+        double eOffset = 0;
+        double nOffset = 0;
+        if (precisionLength > 0) {
+            eOffset = Double.parseDouble(numPart.substring(0, precisionLength)) * resolution;
+            nOffset = Double.parseDouble(numPart.substring(precisionLength)) * resolution;
+        }
 
-        // Calculate Easting
+        // Easting Math (Column)
         int setCol = (zone - 1) % 3;
-        int e100kBase = (setCol == 0) ? mgrsAlphaToNum('A') :
-                (setCol == 1) ? mgrsAlphaToNum('J') : mgrsAlphaToNum('S');
-
+        int e100kBase = (setCol == 0) ? mgrsAlphaToNum('A') : (setCol == 1) ? mgrsAlphaToNum('J') : mgrsAlphaToNum('S');
         int e100kSteps = mgrsAlphaToNum(colLetter) - e100kBase;
-        if (e100kSteps < 0) e100kSteps += 8; // Wrap around for widened zones
+        if (e100kSteps < 0) e100kSteps += 8;
+        double utmEasting = (e100kSteps + 1) * MGRS_SQUARE_SIZE + eOffset;
 
-        double utmEasting = (e100kSteps + 1) * MGRS_SQUARE_SIZE + eMeters;
-
-        // Calculate Northing (The 2,000km ambiguity)
+        // Northing Math (Row)
         int rowBase = (zone % 2 != 0) ? mgrsAlphaToNum('A') : mgrsAlphaToNum('F');
         int n100kSteps = mgrsAlphaToNum(rowLetter) - rowBase;
         if (n100kSteps < 0) n100kSteps += 20;
+        double utmNorthing = n100kSteps * MGRS_SQUARE_SIZE + nOffset;
 
-        double utmNorthing = n100kSteps * MGRS_SQUARE_SIZE + nMeters;
-
-        // Find the minimum possible WGS84 northing for this Latitude Band
+        // Resolve 2,000km Ambiguity
         int bandIndex = latBand - 'C';
         if (latBand > 'I') bandIndex--;
         if (latBand > 'O') bandIndex--;
         double minLat = -80.0 + (bandIndex * 8.0);
+        double minN = (latBand < 'N') ? UTM_FALSE_NORTHING + (minLat * LAT_METERS_PER_DEGREE) : (minLat * LAT_METERS_PER_DEGREE);
 
-        // 1 deg latitude is approx 111,132 meters.
-        double minNorthingEstimate = (latBand < 'N') ?
-                UTM_FALSE_NORTHING + (minLat * LAT_METERS_PER_DEGREE) : // South (starts near 1,100,000 and goes up)
-                (minLat * LAT_METERS_PER_DEGREE);               // North (starts at 0 and goes up)
+        while (utmNorthing < minN) utmNorthing += MGRS_REPEAT_CYCLE;
+        while (utmNorthing > minN + MGRS_REPEAT_CYCLE) utmNorthing -= MGRS_REPEAT_CYCLE;
 
-        // Shift by 2,000,000m blocks until we are inside the correct Latitude Band
-        while (utmNorthing < minNorthingEstimate) {
-            utmNorthing += MGRS_REPEAT_CYCLE;
-        }
+        UTM sw = new UTM(zone, latBand >= 'N', utmEasting, utmNorthing);
+        return new DecodedGrid(sw, resolution);
+    }
 
-        // Safety check: MGRS bands are ~890km tall. If we overshot by a full cycle, bring it back.
-        // This handles edge cases where the rough estimate is slightly misaligned at the band borders.
-        if (utmNorthing > minNorthingEstimate + MGRS_REPEAT_CYCLE) {
-            utmNorthing -= MGRS_REPEAT_CYCLE;
-        }
+    public static UTM toUTM(String mgrsStr) {
+        DecodedGrid grid = decodeMGRS(mgrsStr);
 
-        boolean isNorthern = (latBand >= 'N');
-        return new UTM(zone, isNorthern, utmEasting, utmNorthing);
+        // Calculate the center point using the MGRS string's stated zone
+        double centerE = grid.swCorner.getEast() + (grid.resolution / 2.0);
+        double centerN = grid.swCorner.getNorth() + (grid.resolution / 2.0);
+
+        // Create the "Raw" UTM (potentially in an extended zone)
+        UTM rawUtm = new UTM(grid.swCorner.getZone(), grid.swCorner.isNorthern(), centerE, centerN);
+
+        // Normalize the coordinate
+        // We convert to Lat/Lon and then back to UTM.
+        // UTM.fromWGS84 automatically picks the "correct" zone for that location.
+        Coordinate wgs84 = rawUtm.toWGS84();
+        return UTM.fromWGS84(wgs84.getNorth(), wgs84.getEast());
+    }
+
+    public static Coordinate toWGS84(String mgrsStr) {
+        DecodedGrid grid = decodeMGRS(mgrsStr);
+
+        double centerE = grid.swCorner.getEast() + (grid.resolution / 2.0);
+        double centerN = grid.swCorner.getNorth() + (grid.resolution / 2.0);
+
+        UTM rawUtm = new UTM(grid.swCorner.getZone(), grid.swCorner.isNorthern(), centerE, centerN);
+        return rawUtm.toWGS84();
+    }
+
+    // for big squares more points on the lines may be needed for accurate describe it in another projection
+    public static Coordinate[] getSquareCornersWGS84(String mgrsStr) {
+        DecodedGrid grid = decodeMGRS(mgrsStr);
+
+        double swE = grid.swCorner.getEast();
+        double swN = grid.swCorner.getNorth();
+        int res = grid.resolution;
+        int z = grid.swCorner.getZone();
+        boolean h = grid.swCorner.isNorthern();
+
+        // Define the 4 corners in the local UTM zone plane
+        UTM sw = grid.swCorner;
+        UTM se = new UTM(z, h, swE + res, swN);
+        UTM ne = new UTM(z, h, swE + res, swN + res);
+        UTM nw = new UTM(z, h, swE, swN + res);
+
+        // Convert all to WGS84 and return
+        return new Coordinate[] {
+                sw.toWGS84(),
+                se.toWGS84(),
+                ne.toWGS84(),
+                nw.toWGS84()
+        };
     }
 
     // would be good with a strict and lax variant

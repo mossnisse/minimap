@@ -55,6 +55,8 @@ public class UTM {
         return (isNorthern) ? 'N' : 'S';
     }
 
+    public boolean isNorthern() { return isNorthern; }
+
     /**
      * Static Factory: Create UTM from WGS84 Lat/Lon
      */
