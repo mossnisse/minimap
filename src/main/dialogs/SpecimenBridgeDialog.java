@@ -617,6 +617,7 @@ public class SpecimenBridgeDialog extends JDialog {
         String dmsValue = (s.getLatDeg() != null && !s.getLatDeg().isEmpty()) ? "exists" : "";
         toggleComponentVisibility(btnLatLong, dmsValue);
 
+        /*
         // Force the fields to recalculate their width based on text
         rubinField.invalidate();
         rt90Field.invalidate();
@@ -630,9 +631,12 @@ public class SpecimenBridgeDialog extends JDialog {
         coordBar.revalidate();
         coordBar.repaint();
 
+         */
+
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
     }
 
+    /*
     private void toggleComponentVisibility(JButton btn, Object value) {
         boolean hasData = value != null && !value.toString().trim().isEmpty() && !value.toString().equals("0");
         // This hides/shows the sub-panel (p) created in createFocusRow
@@ -641,6 +645,12 @@ public class SpecimenBridgeDialog extends JDialog {
         // Refresh the layout so buttons slide left/right without changing the bar's height
         coordBar.revalidate();
         coordBar.repaint();
+    }*/
+
+    private void toggleComponentVisibility(JButton btn, Object value) {
+        boolean hasData = value != null && !value.toString().trim().isEmpty() && !value.toString().equals("0");
+        // This hides/shows the sub-panel (p) created in createFocusRow
+        btn.getParent().setVisible(hasData);
     }
 
     public void updateLocalityList(int idToSelect) {
