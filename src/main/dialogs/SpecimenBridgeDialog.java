@@ -32,6 +32,8 @@ public class SpecimenBridgeDialog extends JDialog {
     private JTextField indexField; // For jumping to specific records
     private int pendingIndex = -1;
     private boolean isNavigating = false;
+    private String currentLoadedDistrict = null;
+    private String currentLoadedProvince = null;
 
     private static final Map<String, Integer> ISOF_PROVINCE_MAP = new HashMap<>();
     static {
@@ -657,7 +659,13 @@ public class SpecimenBridgeDialog extends JDialog {
 
         final String finalDist = targetDistrict;
         final String finalProv = targetProvince;
-        final int finalId = idToSelect; // Use the passed-in ID
+        final int finalId = idToSelect;
+
+        // --- NEW: Bypass rebuild if the list data hasn't changed ---
+        if (finalDist.equals(currentLoadedDistrict) && finalProv.equals(currentLoadedProvince)) {
+            setLocalitySelectionById(finalId);
+            return;
+        }
 
         // Set to Loading state
         boolean wasAdjusting = isAdjusting;
@@ -686,7 +694,6 @@ public class SpecimenBridgeDialog extends JDialog {
                     LocalityRecord toSelect = null;
                     for (LocalityRecord l : localities) {
                         localityCombo.addItem(l);
-                        // Match by ID
                         if (l.getId() == finalId) {
                             toSelect = l;
                         }
@@ -695,10 +702,13 @@ public class SpecimenBridgeDialog extends JDialog {
                     if (toSelect != null) {
                         localityCombo.setSelectedItem(toSelect);
                     } else {
-                        localityCombo.setSelectedIndex(0); // Default to placeholder
+                        localityCombo.setSelectedIndex(0);
                     }
 
-                    // CRITICAL: Only turn off isAdjusting AFTER the selection is set
+                    // --- NEW: Update our tracking variables ---
+                    currentLoadedDistrict = finalDist;
+                    currentLoadedProvince = finalProv;
+
                     isAdjusting = false;
 
                 } catch (Exception e) {
@@ -712,6 +722,8 @@ public class SpecimenBridgeDialog extends JDialog {
 
     public void invalidateLocalityList() {
         service.invalidateLocalityCache();
+        currentLoadedDistrict = null; // Force a rebuild
+        currentLoadedProvince = null;
         updateLocalityList(-1);
     }
 
@@ -943,10 +955,17 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     private void applyBridgeToUI(BridgeData data) {
+        // Block the DocumentListener from firing updateLocalityList(-1)
+        boolean wasAdjusting = isAdjusting;
+        isAdjusting = true;
+
         distanceField.setText(data.distance);
         directionCombo.setSelectedItem(data.direction);
         overrideDistField.setText(data.oDistrict);
         overrideProvField.setText(data.oProvince);
+
+        // Restore state before calling the final update
+        isAdjusting = wasAdjusting;
 
         // Tell the list to select the locality ID from the specimen bridge record
         updateLocalityList(data.localityId);
@@ -1060,5 +1079,20 @@ public class SpecimenBridgeDialog extends JDialog {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void setLocalitySelectionById(int id) {
+        boolean wasAdjusting = isAdjusting;
+        isAdjusting = true;
+        for (int i = 0; i < localityCombo.getItemCount(); i++) {
+            LocalityRecord record = localityCombo.getItemAt(i);
+            if (record.getId() == id) {
+                localityCombo.setSelectedIndex(i);
+                isAdjusting = wasAdjusting;
+                return;
+            }
+        }
+        localityCombo.setSelectedIndex(0); // Fallback to placeholder
+        isAdjusting = wasAdjusting;
     }
 }
