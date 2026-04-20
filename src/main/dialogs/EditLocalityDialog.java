@@ -221,46 +221,68 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			e.printStackTrace();
 		}
 	}
-	
+
+
+
 	private void deleteLocality() {
 		int bridgeCount = localityBridgeUses(localityID);
 		int usesCount = localityUses();
 
-		String warning = "Are you sure you want to delete this locality?";
+		StringBuilder warning = new StringBuilder();
+		boolean errorState = (bridgeCount == -1 || usesCount == -1);
+
+		if (errorState) {
+			warning.append("CRITICAL: Could not verify all specimen links due to a database error.\n");
+		}
+
 		if (bridgeCount > 0) {
-			warning = "WARNING: This locality is linked to " + bridgeCount + " specimens bridges.\n" +
-					"Deleting it will break these links. Proceed?\n";
+			warning.append("? Linked to ").append(bridgeCount).append(" specimen bridges.\n");
 		}
 
 		if (usesCount > 0) {
-			warning += "This locality is used by " + usesCount + " specimen records.\n" +
-					"Deleting it will break these links. Proceed?";
+			warning.append("? Used by ").append(usesCount).append(" specimen records.\n");
 		}
 
-		int dialogResult = JOptionPane.showConfirmDialog(this, warning, "Confirm Delete", JOptionPane.YES_NO_OPTION);
+		if (warning.length() == 0) {
+			warning.append("Are you sure you want to delete this locality?");
+		} else {
+			warning.append("\nDeleting it will break these links. Proceed?");
+		}
+
+		// Use WARNING_MESSAGE if there are links or errors, otherwise QUESTION_MESSAGE
+		int messageType = (bridgeCount > 0 || usesCount > 0 || errorState)
+				? JOptionPane.WARNING_MESSAGE
+				: JOptionPane.QUESTION_MESSAGE;
+
+		int dialogResult = JOptionPane.showConfirmDialog(
+				this,
+				warning.toString(),
+				"Confirm Delete",
+				JOptionPane.YES_NO_OPTION,
+				messageType
+		);
+
 		if (dialogResult == JOptionPane.YES_OPTION) {
 			try {
 				Connection conn = DBConnection.getConn();
-
-				String sqlstmt = "DELETE FROM locality WHERE ID =?";
+				String sqlstmt = "DELETE FROM locality WHERE ID = ?";
 				try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
 					statement.setInt(1, localityID);
 					statement.execute();
+
 					if (bridgeDialog != null && bridgeDialog.isVisible()) {
 						bridgeDialog.invalidateLocalityList();
 					}
+
 					Layer layer = canvas.getLayer("LokalDB");
 					if (layer instanceof MYSQLTableLayer mysqlLayer) {
 						mysqlLayer.invalidateCache();
 					}
 					this.dispose();
-				} catch (SQLException e) {
-					e.printStackTrace();
-					JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
-				JOptionPane.showMessageDialog(this, "Error deleting locality: " + e.getMessage());
+				JOptionPane.showMessageDialog(this, " Error deleting locality: " + e.getMessage());
 			}
 		}
 	}

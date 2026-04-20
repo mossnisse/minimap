@@ -93,7 +93,7 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 		try {
 			int distVal = Integer.parseInt(getDistance());
 			String dir = getDirection();
-			
+
 			DistanceLayer distLayer = new DistanceLayer("dist", origin, distVal, dir, CoordSystem.SWEREF99TM);
 			distLayer.setColor(Color.RED);
 

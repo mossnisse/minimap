@@ -431,18 +431,13 @@ public class GUI  {
 
 	private void createLocalityAtCoord() {
 		coord = canvas.getCoordinate();
-		openCreateLocality(coord);
+		new CreateLocalityDialog(frame, this, canvas, bridgeDialog, coord).setVisible(true);
 	}
 
 	private void createLocalityDialog(MouseEvent me) {
 		coord = canvas.translatePoint(new Point(me.getX(), me.getY()));
 		canvas.setCoordinate(coord); // Update the visual marker on the map
-		openCreateLocality(coord);
-	}
-
-	private void openCreateLocality(Point p) {
-		CreateLocalityDialog d = new CreateLocalityDialog(frame, this, canvas, bridgeDialog, p);
-		d.setVisible(true);
+		new CreateLocalityDialog(frame, this, canvas, bridgeDialog, coord).setVisible(true);
 	}
 
 	public void searchSpecimens() {

@@ -170,18 +170,22 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 
 		canvas.focus(sweref);
 		canvas.setCoordinate(sweref);
-		TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
-    	if (pr != null) {
-    		provinceF.setText(pr.getName());
-    	} else {
-    		provinceF.setText("outside the layer");
-    	}
-    	TNGPolygonFileLayer.Province so = districts.inPolygon(sweref);
-    	if (so != null) {
-    		districtF.setText(so.getName());
-    	} else {
-    		districtF.setText("outside the layer");
-    	}
+		if (provinces!= null) {
+			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
+			if (pr != null) {
+				provinceF.setText(pr.getName());
+			} else {
+				provinceF.setText("outside the layer");
+			}
+		}
+		if (districts != null) {
+			TNGPolygonFileLayer.Province so = districts.inPolygon(sweref);
+			if (so != null) {
+				districtF.setText(so.getName());
+			} else {
+				districtF.setText("outside the layer");
+			}
+		}
 	}
 
 	@Override
