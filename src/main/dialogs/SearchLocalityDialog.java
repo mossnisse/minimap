@@ -20,10 +20,6 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import javax.swing.*;
 
-/**
- *    A dialog to search localities in the locality db and Lantmäteriets ortnamnsdb
- */
-
 public class SearchLocalityDialog extends JDialog implements ActionListener, ItemListener {
 	@Serial
 	private static final long serialVersionUID = 5830869660497471486L;
@@ -33,141 +29,95 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			"Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
 			"Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
 	private final int[] provnr = {-1, 27, 25,26,28,24,29,22,23,19,20,21,18,17,16,13,12,14,10,9,11,15,6,8,5,3,2,1,4,7};
-	private String province;
+
 	private JButton searchb, closeb, zoomb;
-	private JTextField lokal;
+	private JTextField lokal, country, district, source, precision, category;
+	private JCheckBox isPlace;
 	private JComboBox<String> provinceBox;
-	private Container contentPane;
-	private SpringLayout layout;
 	private JPanel resultPanel;
 	private JScrollPane scrollPane;
-	private TNGPointFileLayer lastResults; // Store reference for zooming
+	private TNGPointFileLayer lastResults;
 
-	public static class NButton extends JButton {
-		@Serial
-		private static final long serialVersionUID = -1082059330878801135L;
-		private final Point c;
-
-		public NButton(String name, Point c) {
-			super(name);
-			this.c = c;
-		}
-
-		public Point getPoint() {
-			return c;
-		}
-	}
-
-	public SearchLocalityDialog(Frame aFrame, main.core.Canvas canvas, String text, String province) {
-		super(aFrame, false);
+	public SearchLocalityDialog(Frame aFrame, Canvas canvas, String text, String province) {
+		super(aFrame, "Search Localities", false);
 		this.canvas = canvas;
-		this.province = province;
-		setTitle("Search localities");
-		initGUI(text);
+		initComponents(text, province);
+		pack();
 		setLocationRelativeTo(aFrame);
 		setVisible(true);
 	}
 
-	public void initGUI(String text) {
-		contentPane = getContentPane();
-		layout = new SpringLayout();
-		contentPane.setLayout(layout);
+	private void initComponents(String text, String province) {
+		Container content = getContentPane();
+		SpringLayout layout = new SpringLayout();
+		content.setLayout(layout);
 
-		// --- Locality Row ---
-		JLabel label2 = new JLabel("Locality");
-		contentPane.add(label2);
-		lokal = new JTextField(text);
-		lokal.setPreferredSize(new Dimension(180, 25));
-		contentPane.add(lokal);
-
-		// --- Province Row ---
-		JLabel label = new JLabel("Province");
-		contentPane.add(label);
+		// Inputs Section
+		lokal = new JTextField(text, 15);
+		country = new JTextField("Sweden",10);
+		district = new JTextField("*", 10);
+		source = new JTextField("*",10);
+		precision = new JTextField("*", 5);
+		category = new JTextField("*", 10);
+		isPlace = new JCheckBox("Is Place Only");
 		provinceBox = new JComboBox<>(prov);
 		provinceBox.setSelectedItem(province);
-		contentPane.add(provinceBox);
 
-		// --- Buttons ---
+		// Helper to add rows quickly
+		JLabel l1 = addField("Name:", lokal, content, layout, 10, content);
+		JLabel l2 = addField("Province:", provinceBox, content, layout, 5, l1);
+		JLabel l3 = addField("District:", district, content, layout, 5, l2);
+		JLabel l4 = addField("Country:", country, content, layout, 5, l3);
+		JLabel l5 = addField("Source:", source, content, layout, 5, l4);
+		JLabel l6 = addField("Precision:", precision, content, layout, 5, l5);
+		JLabel l7 = addField("Category:", category, content, layout, 5, l6);
+
+		content.add(isPlace);
+		layout.putConstraint(SpringLayout.WEST, isPlace, 120, SpringLayout.WEST, content);
+		layout.putConstraint(SpringLayout.NORTH, isPlace, 5, SpringLayout.SOUTH, category);
+
+		// Buttons
 		searchb = new JButton("Search");
-		searchb.addActionListener(this);
-		contentPane.add(searchb);
-
-		zoomb = new JButton("Zoom to Results");
-		zoomb.setEnabled(false); // Disabled until we have results
-		zoomb.addActionListener(this);
-		contentPane.add(zoomb);
-
+		zoomb = new JButton("Zoom");
 		closeb = new JButton("Close");
-		closeb.addActionListener(this);
-		contentPane.add(closeb);
 
-		// --- Results Area ---
+		JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		btnPanel.add(searchb);
+		btnPanel.add(zoomb);
+		btnPanel.add(closeb);
+		content.add(btnPanel);
+		layout.putConstraint(SpringLayout.WEST, btnPanel, 5, SpringLayout.WEST, content);
+		layout.putConstraint(SpringLayout.NORTH, btnPanel, 10, SpringLayout.SOUTH, isPlace);
+
+		// Results
 		resultPanel = new JPanel();
-		resultPanel.setLayout(new javax.swing.BoxLayout(resultPanel, javax.swing.BoxLayout.Y_AXIS));
+		resultPanel.setLayout(new BoxLayout(resultPanel, BoxLayout.Y_AXIS));
 		scrollPane = new JScrollPane(resultPanel);
-		scrollPane.setPreferredSize(new Dimension(350, 250));
-		contentPane.add(scrollPane);
+		scrollPane.setPreferredSize(new Dimension(400, 300));
+		content.add(scrollPane);
 
-		// ==========================================
-		// --- SPRINGLAYOUT CONSTRAINTS ---
-		// ==========================================
+		layout.putConstraint(SpringLayout.NORTH, scrollPane, 10, SpringLayout.SOUTH, btnPanel);
+		layout.putConstraint(SpringLayout.WEST, scrollPane, 10, SpringLayout.WEST, content);
+		layout.putConstraint(SpringLayout.EAST, content, 10, SpringLayout.EAST, scrollPane);
+		layout.putConstraint(SpringLayout.SOUTH, content, 10, SpringLayout.SOUTH, scrollPane);
 
-		// Province Label
-		layout.putConstraint(SpringLayout.NORTH, label, 15, SpringLayout.NORTH, contentPane);
-		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, contentPane);
-
-		// Locality Label
-		layout.putConstraint(SpringLayout.NORTH, label2, 20, SpringLayout.SOUTH, label);
-		layout.putConstraint(SpringLayout.WEST, label2, 10, SpringLayout.WEST, contentPane);
-
-		// Province ComboBox (Aligns to label, stretches to scrollpane's right edge)
-		layout.putConstraint(SpringLayout.NORTH, provinceBox, -3, SpringLayout.NORTH, label);
-		layout.putConstraint(SpringLayout.WEST, provinceBox, 15, SpringLayout.EAST, label);
-		layout.putConstraint(SpringLayout.EAST, provinceBox, 0, SpringLayout.EAST, scrollPane);
-
-		// Locality TextField (Matches Combobox's left and right edges perfectly)
-		layout.putConstraint(SpringLayout.NORTH, lokal, -3, SpringLayout.NORTH, label2);
-		layout.putConstraint(SpringLayout.WEST, lokal, 0, SpringLayout.WEST, provinceBox);
-		layout.putConstraint(SpringLayout.EAST, lokal, 0, SpringLayout.EAST, provinceBox);
-
-		// Buttons (Anchored Left, allowed to take their natural widths)
-		layout.putConstraint(SpringLayout.NORTH, searchb, 20, SpringLayout.SOUTH, lokal);
-		layout.putConstraint(SpringLayout.WEST, searchb, 10, SpringLayout.WEST, contentPane);
-
-		layout.putConstraint(SpringLayout.NORTH, zoomb, 0, SpringLayout.NORTH, searchb);
-		layout.putConstraint(SpringLayout.WEST, zoomb, 10, SpringLayout.EAST, searchb);
-
-		layout.putConstraint(SpringLayout.NORTH, closeb, 0, SpringLayout.NORTH, searchb);
-		layout.putConstraint(SpringLayout.WEST, closeb, 10, SpringLayout.EAST, zoomb);
-
-		// ScrollPane
-		layout.putConstraint(SpringLayout.NORTH, scrollPane, 20, SpringLayout.SOUTH, searchb);
-		layout.putConstraint(SpringLayout.WEST, scrollPane, 10, SpringLayout.WEST, contentPane);
-
-		// Define overall window boundaries based on the ScrollPane
-		layout.putConstraint(SpringLayout.EAST, contentPane, 10, SpringLayout.EAST, scrollPane);
-		layout.putConstraint(SpringLayout.SOUTH, contentPane, 10, SpringLayout.SOUTH, scrollPane);
-
+		searchb.addActionListener(this);
+		zoomb.addActionListener(this);
+		closeb.addActionListener(this);
+		zoomb.setEnabled(false);
 		getRootPane().setDefaultButton(searchb);
-		provinceBox.addItemListener(this);
-		pack();
 	}
 
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		Object source = e.getSource();
-
-		if (source == searchb) {
-			performSearch();
-		} else if (source == zoomb) {
-			if (lastResults != null && lastResults.size() > 0) {
-				canvas.setBounds(lastResults.getBounds().expand(5000));
-				canvas.repaint();
-			}
-		} else if (source == closeb) {
-			setVisible(false);
-			dispose();
-		}
+	private JLabel addField(String labelText, Component field, Container container, SpringLayout layout, int margin, Component topAnchor) {
+		JLabel label = new JLabel(labelText);
+		container.add(label);
+		container.add(field);
+		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, container);
+		if (topAnchor == container) layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.NORTH, container);
+		else layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.SOUTH, topAnchor);
+		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, container);
+		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
+		return label;
 	}
 
 	private void performSearch() {
@@ -175,91 +125,118 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		ArrayList<Point> allPoints = new ArrayList<>();
 		ArrayList<String> allNames = new ArrayList<>();
 
-		String slocal = lokal.getText().trim();
-		// Use a consistent wildcard pattern for both DBs
-		String searchPattern = slocal.contains("*") ? slocal.replace("*", "%") : slocal;
+		StringBuilder sql = new StringBuilder("SELECT ID, lat, `long`, locality, district, province FROM Locality WHERE 1=1 ");
+		ArrayList<Object> params = new ArrayList<>();
 
-		// --- MySQL ---
-		String altonly  = searchPattern;
-		String altfirst = searchPattern + ",%";
-		String altlast  = "%, " + searchPattern;
-		String altmid   = "%, " + searchPattern + ",%";
-		String altClause = "(alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ?)";
+		// Dynamic filters
+		if (!lokal.getText().isEmpty()) {
 
-		String selectedProv = provinceBox.getSelectedItem().toString();
-		String query = "*".equals(selectedProv)
-				? "SELECT lat, `long`, locality, district FROM Locality WHERE (locality LIKE ?) OR " + altClause
-				: "SELECT lat, `long`, locality, district FROM Locality WHERE province = ? AND ((locality LIKE ?) OR " + altClause + ")";
+			String p = lokal.getText().trim().replace("*", "%");
+			// Matches exact, starts with, ends with, or is in the middle of a comma-separated list
+			sql.append(" AND (locality LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ?)");
+			params.add(p); // locality: exact if user don't write *
+			params.add(p);             // alt: is first and last in list
+			params.add(p + ",%");      // alt: first in list
+			params.add("%, " + p);     // alt: last in list
+			params.add("%, " + p + ",%");// alt: middle of list
+		}
+		// 2. Helper for metadata fields (Handles NULL or Empty vs LIKE)
+		addNullableLikeFilter(sql, params, "country", country.getText());
+		addNullableLikeFilter(sql, params, "district", district.getText());
+		addNullableLikeFilter(sql, params, "coordinate_source", source.getText());
+		addNullableLikeFilter(sql, params, "Coordinateprecision", precision.getText());
+		addNullableLikeFilter(sql, params, "category", category.getText());
 
-		try (Connection conn = DBConnection.getConn();
-		     PreparedStatement statement = conn.prepareStatement(query)) {
+		if (!provinceBox.getSelectedItem().equals("*")) {
+			sql.append(" AND province = ?");
+			params.add(provinceBox.getSelectedItem());
+		}
 
-			int idx = 1;
-			if (!(provinceBox.getSelectedItem()).equals("*")) statement.setString(idx++, (String)provinceBox.getSelectedItem());
-			statement.setString(idx++, searchPattern);
-			statement.setString(idx++, altonly);
-			statement.setString(idx++, altfirst);
-			statement.setString(idx++, altlast);
-			statement.setString(idx++, altmid);
+		if (isPlace.isSelected()) {
+			sql.append(" AND isPlace = 1");
+		}
 
-			try (ResultSet result = statement.executeQuery()) {
-				while (result.next()) {
-					Coordinate wgs84 = new Coordinate(result.getDouble("lat"), result.getDouble("long"));
-					Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
-					allPoints.add(sweref);
-					allNames.add(result.getString("locality") + " (" + result.getString("district") + ")");
+		System.out.println("locality search: "+sql.toString());
+		try (Connection conn = DBConnection.getConn()) {
+			// Main Search
+			try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+				for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
+				try (ResultSet rs = stmt.executeQuery()) {
+					while (rs.next()) {
+						int id = rs.getInt("ID");
+						String name = rs.getString("locality");
+						String distr = rs.getString("district");
+						String prov = rs.getString("province");
+
+						Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
+						Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+
+						allPoints.add(sweref);
+						String label = String.format("%s (%s)", name, distr);
+						allNames.add(label);
+					}
 				}
 			}
-		} catch (SQLException ex) {
-			ex.printStackTrace();
-		}
+		} catch (SQLException ex) { ex.printStackTrace(); }
 
-		// --- H2 ---
-		H2TableLayer od = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
-		if (od != null) {
-			TNGPointFileLayer h2Results = od.find(getProvinsNr(), searchPattern);
-			for (TNGPointFileLayer.Locality locus : h2Results.getLocalities()) {
-				allPoints.add(locus.getPoint());
-				allNames.add(locus.getName() + " (Local)");
+		// H2 Search (Simplified to just name/province) only when name is used.
+		// should also search on district
+		if (!lokal.getText().isEmpty()) {
+			H2TableLayer od = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
+			if (od != null && !lokal.getText().isEmpty()) {
+				TNGPointFileLayer h2Res = od.find(getProvinsNr(), lokal.getText().replace("*", "%"));
+				for (TNGPointFileLayer.Locality locus : h2Res.getLocalities()) {
+					allPoints.add(locus.getPoint());
+					allNames.add(locus.getName() + " (Lantmäteriet)");
+				}
 			}
 		}
 
-		// --- Result Handling ---
 		if (!allPoints.isEmpty()) {
 			lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
-			lastResults.setColor(Color.BLUE);
-
+			lastResults.setColor(Color.blue);
 			canvas.delLayer("Search Results");
 			canvas.addLayerTop(lastResults);
-
-			for (TNGPointFileLayer.Locality locus : lastResults.getLocalities()) {
-				addResultButton(locus);
-			}
+			for (TNGPointFileLayer.Locality l : lastResults.getLocalities()) addResultButton(l);
+			resultPanel.add(Box.createVerticalGlue());
 			zoomb.setEnabled(true);
-		} else {
-			resultPanel.add(new JLabel(" No results found."));
-			zoomb.setEnabled(false);
 		}
-
 		resultPanel.revalidate();
 		resultPanel.repaint();
-		scrollPane.getVerticalScrollBar().setValue(0);
-		SwingUtilities.invokeLater(() -> scrollPane.getVerticalScrollBar().setValue(0));
-		canvas.repaint();
+	}
+
+	private void addNullableLikeFilter(StringBuilder sql, ArrayList<Object> params, String columnName, String input) {
+		String trimmed = input.trim();
+		if (!"*".equals(trimmed)) {
+			if (trimmed.isEmpty()) {
+				// Optional: specific character to force search for empty records
+				sql.append(" AND (" + columnName + " IS NULL OR " + columnName + " = '')");
+			} else {
+				String pattern = trimmed.replace("*", "%");
+				sql.append(" AND " + columnName + " LIKE ?");
+				params.add(pattern);
+			}
+		}
 	}
 
 	private void addResultButton(TNGPointFileLayer.Locality locus) {
-		NButton btn = new NButton(locus.getName(), locus.getPoint());
+		JButton btn = new JButton(locus.getName());
+		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
 		btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 		btn.addActionListener(e -> {
-			Point p = locus.getPoint();
-			canvas.setBounds(new BoundingBox(p.x-2500, p.y-2500, p.x+2500, p.y+2500));
+			canvas.focus(locus.getPoint());
+			canvas.repaint();
 		});
 		resultPanel.add(btn);
 	}
 
-	@Override
-	public void itemStateChanged(ItemEvent ev) {}
+	@Override public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == searchb) performSearch();
+		else if (e.getSource() == zoomb && lastResults != null) canvas.setBounds(lastResults.getBounds().expand(2000));
+		else if (e.getSource() == closeb) dispose();
+	}
+
+	@Override public void itemStateChanged(ItemEvent e) {}
 
 	public int getProvinsNr() {
 		String provstr = (String) provinceBox.getSelectedItem();
