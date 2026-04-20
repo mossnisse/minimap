@@ -434,6 +434,8 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					mysqlLayer.invalidateCache();
 				}
 				canvas.repaint();
+				setTitle("View Locality: " + name.getText());
+				setCursor(Cursor.getDefaultCursor());
 
 				JOptionPane.showMessageDialog(this, "Locality moved successfully!");
 			}
@@ -459,6 +461,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			// Minimize dialog or just tell the user to click
 			//this.setState(Frame.ICONIFIED); // Optional: hide dialog so they can see the map
 			this.setTitle("SELECT NEW LOCATION ON MAP...");
+			this.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
 			gui.enterMoveMode(this);
 		}
 	}

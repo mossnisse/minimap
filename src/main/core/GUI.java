@@ -58,16 +58,7 @@ public class GUI  {
 			public void mouseClicked(MouseEvent e) {
 				// Use 'core.GUI.this' to call instance methods from inside the anonymous listener
 				if (moveTarget != null) {
-					// Get the map coordinates from the click
-					Point mapP = canvas.translatePoint(e.getPoint());
-
-					// Send coordinates back to the dialog
-					moveTarget.updateCoordinates(mapP);
-
-					// Reset the mode
-					moveTarget = null;
-					frame.setCursor(Cursor.getDefaultCursor());
-					return;
+					leaveMoveMode(e);
 				}
 				if (Keyboard.isKeyDown(KeyEvent.VK_A)) {
 					showLocality(e);
@@ -426,7 +417,26 @@ public class GUI  {
 
 	public void enterMoveMode(EditLocalityDialog dialog) {
 		this.moveTarget = dialog;
-		frame.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+		Cursor crosshair = Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
+		frame.setCursor(crosshair);
+		canvas.setCursor(crosshair);
+		if (dialog != null) {
+			dialog.setCursor(crosshair);
+		}
+	}
+
+	public void leaveMoveMode(MouseEvent me) {
+		Point mapP = canvas.translatePoint(me.getPoint());
+		moveTarget.updateCoordinates(mapP);
+
+		// Reset everything back to default
+		Cursor defaultCursor = Cursor.getDefaultCursor();
+		frame.setCursor(defaultCursor);
+		canvas.setCursor(defaultCursor);
+		moveTarget.setCursor(defaultCursor);
+
+		moveTarget = null;
+		return;
 	}
 
 	private void createLocalityAtCoord() {
