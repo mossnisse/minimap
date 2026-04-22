@@ -21,7 +21,7 @@ public class TNGPointFileLayer implements Layer {
 	private CoordSystem cs;
 	private int nameLength;
 	
-	public class Locality extends Point {
+	public static class Locality extends Coordinate {
 		public String name;
 		
 		public Locality(int x, int y, String name) {
@@ -29,17 +29,18 @@ public class TNGPointFileLayer implements Layer {
 			this.name = name;
 		}
 		
-		public Locality(Point p, String name) {
-			super(p);
+		public Locality(Coordinate c, String name) {
+			super(c);
 			this.name = name;
 		}
 		
 		public double dist(int x, int y) {
-			return  Math.round(distance(x, y)/100)/10.0; //Math.round(
+			Coordinate c = new Coordinate(y, x);
+			return  Math.round(distance(c)/100)/10.0; //Math.round(
 		}
 		
-		public String riktning(double x, double y) {
-			double v = Math.atan2(getY()-y, getX()-x);
+		public String direction(double x, double y) {
+			double v = Math.atan2(getNorth()-y, getEast()-x);
 			String rikt = "";
 			if 	    (v>7*Math.PI/8) rikt = "V";
 			else if (v>5*Math.PI/8) rikt = "NV";
@@ -57,13 +58,8 @@ public class TNGPointFileLayer implements Layer {
 		}
 		
 		public String toString() {
-			String xs = Integer.toString(this.x);
-			String ys = Integer.toString(this.y);
-			return "("+xs+", "+ys+", "+name+")";
-		}
-		
-		public Point getPoint() {
-			return new Point(this.x, this.y);
+			String cs = super.toString();
+			return "(" + cs + ", " + name + ")";
 		}
 	}
 	
@@ -74,12 +70,12 @@ public class TNGPointFileLayer implements Layer {
 		readFile();
 	}
 	
-	public TNGPointFileLayer(ArrayList<Point> loca, ArrayList<String> names, String name) {
+	public TNGPointFileLayer(ArrayList<Coordinate> loca, ArrayList<String> names, String name) {
 		this.name = name;
 		localities = new Locality[loca.size()];
 		int i=0;
-		for(Point loci:loca) {
-			localities[i]=new Locality(loci,names.get(i));
+		for(Coordinate loci:loca) {
+			localities[i]=new Locality(loci, names.get(i));
 			i++;
 		}
 	}
@@ -137,8 +133,8 @@ public class TNGPointFileLayer implements Layer {
 
 		for (Locality koord : localities) {
 			// Standard Mapping: X -> Horizontal, Y -> Vertical
-			int x = (int) ((koord.getX() * xScale) + xShift);
-			int y = (int) ((koord.getY() * yScale) + yShift);
+			int x = (int) ((koord.getEast() * xScale) + xShift);
+			int y = (int) ((koord.getNorth() * yScale) + yShift);
 
 			// Draw a crosshair target
 			g2d.drawOval(x - 6, y - 6, 12, 12);
@@ -178,10 +174,10 @@ public class TNGPointFileLayer implements Layer {
 		int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
 
 		for (Locality koord : localities) {
-			if (koord.x < minX) minX = koord.x;
-			if (koord.x > maxX) maxX = koord.x;
-			if (koord.y < minY) minY = koord.y;
-			if (koord.y > maxY) maxY = koord.y;
+			if (koord.getEast() < minX) minX = (int) Math.round( koord.getEast());
+			if (koord.getEast() > maxX) maxX = (int) Math.round(koord.getEast());
+			if (koord.getNorth() < minY) minY = (int) Math.round(koord.getNorth());
+			if (koord.getNorth() > maxY) maxY = (int) Math.round(koord.getNorth());
 		}
 		// Order: minX, minY, maxX, maxY
 		return new BoundingBox(minX, minY, maxX, maxY);

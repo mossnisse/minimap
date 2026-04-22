@@ -43,7 +43,8 @@ public class TNGPolygonFileLayer implements Layer {
 			this.name = name;
 		}
 		
-		public boolean isInside(Point p) {
+		public boolean isInside(Coordinate c) {
+			Point p = c.getPoint();
 			if (box.isInside(p)) {
 				//System.out.println("inside Box: "+name);
 				return super.isInside(p);
@@ -67,24 +68,17 @@ public class TNGPolygonFileLayer implements Layer {
 		int shapeType = in.readInt();
 		if (shapeType != 5) throw new IOException("wrong shape type");
 		int nrRecords = in.readInt();
-		//System.out.println("fileName: "+fileName);
-		//System.out.println("Read nrRecords: "+nrRecords);
 		nameLength = in.readInt();
-		//System.out.println("read nameLenght: "+nameLength);
 		provinces = new Province[nrRecords];
 		for (int i = 0; i < nrRecords; i++) {
-			//System.out.println("ReccordNr: "+i);
 			String name = in.readStringUTF8(nameLength).trim();  // length +2 stupid java adds a couple of bytes
-			//System.out.println("nR: "+i+" Reads name: "+name);
 			int x1 = in.readInt();
 			int y1 = in.readInt();
 			int x2 = in.readInt();
 			int y2 = in.readInt();
 			BoundingBox box = new BoundingBox(x1, y1, x2, y2);
-			//System.out.println("BoundingBox: "+box);
 			int numParts = in.readInt();
 			int numPoints = in.readInt();
-			//System.out.println("numParts: "+numParts+" numPoints: "+numPoints);
 			int[] parts = new int[numParts];
 			for (int j = 0; j < numParts; j++) {
 				parts[j] = in.readInt();
@@ -97,7 +91,6 @@ public class TNGPolygonFileLayer implements Layer {
 			}
 			provinces[i] = new Province(name, box, parts, points);
 		}
-		//System.out.println("Read nrRecords: "+nrRecords);
 		in.close();
 	}
 	
@@ -126,9 +119,9 @@ public class TNGPolygonFileLayer implements Layer {
 		this.name = name;
 	}
 	
-	public Province inPolygon(Point p) {
+	public Province inPolygon(Coordinate c) {
 		for (Province pr: provinces) {
-			if(pr.isInside(p)) return pr;
+			if(pr.isInside(c)) return pr;
 		}
 		return null;
 	}

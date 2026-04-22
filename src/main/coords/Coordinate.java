@@ -86,7 +86,7 @@ public class Coordinate {
 
         String dir = (direction == null) ? "" : direction.trim().toUpperCase();
 
-        boolean isNegative = false;
+        boolean isNegative;
 
         if (dir.equals("S") || dir.equals("W")) {
             isNegative = true;
@@ -140,6 +140,11 @@ public class Coordinate {
 
         // The \u00B0 is the Unicode for the degree symbol °
         return String.format(Locale.US, "%d\u00B0 %d' %.2f\" %s", degrees, minutes, seconds, direction);
+    }
+
+    // needs to be an TM coordinate system or similar for it to be reasonably accurate
+    public double distance(Coordinate c) {
+        return Math.hypot(this.north - c.north, this.east - c.east);
     }
 
     @Override

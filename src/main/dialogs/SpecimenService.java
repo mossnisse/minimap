@@ -1,5 +1,6 @@
 package main.dialogs;
 
+import main.coords.Coordinate;
 import main.core.DBConnection;
 import main.core.Settings;
 
@@ -78,7 +79,7 @@ public class SpecimenService {
         }
 
 
-        mysqlSql.append(" ORDER BY Year ASC, Month ASC, Day ASC");
+        mysqlSql.append(" ORDER BY Year ASC, Month ASC, Day ASC, original_text ASC");
 
         String h2Insert = "INSERT INTO tempspecimens (AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
                 + "InstitutionCode, specimen_locality, district, province, specimens_ID, "
@@ -182,14 +183,15 @@ public class SpecimenService {
     }
 
     public Specimen getSpecimenAt(int index) {
-        String sql = "SELECT * FROM tempspecimens ORDER BY cache_id ASC LIMIT 1 OFFSET ?;";
+        // index 0 maps to cache_id 1
+        String sql = "SELECT * FROM tempspecimens WHERE cache_id = ?;";
         try (Connection conn = DBConnection.getH2Conn();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, index);
+            ps.setInt(1, index + 1);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return mapResultSetToSpecimen(rs); // <--- Clean and simple
+                    return mapResultSetToSpecimen(rs);
                 }
             }
         } catch (SQLException e) {
@@ -410,7 +412,7 @@ public class SpecimenService {
         }
     }
 
-    public Point getLocalityPoint(int localityID) {
+    public Coordinate getLocalityPoint(int localityID) {
         try {
             String query = "SELECT SWTMN, SWTME FROM locality WHERE ID = ?";
             Connection conn = DBConnection.getConn();
@@ -420,7 +422,7 @@ public class SpecimenService {
                 if (rs.next()) {
                     int swN = rs.getInt("SWTMN");
                     int swE = rs.getInt("SWTME");
-                    return new Point(swE, swN);
+                    return new Coordinate(swN, swE);
                 }
             }
         } catch (Exception e) {

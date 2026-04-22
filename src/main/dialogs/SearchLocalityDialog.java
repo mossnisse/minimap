@@ -2,7 +2,6 @@ package main.dialogs;
 
 import main.core.Canvas;
 import main.core.DBConnection;
-import main.geometry.BoundingBox;
 import main.coords.*;
 import main.layers.H2TableLayer;
 import main.layers.TNGPointFileLayer;
@@ -69,7 +68,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		JLabel l3 = addField("District:", district, content, layout, 5, l2);
 		JLabel l4 = addField("Country:", country, content, layout, 5, l3);
 		JLabel l5 = addField("Source:", source, content, layout, 5, l4);
-		JLabel l6 = addField("Precision:", precision, content, layout, 5, l5);
+		JLabel l6 = addField("Precision > :", precision, content, layout, 5, l5);
 		JLabel l7 = addField("Category:", category, content, layout, 5, l6);
 
 		content.add(isPlace);
@@ -122,10 +121,10 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 	private void performSearch() {
 		resultPanel.removeAll();
-		ArrayList<Point> allPoints = new ArrayList<>();
+		ArrayList<Coordinate> allPoints = new ArrayList<>();
 		ArrayList<String> allNames = new ArrayList<>();
 
-		StringBuilder sql = new StringBuilder("SELECT ID, lat, `long`, locality, district, province FROM Locality WHERE 1=1 ");
+		StringBuilder sql = new StringBuilder("SELECT ID, lat, `long`, locality, district FROM Locality WHERE 1=1 ");
 		ArrayList<Object> params = new ArrayList<>();
 
 		// Dynamic filters
@@ -144,7 +143,24 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		addNullableLikeFilter(sql, params, "country", country.getText());
 		addNullableLikeFilter(sql, params, "district", district.getText());
 		addNullableLikeFilter(sql, params, "coordinate_source", source.getText());
-		addNullableLikeFilter(sql, params, "Coordinateprecision", precision.getText());
+		// Specialized Precision Logic
+		String precInput = precision.getText().trim();
+		if (!"*".equals(precInput)) {
+			if (precInput.isEmpty()) {
+				// Search for "empty/invalid" records
+				sql.append(" AND (Coordinateprecision IS NULL OR Coordinateprecision = 0)");
+			} else {
+				try {
+					// Remove any * if user accidentally typed one, treat as "greater than or equal"
+					int val = Integer.parseInt(precInput.replace("*", ""));
+					sql.append(" AND (Coordinateprecision >= ? OR Coordinateprecision IS NULL OR Coordinateprecision = 0)");
+					params.add(val);
+				} catch (NumberFormatException e) {
+					// If user types gibberish, we can either ignore it or fall back to LIKE
+					// Let's ignore it to prevent SQL errors
+				}
+			}
+		}
 		addNullableLikeFilter(sql, params, "category", category.getText());
 
 		if (!provinceBox.getSelectedItem().equals("*")) {
@@ -156,20 +172,22 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			sql.append(" AND isPlace = 1");
 		}
 
-		System.out.println("locality search: "+sql.toString());
-		try (Connection conn = DBConnection.getConn()) {
+		sql.append(" LIMIT 50");
+
+		//System.out.println("locality search: "+sql.toString());
+		try {
+			Connection conn = DBConnection.getConn();
 			// Main Search
 			try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
 				for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
 				try (ResultSet rs = stmt.executeQuery()) {
 					while (rs.next()) {
-						int id = rs.getInt("ID");
+						//int id = rs.getInt("ID");
 						String name = rs.getString("locality");
 						String distr = rs.getString("district");
-						String prov = rs.getString("province");
 
 						Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
-						Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+						Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
 						allPoints.add(sweref);
 						String label = String.format("%s (%s)", name, distr);
@@ -181,12 +199,13 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 		// H2 Search (Simplified to just name/province) only when name is used.
 		// should also search on district
-		if (!lokal.getText().isEmpty()) {
+		String sCountry = country.getText().trim();
+		if (!lokal.getText().isEmpty() && ("Sweden".equals(sCountry) || "*".equals(sCountry))) {
 			H2TableLayer od = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
 			if (od != null && !lokal.getText().isEmpty()) {
-				TNGPointFileLayer h2Res = od.find(getProvinsNr(), lokal.getText().replace("*", "%"));
+				TNGPointFileLayer h2Res = od.find(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
 				for (TNGPointFileLayer.Locality locus : h2Res.getLocalities()) {
-					allPoints.add(locus.getPoint());
+					allPoints.add(new Coordinate(locus.getPoint()));
 					allNames.add(locus.getName() + " (Lantmäteriet)");
 				}
 			}
@@ -224,7 +243,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
 		btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
 		btn.addActionListener(e -> {
-			canvas.focus(locus.getPoint());
+			canvas.focus(locus);
 			canvas.repaint();
 		});
 		resultPanel.add(btn);

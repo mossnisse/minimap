@@ -158,13 +158,13 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 			}
 		}
 
-		Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
-		Point rt90 = CoordSystem.RT90.toProjected(wgs84);
+		Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+		Coordinate rt90 = CoordSystem.RT90.toProjected(wgs84);
 		String rubin = RUBIN.fromRT90(rt90);
 
 		// Update UI
-		swerefF.setText(sweref.y + ", " + sweref.x);
-		rt90F.setText(rt90.y + ", " + rt90.x);
+		swerefF.setText(sweref.toPString());
+		rt90F.setText(rt90.toPString());
 		wgs84F.setText(wgs84.toString());
 		rubinF.setText(rubin);
 

@@ -6,7 +6,7 @@ import java.io.IOException;
 import java.util.Vector;
 
 public class shape {
-	private String filename;
+	private final String filename;
 	int fileLength, version, shapeType;
 	double minX, minY, maxX, maxY, minZ, maxZ, minM, maxM;
 	Vector<ShapeESRI> records = new Vector<ShapeESRI>(); 
@@ -14,7 +14,7 @@ public class shape {
 	static private void printHex(String name, int i) {
 		System.out.print(name+": ");
 		System.out.printf("%08X ",i);
-		System.out.println("");
+		System.out.println();
 	}
 	
 	/*
@@ -27,7 +27,7 @@ public class shape {
 	static private void printHex(String name, double i) {
 		System.out.print(name+": ");
 		System.out.print(i);
-		System.out.println("");
+		System.out.println();
 	}
 	
 	public shape(String filename) {

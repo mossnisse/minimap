@@ -159,7 +159,9 @@ public class SpecimenBridgeDialog extends JDialog {
         actionMap.put("copyLast", new AbstractAction() {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
-                applyLastSaved();
+                if (lastSavedBridge != null) {
+                    applyBridgeToUI(lastSavedBridge);
+                }
             }
         });
 
@@ -617,35 +619,8 @@ public class SpecimenBridgeDialog extends JDialog {
         String dmsValue = (s.getLatDeg() != null && !s.getLatDeg().isEmpty()) ? "exists" : "";
         toggleComponentVisibility(btnLatLong, dmsValue);
 
-        /*
-        // Force the fields to recalculate their width based on text
-        rubinField.invalidate();
-        rt90Field.invalidate();
-        swerefField.invalidate();
-        latLongField.invalidate();
-
-        // Ensure the panel redraws to account for hidden components
-        btnRubin.getParent().revalidate();
-        btnRubin.getParent().repaint();
-
-        coordBar.revalidate();
-        coordBar.repaint();
-
-         */
-
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
     }
-
-    /*
-    private void toggleComponentVisibility(JButton btn, Object value) {
-        boolean hasData = value != null && !value.toString().trim().isEmpty() && !value.toString().equals("0");
-        // This hides/shows the sub-panel (p) created in createFocusRow
-        btn.getParent().setVisible(hasData);
-
-        // Refresh the layout so buttons slide left/right without changing the bar's height
-        coordBar.revalidate();
-        coordBar.repaint();
-    }*/
 
     private void toggleComponentVisibility(JButton btn, Object value) {
         boolean hasData = value != null && !value.toString().trim().isEmpty() && !value.toString().equals("0");
@@ -835,22 +810,16 @@ public class SpecimenBridgeDialog extends JDialog {
         }
     }
 
-    private void applyLastSaved() {
-        if (lastSavedBridge != null) {
-            applyBridgeToUI(lastSavedBridge);
-        }
-    }
-
     public void focusLocality() {
         LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
         if (selected == null || selected.getId() == -1) return;
         // core.GUI.setCursorWait();
-        Point p = service.getLocalityPoint(selected.getId());
-        if (p == null) return;
+        Coordinate c = service.getLocalityPoint(selected.getId());
+        if (c == null) return;
 
         // Center the map canvas
-        canvas.focus(p);
-        canvas.setCoordinate(p);
+        canvas.focus(c);
+        canvas.setCoordinate(c);
 
         // Handle Distance/Direction Visualization
         String distText = distanceField.getText().trim();
@@ -865,7 +834,7 @@ public class SpecimenBridgeDialog extends JDialog {
                 if (distanceI > 0) {
                     // Add the visual vector layer
                     canvas.addLayerTop(new DistanceLayer(
-                            "distance", p, distanceI, directionS, CoordSystem.SWEREF99TM
+                            "distance", c, distanceI, directionS, CoordSystem.SWEREF99TM
                     ));
                 }
             } catch (NumberFormatException e) {
@@ -875,7 +844,6 @@ public class SpecimenBridgeDialog extends JDialog {
 
         // Repaint to show changes
         canvas.repaint();
-
     }
 
     public void focusRubin() {
@@ -884,8 +852,7 @@ public class SpecimenBridgeDialog extends JDialog {
             RubinLayer r = new RubinLayer(rubin, "Rubin", Color.GREEN);
             canvas.delLayer("Rubin");
             canvas.addLayerTop(r);
-            Point p = r.getMiddle();
-            canvas.focus(p);
+            canvas.focus(r.getMiddle());
         }
     }
 
@@ -903,7 +870,7 @@ public class SpecimenBridgeDialog extends JDialog {
                 while (o < 1000000) o *= 10;
 
                 Coordinate wgs84 = CoordSystem.RT90.toWGS84(n, o);
-                Point swtm = CoordSystem.SWEREF99TM.toProjected(wgs84);
+                Coordinate swtm = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
                 canvas.focus(swtm);
                 canvas.setCoordinate(swtm);
@@ -918,9 +885,9 @@ public class SpecimenBridgeDialog extends JDialog {
         int e = targetSpecimen.getSwerefE();
         // Basic validation for SWEREF99 TM range (approximate Sweden bounds)
         if (n > 6000000 && e > 200000) {
-            Point p = new Point(e, n);
-            canvas.focus(p);
-            canvas.setCoordinate(p);
+            Coordinate c = new Coordinate(n, e);
+            canvas.focus(c);
+            canvas.setCoordinate(c);
         }
     }
 
@@ -939,7 +906,7 @@ public class SpecimenBridgeDialog extends JDialog {
                     targetSpecimen.getLongDeg(), targetSpecimen.getLongMin(), targetSpecimen.getLongSec(), targetSpecimen.getLongDir()
             );
 
-            Point sweref = CoordSystem.SWEREF99TM.toProjected(c);
+            Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(c);
 
             canvas.focus(sweref);
             canvas.setCoordinate(sweref);
@@ -1020,9 +987,6 @@ public class SpecimenBridgeDialog extends JDialog {
 
         // Open and Position the Dialog
         SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, canvas, selectedText, province);
-
-        // Pass the province if your dialog supports it
-        //d.setProvince(province);
 
         d.pack();
         d.setLocationRelativeTo(this);

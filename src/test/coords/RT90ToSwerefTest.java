@@ -36,11 +36,11 @@ class RT90ToSwerefTest {
 
         // Act: RT90 -> WGS84 -> Sweref99TM
         Coordinate wgs84 = CoordSystem.RT90.toWGS84(rt90Coord);
-        Point result = CoordSystem.SWEREF99TM.toProjected(wgs84);
+        Coordinate result = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
         // Assert
-        assertEquals(swerefN, result.y, TOLERANCE, "Forward mismatch at Point " + name);
-        assertEquals(swerefE, result.x, TOLERANCE, "Forward mismatch at Point " + name);
+        assertEquals(swerefN, result.getNorth(), TOLERANCE, "Forward mismatch at Point " + name);
+        assertEquals(swerefE, result.getEast(), TOLERANCE, "Forward mismatch at Point " + name);
     }
 
     @ParameterizedTest(name = "Point {0}: SWEREF99TM -> RT90")
@@ -51,11 +51,11 @@ class RT90ToSwerefTest {
 
         // Act: Sweref99TM -> WGS84 -> RT90
         Coordinate wgs84 = CoordSystem.SWEREF99TM.toWGS84(swerefCoord);
-        Point result = CoordSystem.RT90.toProjected(wgs84);
+        Coordinate result = CoordSystem.RT90.toProjected(wgs84);
 
         // Assert
-        assertEquals(rt90N, result.y, TOLERANCE, "Backward mismatch at Point " + name);
-        assertEquals(rt90E, result.x, TOLERANCE, "Backward mismatch at Point " + name);
+        assertEquals(rt90N, result.getNorth(), TOLERANCE, "Backward mismatch at Point " + name);
+        assertEquals(rt90E, result.getEast(), TOLERANCE, "Backward mismatch at Point " + name);
     }
 
     @ParameterizedTest(name = "Point {0}: Round-Trip Consistency (RT90 -> SWEREF -> RT90)")
@@ -66,14 +66,14 @@ class RT90ToSwerefTest {
 
         // Act: Convert out and back
         Coordinate wgs84 = CoordSystem.RT90.toWGS84(start);
-        Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+        Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
-        Coordinate swerefBackToWgs = CoordSystem.SWEREF99TM.toWGS84(new Coordinate(sweref.y, sweref.x));
-        Point end = CoordSystem.RT90.toProjected(swerefBackToWgs);
+        Coordinate swerefBackToWgs = CoordSystem.SWEREF99TM.toWGS84(sweref);
+        Coordinate end = CoordSystem.RT90.toProjected(swerefBackToWgs);
 
         // Assert: For round-trips, tolerance should be even tighter (e.g., 0.01m)
         // because we are testing mathematical stability, not just datum shifts.
-        assertEquals(rt90N, end.y, TOLERANCE, "Round-trip stability fail (North) at Point " + name);
-        assertEquals(rt90E, end.x, TOLERANCE, "Round-trip stability fail (East) at Point " + name);
+        assertEquals(rt90N, end.getNorth(), TOLERANCE, "Round-trip stability fail (North) at Point " + name);
+        assertEquals(rt90E, end.getEast(), TOLERANCE, "Round-trip stability fail (East) at Point " + name);
     }
 }

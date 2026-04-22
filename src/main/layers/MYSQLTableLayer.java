@@ -198,31 +198,31 @@ public class MYSQLTableLayer implements Layer {
 	public void setHidden(boolean hidden) { this.hidden = hidden; }
 
 	// point should be in world coordinate
-	public void selectNearest(Point p) {
+	public void selectNearest(Coordinate c) {
 		// We search within a "tolerance" (e.g., 10 pixels converted to world units)
 		int tolerance = 1000 ;
-		this.selectedLocalityID = findNearest(p, tolerance);
+		this.selectedLocalityID = findNearest(c, tolerance);
 
 		// The canvas should repaint after calling this
 	}
 
-	public int findNearest(Point p, int limit) {
+	public int findNearest(Coordinate c, int limit) {
 		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?";
 		try {
 			Connection conn = DBConnection.getConn();
 			try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
 
-				statement.setInt(1, p.y - limit);
-				statement.setInt(2, p.y + limit);
-				statement.setInt(3, p.x - limit);
-				statement.setInt(4, p.x + limit);
+				statement.setInt(1, (int) Math.round(c.getNorth() - limit));
+				statement.setInt(2, (int) Math.round(c.getNorth() + limit));
+				statement.setInt(3, (int) Math.round(c.getEast() - limit));
+				statement.setInt(4, (int) Math.round(c.getEast() + limit));
 
 				try (ResultSet result = statement.executeQuery()) {
 					double ndist = Double.MAX_VALUE;
 					int nID = -1;
 					while (result.next()) {
-						Point pc = new Point(result.getInt(2), result.getInt(1));
-						double dist = p.distance(pc);
+						Coordinate pc = new Coordinate(result.getInt(1), result.getInt(2));
+						double dist = c.distance(pc);
 						if (dist < ndist) {
 							ndist = dist;
 							nID = result.getInt(3);

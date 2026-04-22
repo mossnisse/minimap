@@ -182,7 +182,7 @@ public class ShapePointFileLayer implements Layer {
 	public TNGPointFileLayer find(String kname, String value) {
 		value = value.trim();
 		//Pattern pattern = Pattern.compile(value+"*");
-		ArrayList<Point> ans = new ArrayList<Point>();
+		ArrayList<Coordinate> ans = new ArrayList<Coordinate>();
 		ArrayList<String> names = new ArrayList<String>();
 		Iterator<PointESRI> it = points.iterator();
 		for (dbfRecord record : data) {
@@ -193,7 +193,7 @@ public class ShapePointFileLayer implements Layer {
 			if (record.getField(0).equals(value)) {
 			//if(matcher.find()) {
 				//System.out.println("träff");
-				ans.add(point.toPoint());
+				ans.add(new Coordinate(point.toPoint()));
 				names.add(record.getField(0)+", "+record.getField(3)+", " +record.getField(1));
 			}
 		}

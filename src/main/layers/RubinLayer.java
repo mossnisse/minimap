@@ -17,7 +17,7 @@ public class RubinLayer implements Layer {
 	private CoordSystem cs;
 
 	// Store corners in projected (Sweref) coordinates
-	private List<Point> swerefCorners = new ArrayList<>();
+	private List<Coordinate> swerefCorners = new ArrayList<>();
 
 	public RubinLayer(String rubin, String name, Color c) {
 		this.name = name;
@@ -35,7 +35,7 @@ public class RubinLayer implements Layer {
 			for (int[] corner : rt90Corners) {
 				// Set current corner in RT90
 				Coordinate wgs84 = CoordSystem.RT90.toWGS84(corner[0], corner[1]);
-				Point sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+				Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
 				// Store the Sweref coordinates
 				swerefCorners.add(sweref);
@@ -56,9 +56,9 @@ public class RubinLayer implements Layer {
 		int[] yPoints = new int[4];
 
 		for (int i = 0; i < 4; i++) {
-			Point pt = swerefCorners.get(i);
-			xPoints[i] = (int) ((pt.x * xScale) + xShift);
-			yPoints[i] = (int) ((pt.y * yScale) + yShift);
+			Coordinate pt = swerefCorners.get(i);
+			xPoints[i] = (int) ((pt.getEast() * xScale) + xShift);
+			yPoints[i] = (int) ((pt.getNorth() * yScale) + yShift);
 		}
 
 		// This handles cases where the grid might be slightly rotated/skewed after conversion
@@ -67,7 +67,7 @@ public class RubinLayer implements Layer {
 		g2d.setStroke(originalStroke);
 	}
 
-	public Point getMiddle() {
+	public Coordinate getMiddle() {
 		return RUBIN.toSweref99TM(rubin);
 	}
 
@@ -87,10 +87,10 @@ public class RubinLayer implements Layer {
 	}
 
 	@Override
-	public void setMinZoomL(int zoomLevel) {}
+	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
 
 	@Override
-	public void setMaxZoomL(int zoomLevel) {}
+	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
 
 	@Override
 	public boolean isInZoomLevel(int zoomLevel) {

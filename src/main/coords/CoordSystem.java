@@ -32,13 +32,18 @@ public enum CoordSystem {
         this.eMax = eMax;
     }
 
+    public Coordinate convertTo(Coordinate c, CoordSystem cs) {
+        if (cs.equals(this) ) { return c; }
+        Coordinate wgs84 = toWGS84(c);
+        return cs.toProjected(wgs84);
+    }
+
     public Coordinate toProjected(double lat, double lon) {
         return strategy.project(lat, lon);
     }
 
-    public Point toProjected(Coordinate c) {
-        Coordinate cpr = strategy.project(c.getNorth(), c.getEast());
-        return new Point((int) Math.round(cpr.getEast()), (int) Math.round(cpr.getNorth()));
+    public Coordinate toProjected(Coordinate c) {
+        return strategy.project(c.getNorth(), c.getEast());
     }
 
     public Coordinate toWGS84(double n, double e) {

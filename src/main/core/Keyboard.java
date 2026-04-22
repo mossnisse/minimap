@@ -9,8 +9,8 @@ public class Keyboard {
 	private static final HashMap<Key, String> accelerators = new HashMap<Key, String>();
 
 	public static class Key {
-		private int keyCode;
-		private int modifiers;
+		private final int keyCode;
+		private final int modifiers;
 
 		Key(int keyCode, int modifiers) {
 			this.keyCode = keyCode;

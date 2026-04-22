@@ -21,7 +21,7 @@ public class GPXFileLayer implements Layer {
 	private int maxZoom = 0; // 0 indicates unset
 	private int minZoom = 0;
 	
-	public class GPXKoordinat {
+	public static class GPXKoordinat {
 		double latitude, longitude, elevation;
 		String dateTime, name;
 	}
@@ -55,7 +55,7 @@ public class GPXFileLayer implements Layer {
 		}
 	}
 
-	public GPXKoordinat[] getKoordinates() {
+	public GPXKoordinat[] getCoordinates() {
 		return koordinates;
 	}
 

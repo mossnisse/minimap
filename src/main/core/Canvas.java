@@ -18,7 +18,7 @@ public class Canvas extends JPanel {
 	private static final long serialVersionUID = 1L;
 	private final CoordSystem cs;
 	BoundingBox bounds;
-	Point coord;
+	Coordinate coord;
 	private final ArrayList<Layer> layers;
 	
 	public Canvas() {
@@ -77,14 +77,14 @@ public class Canvas extends JPanel {
 	}
 
 	// todo use the MYSQLTableLayer concurently with the UI thread. check for null?
-	public void setCoordinate(Point p) {
-		coord = p;
+	public void setCoordinate(Coordinate c) {
+		coord = c;
 		//MYSQLTableLayer ort = (MYSQLTableLayer) getLayer("LokalDB");
 		//ort.selectNearest(p);
 		repaint();
 	}
 	
-	public Point getCoordinate() {
+	public Coordinate getCoordinate() {
 		return coord;
 	}
 	
@@ -171,15 +171,16 @@ public class Canvas extends JPanel {
 		repaint();
 	}
 	
-	public void focus(Point coord) {
-		bounds.focus(coord);
+	public void focus(Coordinate coord) {
+		Point p = coord.getPoint();
+		bounds.focus(p);
 		repaint();
 	}
 
 	// translates p from pixels to world coordinates
-	public Point translatePoint(Point p) {
+	public Coordinate translatePoint(Point p) {
 		Dimension size = getSize();
-		if (size.width <= 0 || size.height <= 0 || bounds == null) return p;
+		if (size.width <= 0 || size.height <= 0 || bounds == null) return null;
 
 		double rawXScale = size.width / (double) bounds.getWidth();
 		double rawYScale = size.height / (double) bounds.getHeight();
@@ -193,7 +194,7 @@ public class Canvas extends JPanel {
 		int x = (int) ((p.getX() - xShift) / scale);
 		int y = (int) ((p.getY() - yShift) / -scale);
 
-		return new Point(x, y);
+		return new Coordinate(y, x);
 	}
 
 	@Override
@@ -252,8 +253,8 @@ public class Canvas extends JPanel {
 		//Draw the Marker
 		if (coord != null) {
 			g2d.setColor(Color.RED);
-			int x = (int) (coord.getX() * scale + xShift);
-			int y = (int) (coord.getY() * -scale + yShift);
+			int x = (int) (coord.getEast() * scale + xShift);
+			int y = (int) (coord.getNorth() * -scale + yShift);
 			g2d.drawOval(x - 10, y - 10, 20, 20);
 			g2d.drawLine(x - 10, y - 10, x + 10, y + 10);
 			g2d.drawLine(x - 10, y + 10, x + 10, y - 10);

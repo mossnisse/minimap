@@ -121,43 +121,62 @@ public class H2TableLayer implements Layer {
 		this.hidden = hidden;
 	}
 
-	public TNGPointFileLayer find(int provinsNr, String value) {
-		value = value.trim();
-		if (value.contains("*")) {
-			value = value.replace("*", "%");
-		}
+	public TNGPointFileLayer find(int provinsNr, String value, String district) {
+		value = value.trim().replace("*", "%");
+		district = district.trim().replace("*", "%");
+
 		try {
 			Connection conn = DBConnection.getH2Conn();
-			ArrayList<Point> ans = new ArrayList<Point>();
-			ArrayList<String> names = new ArrayList<String>();
-			String sql = (provinsNr == -1)
-					? "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM " + tableName + " WHERE Ortnamn ILIKE ? ORDER BY SOCKEN"
-					: "SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM " + tableName + " WHERE Ortnamn ILIKE ? AND FPNUMMER = ? ORDER BY SOCKEN";
-			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-				pstmt.setString(1, value);
-				if (provinsNr != -1) pstmt.setInt(2, provinsNr);
+			ArrayList<Coordinate> ans = new ArrayList<>();
+			ArrayList<String> names = new ArrayList<>();
+
+			// 1. Build the Dynamic SQL
+			StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM " + tableName + " WHERE Ortnamn ILIKE ?");
+
+			if (provinsNr != -1) {
+				sql.append(" AND FPNUMMER = ?");
+			}
+
+			// Only add district filter if it's not a global wildcard
+			boolean useDistrict = !district.equals("%") && !district.isEmpty();
+			if (useDistrict) {
+				sql.append(" AND SOCKEN ILIKE ?");
+			}
+
+			sql.append(" ORDER BY SOCKEN LIMIT 100");
+
+			try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+				int idx = 1;
+				pstmt.setString(idx++, value);
+
+				if (provinsNr != -1) {
+					pstmt.setInt(idx++, provinsNr);
+				}
+
+				if (useDistrict) {
+					pstmt.setString(idx++, district);
+				}
 
 				try (ResultSet result = pstmt.executeQuery()) {
-					while (result.next()) { // process results one row at a time
-						//System.out.println("NORTH: " + result.getString(1) + ", EAST: " + result.getString(2) + ", DETALJTYP: " + result.getString(3) + ", SOCKEN: " + result.getString(4));
+					while (result.next()) {
 						int north = result.getInt(1);
 						int east = result.getInt(2);
-
-						ans.add(new Point(east, north)); // East=X, North=Y
+						ans.add(new Coordinate(north, east));
 						names.add(result.getString(3) + ", " + result.getString(4));
 					}
 				}
 			} catch (SQLException e) {
 				e.printStackTrace();
 			}
-			return new TNGPointFileLayer(ans, names, "ans");
+			return new TNGPointFileLayer(ans, names, "Search Results");
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 
-	public String findNearest(Point p, int limit) {
+	public String findNearest(Coordinate c, int limit) {
+		Point p = c.getPoint();
 		int eastVal = p.x;
 		int northVal = p.y;
 

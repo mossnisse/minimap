@@ -19,8 +19,8 @@ import main.shapeFile.DataInputStreamSE;
 public class RasterFilLayer implements Layer {
 	private String name;
 	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
+	private int maxZoom; // 0 indicates unset
+	private int minZoom;
 	private final String fileName;
 	private Image img;
 	private BoundingBox box;

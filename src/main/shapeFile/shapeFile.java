@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.Vector;
 
 public class shapeFile {
-	private String filename;
+	private final String filename;
 	int fileLength, shpVersion, shapeType, nrRecords, nrFields;
 	// BoundingBoxESRI box;
 	double minX, minY, maxX, maxY, minZ, maxZ, minM, maxM;
@@ -30,19 +30,19 @@ public class shapeFile {
 	static private void printHex(String name, int i) {
 		System.out.print(name + ": ");
 		System.out.printf("%08X ", i);
-		System.out.println("");
+		System.out.println();
 	}
 
 	static private void printHex(String name, double i) {
 		System.out.print(name + ": ");
 		System.out.print(i);
-		System.out.println("");
+		System.out.println();
 	}
 
 	static private void printN(String name, double i) {
 		System.out.print(name + ": ");
 		System.out.print(i);
-		System.out.println("");
+		System.out.println();
 	}
 
 

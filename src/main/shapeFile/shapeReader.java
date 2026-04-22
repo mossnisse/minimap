@@ -88,8 +88,8 @@ public class shapeReader implements Iterable<ReccordESRI>{
 	private dbfRecord readDBF() throws IOException {
 		dbfRecord rdata = new dbfRecord(descriptors);
 		rdata.read(DBFbr);
-	return rdata;
-}
+		return rdata;
+	}
 	
 	public ReccordESRI readNext() throws IOException {
 		if (shapeType == 1.0) {
@@ -100,11 +100,9 @@ public class shapeReader implements Iterable<ReccordESRI>{
 		} 
 		return new ReccordESRI(readPolygon(),readDBF());
 	}
-	
-	
-	
-	 private class ShpReadIterator implements Iterator<ReccordESRI> {
-		 private shapeReader sr;
+
+	 private static class ShpReadIterator implements Iterator<ReccordESRI> {
+		private final shapeReader sr;
 
 		public ShpReadIterator(shapeReader sr) {
 			this.sr = sr;
@@ -136,23 +134,22 @@ public class shapeReader implements Iterable<ReccordESRI>{
 	 }
 
 	 static private void printHex(String name, int i) {
-			System.out.print(name + ": ");
-			System.out.printf("%08X ", i);
-			System.out.println("");
-		}
+		System.out.print(name + ": ");
+		System.out.printf("%08X ", i);
+		System.out.println();
+	}
 
-		static private void printHex(String name, double i) {
-			System.out.print(name + ": ");
-			System.out.print(i);
-			System.out.println("");
-		}
+	static private void printHex(String name, double i) {
+		System.out.print(name + ": ");
+		System.out.print(i);
+		System.out.println();
+	}
 
-		static private void printN(String name, double i) {
-			System.out.print(name + ": ");
-			System.out.print(i);
-			System.out.println("");
-		}
-
+	static private void printN(String name, double i) {
+		System.out.print(name + ": ");
+		System.out.print(i);
+		System.out.println();
+	}
 	 
 	 public void printShpHeader() {
 		System.out.println("Shapefile header");
@@ -177,10 +174,8 @@ public class shapeReader implements Iterable<ReccordESRI>{
 		printN("Nr Fields", nrFields);
 	}
 
-	 
 	@Override
 	public Iterator<ReccordESRI> iterator() {
-		// TODO Auto-generated method stub
 		return new ShpReadIterator(this);
 	}
 }

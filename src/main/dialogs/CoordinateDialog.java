@@ -12,11 +12,11 @@ public class CoordinateDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	public CoordinateDialog(Frame owner, Canvas canvas, Point sweref) {
+	public CoordinateDialog(Frame owner, Canvas canvas, Coordinate sweref) {
 		super(owner, "Coordinate Details", false);
 
 		Coordinate wgs84 = CoordSystem.SWEREF99TM.toWGS84(sweref);
-		Point rt90 = CoordSystem.RT90.toProjected(wgs84);
+		Coordinate rt90 = CoordSystem.RT90.toProjected(wgs84);
 		String rubin = RUBIN.fromRT90(rt90);
 		UTM utm = UTM.fromWGS84(wgs84);
 		String mgrs = utm.toMGRS();
@@ -45,8 +45,8 @@ public class CoordinateDialog extends JDialog {
 		// Initialize and add fields
 		JTextField provF = createReadOnlyField(prov);
 		JTextField distF = createReadOnlyField(dist);
-		JTextField swerefF = createReadOnlyField(sweref.y + ", " + sweref.x);
-		JTextField rt90F = createReadOnlyField(rt90.y + ", " + rt90.x);
+		JTextField swerefF = createReadOnlyField(sweref.toPString());
+		JTextField rt90F = createReadOnlyField(rt90.toPString());
 		JTextField wgs84F = createReadOnlyField(wgs84.toString());
 		JTextField rubinF = createReadOnlyField(rubin);
 		JTextField utmF = createReadOnlyField(utm.toString());

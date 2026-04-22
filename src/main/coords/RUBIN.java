@@ -62,7 +62,7 @@ public class RUBIN {
         return new Coordinate(north, east);
     }
 
-    public static Point toSweref99TM(String rubin) {
+    public static Coordinate toSweref99TM(String rubin) {
         Coordinate rt90 = toRT90(rubin);
         Coordinate wgs84 = CoordSystem.RT90.toWGS84(rt90);
         return CoordSystem.SWEREF99TM.toProjected(wgs84);
@@ -91,9 +91,9 @@ public class RUBIN {
         return fromRT90(new Coordinate(p));
     }
 
-    public static String fromSweref99TM(Point p) {
-        Coordinate c = CoordSystem.SWEREF99TM.toWGS84(p);
-        return fromRT90(CoordSystem.RT90.toProjected(c));
+    public static String fromSweref99TM(Coordinate c) {
+        Coordinate wgs84 = CoordSystem.SWEREF99TM.toWGS84(c);
+        return fromRT90(CoordSystem.RT90.toProjected(wgs84));
     }
 
     // returns the corder of the RUBIN square in RT90

@@ -25,14 +25,14 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private final GUI gui;
 	private final Canvas canvas;
 	private final SpecimenBridgeDialog bridgeDialog;
-	Point SWTM;
+	Coordinate SWTM;
 	private JTextField localityT, districtT, provinceT, countryT, continentT, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;
 	private JScrollPane commentScroll;
 	private JButton cancel, ok;
 
-	public CreateLocalityDialog(Frame owner, GUI gui, main.core.Canvas canvas, SpecimenBridgeDialog bridge, Point SWTM) {
+	public CreateLocalityDialog(Frame owner, GUI gui, main.core.Canvas canvas, SpecimenBridgeDialog bridge, Coordinate SWTM) {
 		super(owner, "Create New Locality", false);
 		this.gui = gui;
 		this.canvas = canvas;
@@ -181,9 +181,9 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		}
 
 		Coordinate wgs84c = CoordSystem.SWEREF99TM.toWGS84(SWTM);
-		Point rt90c = CoordSystem.RT90.toProjected(wgs84c);
-		String RT90Nt = Integer.toString(rt90c.y);
-		String RT90Et = Integer.toString(rt90c.x);
+		Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
+		String RT90Nt = Integer.toString((int) Math.round(rt90c.getNorth()));
+		String RT90Et = Integer.toString((int) Math.round(rt90c.getEast()));
 		
 		//check if locality already exists and show message
 		String sqltestifU = "SELECT COUNT(1) FROM locality WHERE locality = ? AND district = ? AND province = ? AND country = 'Sweden';";
@@ -234,8 +234,8 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		    preparedStmt.setDouble(7, wgs84c.getEast());
 		    preparedStmt.setString (8, RT90Nt);
 		    preparedStmt.setString (9, RT90Et);
-		    preparedStmt.setInt (10, SWTM.y);
-		    preparedStmt.setInt (11, SWTM.x);
+		    preparedStmt.setInt (10, (int) Math.round(SWTM.getNorth()));
+		    preparedStmt.setInt (11, (int) Math.round(SWTM.getEast()));
 		    preparedStmt.setString (12, Settings.getValue("user"));
 		    preparedStmt.setString (13, alternativeT.getText() );
 		    preparedStmt.setString (14, coordsourceT.getText());

@@ -19,7 +19,7 @@ import main.coords.*;
 public class GUI  {
 	private JFrame frame;
 	private Canvas canvas;
-	private Point coord;
+	private Coordinate coord;
 	private SpecimenBridgeDialog bridgeDialog;
 	private EditLocalityDialog moveTarget = null;
 
@@ -73,8 +73,8 @@ public class GUI  {
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_D)) {
 					distance(e);
 				} else {
-					Point p = canvas.translatePoint(new Point(e.getX(), e.getY()));
-					canvas.setCoordinate(p);
+					Coordinate c = canvas.translatePoint(new Point(e.getX(), e.getY()));
+					canvas.setCoordinate(c);
 				}
 			}
 		});
@@ -334,13 +334,13 @@ public class GUI  {
 	}
 
 	public void showCoordinateInfoAtCoord() {
-		Point p = canvas.getCoordinate();
-		new CoordinateDialog(frame, canvas, p).setVisible(true);
+		Coordinate c = canvas.getCoordinate();
+		new CoordinateDialog(frame, canvas, c).setVisible(true);
 	}
 
 	public void showCoordinateInfo(MouseEvent me) {
-		Point p = canvas.translatePoint(new Point(me.getX(), me.getY()));
-		new CoordinateDialog(frame, canvas, p).setVisible(true);
+		Coordinate c = canvas.translatePoint(me.getPoint());
+		new CoordinateDialog(frame, canvas, c).setVisible(true);
 	}
 
 	public void viewRubin() {
@@ -349,11 +349,11 @@ public class GUI  {
 
 		if (s != null && !s.trim().isEmpty()) {
 			RubinLayer r = new RubinLayer(s.trim(), "Rubin", Color.green);
-			Point p = r.getMiddle();
-			if (p != null) {
+			Coordinate c = r.getMiddle();
+			if (c != null) {
 				canvas.delLayer("Rubin");
 				canvas.addLayerTop(r);
-				canvas.focus(p);
+				canvas.focus(c);
 				canvas.repaint();
 			} else {
 				JOptionPane.showMessageDialog(frame,
@@ -364,42 +364,45 @@ public class GUI  {
 	}
 
 	public void showRubin(MouseEvent e) {
-		Point p = canvas.translatePoint(e.getPoint());
-		String rubin = RUBIN.fromSweref99TM(p);
+		Coordinate c = canvas.translatePoint(e.getPoint());
+		String rubin = RUBIN.fromSweref99TM(c);
 		RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
 		canvas.delLayer("Rubin");
 		canvas.addLayerTop(r);
 	}
 
 	public void distanceAtCoord() {
-		Point p = canvas.getCoordinate();
-		if (p == null) {
+		Coordinate c = canvas.getCoordinate();
+		if (c == null) {
 			JOptionPane.showMessageDialog(canvas, "Please select a point on the map first.");
 			return;
 		}
-		new DistanceDialog(frame, canvas, p).setVisible(true);
+		new DistanceDialog(frame, canvas, c).setVisible(true);
 	}
 
 	public void distance(MouseEvent me) {
-		Point p = canvas.translatePoint(new Point(me.getX(), me.getY()));
-		new DistanceDialog(frame, canvas, p).setVisible(true);
+		Coordinate c = canvas.translatePoint(new Point(me.getX(), me.getY()));
+		new DistanceDialog(frame, canvas, c).setVisible(true);
 	}
 
 	public void userDialog() {
-		SetUserDialog l = new SetUserDialog();
-		l.setVisible(true);
+		new SetUserDialog().setVisible(true);
 	}
 
 	public void showShortcuts() {
-		String message = "Press s and click on the map to create a new Locality\nPress a and click on the map to edit Locality information\n"
-				+ "Press c and click on the map to show info about the coordinate\nPress r and click on the map to show the 5x5 km RUBIN ruta";
+		String message = "Press s and click on the map to create a new Locality\n" +
+						"Press a and click on the map to edit Locality information\n" +
+						"Press c and click on the map to show info about the coordinate\n" +
+						"Press r and click on the map to show the 5x5 km RUBIN ruta\n" +
+						"Press k and click on the map to open Kartbild.com at the coordinate\n" +
+						"Press d and click on the map to show distance and direction";
 		JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
 	}
 
 	public void showLocality(MouseEvent e) {
-		Point p = canvas.translatePoint(new Point(e.getX(), e.getY()));
+		Coordinate c = canvas.translatePoint(new Point(e.getX(), e.getY()));
 		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
-		int localityID = ldb.findNearest(p, 1000);
+		int localityID = ldb.findNearest(c, 1000);
 
 		if (localityID != -1) {
 			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
@@ -407,9 +410,9 @@ public class GUI  {
 	}
 	
 	public void showLocalityAtCoord() {
-		Point p = canvas.getCoordinate();
+		Coordinate c = canvas.getCoordinate();
 		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
-		int localityID = ldb.findNearest(p,1000);
+		int localityID = ldb.findNearest(c,1000);
 		if (localityID != -1) {
 			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
 		}
@@ -426,7 +429,7 @@ public class GUI  {
 	}
 
 	public void leaveMoveMode(MouseEvent me) {
-		Point mapP = canvas.translatePoint(me.getPoint());
+		Coordinate mapP = canvas.translatePoint(me.getPoint());
 		moveTarget.updateCoordinates(mapP);
 
 		// Reset everything back to default
@@ -436,7 +439,6 @@ public class GUI  {
 		moveTarget.setCursor(defaultCursor);
 
 		moveTarget = null;
-		return;
 	}
 
 	private void createLocalityAtCoord() {
@@ -445,8 +447,7 @@ public class GUI  {
 	}
 
 	private void createLocalityDialog(MouseEvent me) {
-		coord = canvas.translatePoint(new Point(me.getX(), me.getY()));
-		canvas.setCoordinate(coord); // Update the visual marker on the map
+		coord = canvas.translatePoint(me.getPoint());
 		new CreateLocalityDialog(frame, this, canvas, bridgeDialog, coord).setVisible(true);
 	}
 
@@ -492,11 +493,8 @@ public class GUI  {
 			int mapType = 20; // Specific layer ID for Kartbild  = generalkarta1
 			int zoomLevel = 12;
 
-			// Translate screen click to map coordinates
-			Point point = canvas.translatePoint(me.getPoint());
-
-			// Convert SWEREF99TM (Projected) to WGS84 (Geographic)
-			Coordinate wgs84  = CoordSystem.SWEREF99TM.toWGS84(point);
+			Coordinate c = canvas.translatePoint(me.getPoint());
+			Coordinate wgs84  = CoordSystem.SWEREF99TM.toWGS84(c);
 
 			// Format the URI string. Format: #zoom/lat/lon/type  //https://kartbild.com/?marker=58.88545,11.02363#14/58.88545/11.02363+/0x20"
 			String uriString = String.format(Locale.US, "https://kartbild.com/?marker=%f,%f#%d/%f/%f/0x%d",
@@ -506,7 +504,6 @@ public class GUI  {
 					mapType);
 
 			Desktop.getDesktop().browse(new URI(uriString));
-
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(frame,
 					"Could not open the browser: " + e.getMessage(),

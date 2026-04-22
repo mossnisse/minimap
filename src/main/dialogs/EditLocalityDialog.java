@@ -406,10 +406,10 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		}
 	}
 
-	public void updateCoordinates(Point p) {
+	public void updateCoordinates(Coordinate c) {
 		// p.y is North, p.x is East in SWEREF99TM
-		int newN = p.y;
-		int newE = p.x;
+		int newN = (int) Math.round(c.getNorth());
+		int newE = (int) Math.round(c.getEast());
 
 		// Optional: Auto-lookup the new District/Province for the new spot
 		// Update the DB directly
@@ -418,13 +418,13 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			String sql = "UPDATE locality SET SWTMN = ?, SWTME = ?, lat = ?, `long` = ?, RT90N = ?, RT90E = ? WHERE ID = ?";
 			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
 				Coordinate wgs84c = CoordSystem.SWEREF99TM.toWGS84(newN, newE);
-				Point rt90c = CoordSystem.RT90.toProjected(wgs84c);
+				Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
 				stmt.setInt(1, newN);
 				stmt.setInt(2, newE);
 				stmt.setDouble(3, wgs84c.getNorth());
 				stmt.setDouble(4, wgs84c.getEast());
-				stmt.setInt(5, rt90c.y);
-				stmt.setInt(6, rt90c.x);
+				stmt.setInt(5, (int) Math.round(rt90c.getNorth()));
+				stmt.setInt(6, (int) Math.round(rt90c.getEast()));
 				stmt.setInt(7, localityID);
 				stmt.executeUpdate();
 

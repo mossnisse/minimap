@@ -1,6 +1,7 @@
 package main.dialogs;
 
 import main.coords.CoordSystem;
+import main.coords.Coordinate;
 import main.layers.DistanceLayer;
 import main.core.Canvas;
 
@@ -15,16 +16,16 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 	@Serial
 	private static final long serialVersionUID = 2464657686998213912L;
 	private final Canvas canvas;
-	private final Point origin;
+	private final Coordinate origin;
 	private final JTextField distance;
 	private final JComboBox<String> direction;
 	private final JOptionPane optionPane;
 
-	public DistanceDialog(Frame aFrame, Canvas canvas, Point p) {
+	public DistanceDialog(Frame aFrame, Canvas canvas, Coordinate c) {
 		super(aFrame, true); // Modal
 		setTitle("Distance and Direction");
 		this.canvas = canvas;
-		this.origin = p;
+		this.origin = c;
 
 		String[] dirStrings = {"N", "E", "S", "W", "NE", "SE", "NW", "SW", "NNE", "ENE", "ESE", "SSE", "SSW", "WSW", "WNW", "NNW"};
 		direction = new JComboBox<>(dirStrings);

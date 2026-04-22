@@ -12,11 +12,11 @@ public class DistanceLayer implements Layer {
 	private String name;
 	private final String direction;
 	private boolean hidden;
-	private final Point c;
+	private final Coordinate c;
 	private final int dist;
 	private CoordSystem cs;
 
-	public DistanceLayer(String name, Point c, int dist, String direction, CoordSystem cs) {
+	public DistanceLayer(String name, Coordinate c, int dist, String direction, CoordSystem cs) {
 		this.name = name;
 		this.c=c;
 		this.dist = dist;
@@ -68,8 +68,8 @@ public class DistanceLayer implements Layer {
 		g2d.setStroke(new BasicStroke(2));
 
 		// Calculate screen start point
-		int x1 = (int) ((c.getX() * xScale) + xShift);
-		int y1 = (int) ((c.getY() * yScale) + yShift);
+		int x1 = (int) ((c.getEast() * xScale) + xShift);
+		int y1 = (int) ((c.getNorth() * yScale) + yShift);
 
 		// Convert distance to screen pixels
 		double ds = dist * xScale;

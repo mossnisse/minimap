@@ -6,7 +6,6 @@ import java.awt.Graphics2D;
 import main.coords.*;
 import main.geometry.BoundingBox;
 
-
 public interface Layer {
 	void setColor(Color c);
 	Color getColor();
