@@ -5,6 +5,7 @@ import java.util.Locale;
 
 public class Coordinate {
     private double north, east; // Can represent Lat/Lon or N/E meters
+    public static String[] directions = { "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW" };
 
     public Coordinate(double north, double east) {
         this.north = north;
@@ -143,8 +144,135 @@ public class Coordinate {
     }
 
     // needs to be an TM coordinate system or similar for it to be reasonably accurate
-    public double distance(Coordinate c) {
+    public double distanceTM(Coordinate c) {
         return Math.hypot(this.north - c.north, this.east - c.east);
+    }
+
+    public double distanceWGS84(Coordinate c) {
+        double R = 6371000; // Mean Earth radius in meters
+
+        double lat1 = Math.toRadians(this.north);
+        double lat2 = Math.toRadians(c.getNorth());
+        double lon1 = Math.toRadians(this.east);
+        double lon2 = Math.toRadians(c.getEast());
+
+        double dLat = lat2 - lat1;
+        double dLon = lon2 - lon1;
+
+        // --- The Fix for the 180/-180 line --- This ensures dLon is always between -PI and PI
+        while (dLon > Math.PI)  dLon -= 2 * Math.PI;
+        while (dLon < -Math.PI) dLon += 2 * Math.PI;
+
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1) * Math.cos(lat2) *
+                        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+
+        double centralAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * centralAngle;
+    }
+
+    public Coordinate moveWGS84(double distance, double bearingDegrees) {
+        double R = 6371000; // Mean Earth radius in meters
+
+        double lat1 = Math.toRadians(this.north); // Assuming this.north is Latitude
+        double lon1 = Math.toRadians(this.east);  // Assuming this.east is Longitude
+        double brng = Math.toRadians(bearingDegrees);
+
+        // Angular distance in radians
+        double angularDist = distance / R;
+
+        // Calculate new Latitude
+        double lat2 = Math.asin(Math.sin(lat1) * Math.cos(angularDist) +
+                Math.cos(lat1) * Math.sin(angularDist) * Math.cos(brng));
+
+        // Calculate new Longitude
+        double lon2 = lon1 + Math.atan2(Math.sin(brng) * Math.sin(angularDist) * Math.cos(lat1),
+                Math.cos(angularDist) - Math.sin(lat1) * Math.sin(lat2));
+
+        // Normalize longitude to -180 to +180 degrees
+        double lon2Degrees = Math.toDegrees(lon2);
+        lon2Degrees = (lon2Degrees + 540) % 360 - 180;
+
+        return new Coordinate(Math.toDegrees(lat2), lon2Degrees);
+    }
+
+    public Coordinate moveTM(double distance, double bearingDegrees) {
+        double brng = Math.toRadians(bearingDegrees);
+
+        // 2Calculate the offsets In navigation (North = 0), Easting uses Sin and Northing uses Cos
+        double dEast = distance * Math.sin(brng);
+        double dNorth = distance * Math.cos(brng);
+
+        // Apply the offsets to the current coordinates
+        double newEast = this.east + dEast;
+        double newNorth = this.north + dNorth;
+
+        return new Coordinate(newNorth, newEast);
+    }
+
+    public double getBearingWGS84(Coordinate c) {
+        double lat1 = Math.toRadians(this.north);
+        double lat2 = Math.toRadians(c.getNorth());
+        double lon1 = Math.toRadians(this.east);
+        double lon2 = Math.toRadians(c.getEast());
+
+        double dLon = lon2 - lon1;
+        // --- The Fix for the 180/-180 line --- This ensures dLon is always between -PI and PI
+        while (dLon > Math.PI)  dLon -= 2 * Math.PI;
+        while (dLon < -Math.PI) dLon += 2 * Math.PI;
+
+        double y = Math.sin(dLon) * Math.cos(lat2);
+        double x = Math.cos(lat1) * Math.sin(lat2) -
+                Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+
+        double brng = Math.atan2(y, x);
+
+        // Convert to degrees and normalize to 0-360
+        return (Math.toDegrees(brng) + 360) % 360;
+    }
+
+
+
+    public double getBearingTM(Coordinate c) {
+        double dEast = c.getEast() - this.east;
+        double dNorth = c.getNorth() - this.north;
+        double brng = Math.atan2(dEast, dNorth);
+
+        return (Math.toDegrees(brng) + 360) % 360;
+    }
+
+    public static double getBearingFromDirection(String dir) {
+        return switch (dir.toUpperCase()) {
+            case "N"   -> 0.0;
+            case "NNE" -> 22.5;
+            case "NE"  -> 45.0;
+            case "ENE" -> 67.5;
+            case "E"   -> 90.0;
+            case "ESE" -> 112.5;
+            case "SE"  -> 135.0;
+            case "SSE" -> 157.5;
+            case "S"   -> 180.0;
+            case "SSW" -> 202.5;
+            case "SW"  -> 225.0;
+            case "WSW" -> 247.5;
+            case "W"   -> 270.0;
+            case "WNW" -> 292.5;
+            case "NW"  -> 315.0;
+            case "NNW" -> 337.5;
+            default    -> 0.0;
+        };
+    }
+
+    public static String getDirectionFromBearing(double bearing) {
+        double normalized = (bearing % 360 + 360) % 360;
+        int index = (int) Math.round(normalized / 22.5) % 16;
+
+        return directions[index];
+    }
+
+    public String directionTM(Coordinate c) {
+        return getDirectionFromBearing(getBearingTM(c));
     }
 
     @Override

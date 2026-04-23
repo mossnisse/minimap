@@ -222,7 +222,7 @@ public class MYSQLTableLayer implements Layer {
 					int nID = -1;
 					while (result.next()) {
 						Coordinate pc = new Coordinate(result.getInt(1), result.getInt(2));
-						double dist = c.distance(pc);
+						double dist = c.distanceTM(pc);
 						if (dist < ndist) {
 							ndist = dist;
 							nID = result.getInt(3);

@@ -833,9 +833,7 @@ public class SpecimenBridgeDialog extends JDialog {
                 int distanceI = Integer.parseInt(distText);
                 if (distanceI > 0) {
                     // Add the visual vector layer
-                    canvas.addLayerTop(new DistanceLayer(
-                            "distance", c, distanceI, directionS, CoordSystem.SWEREF99TM
-                    ));
+                    canvas.addLayerTop(new DistanceLayer(canvas, "distance", c, distanceI, directionS, CoordSystem.SWEREF99TM ));
                 }
             } catch (NumberFormatException e) {
                 // Silent fail for visualization if number is garbled

@@ -1,6 +1,7 @@
 package main.core;
 
 import main.coords.*;
+import main.dialogs.DistanceTool;
 import main.geometry.BoundingBox;
 import main.layers.H2TableLayer;
 import main.layers.MYSQLTableLayer;
@@ -32,6 +33,9 @@ public class Canvas extends JPanel {
 		bounds = new BoundingBox(xMin,yMin,xMax,yMax);
 		coord = null;
 		layers = new ArrayList<Layer>();
+
+		DistanceTool tool = new DistanceTool(this);
+		addMouseListener(tool);
 		initialize();
 	}
 
@@ -177,6 +181,7 @@ public class Canvas extends JPanel {
 		repaint();
 	}
 
+	/*
 	// translates p from pixels to world coordinates
 	public Coordinate translatePoint(Point p) {
 		Dimension size = getSize();
@@ -195,6 +200,44 @@ public class Canvas extends JPanel {
 		int y = (int) ((p.getY() - yShift) / -scale);
 
 		return new Coordinate(y, x);
+	}*/
+
+	public Coordinate translatePoint(Point p) {
+		Dimension size = getSize();
+		if (size.width <= 0 || size.height <= 0 || bounds == null) return null;
+
+		double scale = Math.min(size.width / (double)bounds.getWidth(), size.height / (double)bounds.getHeight());
+		Point m = bounds.getMidlePoint();
+
+		double xShift = (size.width / 2.0) - (m.getX() * scale);
+		double yShift = (size.height / 2.0) - (m.getY() * -scale);
+
+		// Inverse of the logic above
+		double east = (p.x - xShift) / scale;
+		double north = (p.y - yShift) / -scale;
+
+		return new Coordinate(north, east);
+	}
+
+	public Point toScreenSpace(Coordinate c) {
+		Dimension size = getSize();
+		if (size.width <= 0 || size.height <= 0 || bounds == null) return new Point(0,0);
+
+		double scale = Math.min(size.width / (double)bounds.getWidth(), size.height / (double)bounds.getHeight());
+		Point m = bounds.getMidlePoint();
+
+		// Use the exact same shift logic as paintComponent
+		double xShift = (size.width / 2.0) - (m.getX() * scale);
+		double yShift = (size.height / 2.0) - (m.getY() * -scale);
+
+		int x = (int) (c.getEast() * scale + xShift);
+		int y = (int) (c.getNorth() * -scale + yShift); // Note the -scale for Y
+
+		return new Point(x, y);
+	}
+
+	public CoordSystem getCRS() {
+		return cs;
 	}
 
 	@Override

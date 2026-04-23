@@ -36,7 +36,7 @@ public class TNGPointFileLayer implements Layer {
 		
 		public double dist(int x, int y) {
 			Coordinate c = new Coordinate(y, x);
-			return  Math.round(distance(c)/100)/10.0; //Math.round(
+			return  Math.round(distanceTM(c)/100)/10.0; //Math.round(
 		}
 		
 		public String direction(double x, double y) {

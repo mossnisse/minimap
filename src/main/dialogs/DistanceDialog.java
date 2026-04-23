@@ -27,8 +27,7 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 		this.canvas = canvas;
 		this.origin = c;
 
-		String[] dirStrings = {"N", "E", "S", "W", "NE", "SE", "NW", "SW", "NNE", "ENE", "ESE", "SSE", "SSW", "WSW", "WNW", "NNW"};
-		direction = new JComboBox<>(dirStrings);
+		direction = new JComboBox<>(Coordinate.directions);
 		distance = new JTextField(10);
 
 		// UI Components inside the Pane
@@ -95,7 +94,7 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 			int distVal = Integer.parseInt(getDistance());
 			String dir = getDirection();
 
-			DistanceLayer distLayer = new DistanceLayer("dist", origin, distVal, dir, CoordSystem.SWEREF99TM);
+			DistanceLayer distLayer = new DistanceLayer( canvas,"dist", origin, distVal, dir, CoordSystem.SWEREF99TM);
 			distLayer.setColor(Color.RED);
 
 			canvas.delLayer("dist");
