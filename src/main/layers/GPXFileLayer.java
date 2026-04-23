@@ -5,58 +5,80 @@ import main.geometry.BoundingBox;
 import main.coords.*;
 import java.awt.*;
 import java.io.File;
-import java.io.IOException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 public class GPXFileLayer implements Layer {
 	private CoordSystem cs = CoordSystem.RT90;
 	private Color color = Color.BLACK;
 	private int maxZoom = 0; // 0 indicates unset
 	private int minZoom = 0;
-	
-	public static class GPXKoordinat {
+	private String fileName, name;
+	private GPXCoordinate[] coordinates = new GPXCoordinate[0];
+	private boolean hidden;
+	static final Stroke LINE_STROKE = new BasicStroke(2);
+
+	public static class GPXCoordinate {
 		double latitude, longitude, elevation;
 		String dateTime, name;
+		Point projectedPoint; // Store the result here!
 	}
 
-	private String fileName, name;
-	private GPXKoordinat[] koordinates;
-	private boolean hidden;
-
-	public GPXFileLayer(String fileName) throws IOException, ParserConfigurationException, SAXException {
+	public GPXFileLayer(String fileName) throws Exception {
 		this.fileName = fileName;
 		this.name = fileName;
-		readFile();
-	}
-
-	private void readFile() throws IOException, ParserConfigurationException, SAXException {
-		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
-		Document doc = docBuilder.parse(new File(fileName));
-		doc.getDocumentElement().normalize();
-		NodeList waypoints = doc.getElementsByTagName("wpt");
-		koordinates = new GPXKoordinat[waypoints.getLength()];
-		for (int s = 0; s < waypoints.getLength(); s++) {
-			Node waypoint = waypoints.item(s);
-			Element waypointElement = (Element) waypoint;
-			koordinates[s] = new GPXKoordinat();
-			koordinates[s].latitude = Double.valueOf(waypointElement.getAttribute("lat"));
-			koordinates[s].longitude = Double.valueOf(waypointElement.getAttribute("lon"));
-			koordinates[s].elevation = Double.valueOf(waypointElement.getElementsByTagName("ele").item(0).getTextContent());
-			koordinates[s].dateTime = waypointElement.getElementsByTagName("time").item(0).getTextContent();
-			koordinates[s].name = waypointElement.getElementsByTagName("name").item(0).getTextContent();
+		try {
+			readFile();
+		} catch(Exception e) {
+			e.printStackTrace();
 		}
 	}
 
-	public GPXKoordinat[] getCoordinates() {
-		return koordinates;
+	private void readFile() throws Exception, ParserConfigurationException, SAXException {
+		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
+		DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
+		Document doc = docBuilder.parse(new File(fileName));
+		NodeList waypoints = doc.getElementsByTagName("wpt");
+
+		coordinates = new GPXCoordinate[waypoints.getLength()];
+
+		for (int s = 0; s < waypoints.getLength(); s++) {
+			Element el = (Element) waypoints.item(s);
+			GPXCoordinate k = new GPXCoordinate();
+
+			k.latitude = Double.parseDouble(el.getAttribute("lat"));
+			k.longitude = Double.parseDouble(el.getAttribute("lon"));
+
+			// Safe tag reading helper
+			k.elevation = getSafeTagDouble(el, "ele");
+			k.dateTime = getSafeTagString(el, "time");
+			k.name = getSafeTagString(el, "name");
+
+			// PRE-PROJECT the point so draw() is fast
+			Coordinate wgs = new Coordinate(k.latitude, k.longitude);
+			k.projectedPoint = CoordSystem.SWEREF99TM.toProjected(wgs).getPoint();
+
+			coordinates[s] = k;
+		}
+	}
+
+	private String getSafeTagString(Element el, String tag) {
+		NodeList nl = el.getElementsByTagName(tag);
+		return (nl.getLength() > 0) ? nl.item(0).getTextContent() : "";
+	}
+
+	private double getSafeTagDouble(Element el, String tag) {
+		NodeList nl = el.getElementsByTagName(tag);
+		return (nl.getLength() > 0) ? Double.parseDouble(nl.item(0).getTextContent()) : 0.0;
+	}
+
+	public GPXCoordinate[] getCoordinates() {
+		return coordinates;
 	}
 
 	@Override
@@ -79,14 +101,17 @@ public class GPXFileLayer implements Layer {
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
 		if (!hidden) {
 			g2d.setColor(color);
-			for(GPXKoordinat koord:koordinates) {
-				Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(koord.latitude, koord.longitude);
-				Point l = sweref.getPoint();
-				int x = (int) ((l.getY()*xScale)+xShift);
-				int y = (int) ((l.getX()*yScale)+yShift);
-					g2d.drawOval(x, y, 5, 5);
-					//System.out.println("name:" + koord.name +" long: "+l.getY()+" lat: "+l.getX()+" x:"+x+" y:"+y);
+			Stroke originalStroke = g2d.getStroke();
+			g2d.setStroke(LINE_STROKE);
+			for(GPXCoordinate coord : coordinates) {
+				// Using the pre-calculated point is much faster!
+				int x = (int) ((coord.projectedPoint.getX() * xScale) + xShift);
+				int y = (int) ((coord.projectedPoint.getY() * yScale) + yShift);
+				g2d.drawOval(x - 8, y - 8, 16, 16); // Center the oval on the point
+				g2d.drawLine(x - 10, y - 10,  x + 10, y + 10);
+				g2d.drawLine(x - 10, y + 10,  x + 10, y - 10);
 			}
+			g2d.setStroke(originalStroke);
 		}
 	}
 

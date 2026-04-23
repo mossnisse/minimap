@@ -15,6 +15,7 @@ public class DistanceLayer implements Layer {
 	private boolean hidden;
 	private CoordSystem cs;
 	private final Coordinate c1, c2;
+	static final Stroke LINE_STROKE = new BasicStroke(2);
 
 	public DistanceLayer(Canvas canvas, String name, Coordinate c, int distance, String direction, CoordSystem cs) {
 		this.name = name;
@@ -86,7 +87,7 @@ public class DistanceLayer implements Layer {
 
 		g2d.setColor(color);
 		Stroke originalStroke = g2d.getStroke();
-		g2d.setStroke(new BasicStroke(2));
+		g2d.setStroke(LINE_STROKE);
 
 		Point p1 = canvas.toScreenSpace(c1);
 		Point p2 = canvas.toScreenSpace(c2);

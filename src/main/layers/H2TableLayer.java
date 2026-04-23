@@ -210,11 +210,8 @@ public class H2TableLayer implements Layer {
 					}
 				}
 				return nearest;
-			} catch (SQLException e) {
-				e.printStackTrace();
 			}
-		}
-		catch(Exception e) {
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 		return "";

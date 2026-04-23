@@ -297,17 +297,12 @@ public class GUI  {
 			System.out.println("Open: " + file.getName());
 
 			try {
-				GPXFileLayer l;
-				l = new GPXFileLayer(file.getCanonicalPath());
-				l.setColor(Color.ORANGE);
+				GPXFileLayer l = new GPXFileLayer(file.getCanonicalPath());
+				l.setColor(Color.BLUE);
 				l.setName(file.getName());
 				canvas.addLayerTop(l);
 				canvas.repaint();
-			} catch (ParserConfigurationException e) {
-				e.printStackTrace();
-			} catch (SAXException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
+			} catch (Exception e) {
 				e.printStackTrace();
 			}
 

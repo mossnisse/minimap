@@ -20,6 +20,7 @@ public class TNGPointFileLayer implements Layer {
 	private boolean hidden;
 	private CoordSystem cs;
 	private int nameLength;
+	static final Stroke LINE_STROKE = new BasicStroke(2);
 	
 	public static class Locality extends Coordinate {
 		public String name;
@@ -128,13 +129,13 @@ public class TNGPointFileLayer implements Layer {
 		if (hidden) return;
 
 		Stroke s = g2d.getStroke();
-		g2d.setStroke(new BasicStroke(2));
+		g2d.setStroke(LINE_STROKE);
 		g2d.setColor(color);
 
-		for (Locality koord : localities) {
+		for (Locality coord : localities) {
 			// Standard Mapping: X -> Horizontal, Y -> Vertical
-			int x = (int) ((koord.getEast() * xScale) + xShift);
-			int y = (int) ((koord.getNorth() * yScale) + yShift);
+			int x = (int) ((coord.getEast() * xScale) + xShift);
+			int y = (int) ((coord.getNorth() * yScale) + yShift);
 
 			// Draw a crosshair target
 			g2d.drawOval(x - 6, y - 6, 12, 12);

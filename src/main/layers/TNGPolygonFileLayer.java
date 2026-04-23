@@ -20,6 +20,7 @@ public class TNGPolygonFileLayer implements Layer {
 	private Province[] provinces;
 	private boolean hidden;
 	private CoordSystem cs;
+	static final Stroke LINE_STROKE = new BasicStroke(1.5f);
 	
 	public static class Province extends Polygon{
 		private String name;
@@ -134,7 +135,7 @@ public class TNGPolygonFileLayer implements Layer {
 		g2d.setColor(color);
 
 		Stroke oldStroke = g2d.getStroke();
-		g2d.setStroke(new BasicStroke(1.5f));
+		g2d.setStroke(LINE_STROKE);
 
 		for (Province pr : provinces) {
 			if (bounds.intersects(pr.getBoundingBox())) {

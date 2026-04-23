@@ -15,6 +15,7 @@ public class RubinLayer implements Layer {
 	private int minZoom = 0;
 	private boolean hidden;
 	private CoordSystem cs;
+	static final Stroke LINE_STROKE = new BasicStroke(2);
 
 	// Store corners in projected (Sweref) coordinates
 	private List<Coordinate> swerefCorners = new ArrayList<>();
@@ -49,7 +50,7 @@ public class RubinLayer implements Layer {
 
 		g2d.setColor(color);
 		Stroke originalStroke = g2d.getStroke();
-		g2d.setStroke(new BasicStroke(2));
+		g2d.setStroke(LINE_STROKE);
 
 		// Convert the 4 Sweref corners to screen pixel paths
 		int[] xPoints = new int[4];
