@@ -512,27 +512,44 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     private void loadSpecimen(int index) {
-        if (index < 0 || index >= totalCount) return;
+        if (index < 0 || index >= totalCount) {
+            isNavigating = false;
+            return;
+        }
 
-        Specimen s = service.getSpecimenAt(index);
-        if (s != null) {
-            this.targetSpecimen = s;
-            this.currentIndex = index;
+        // Optional: Visual feedback that things are happening
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-            // Save the current index to settings so it persists
-            try {
-                Settings.setValue("cnr", String.valueOf(index));
-            } catch (IOException e) {
-                e.printStackTrace();
+        new SwingWorker<Specimen, Void>() {
+            @Override
+            protected Specimen doInBackground() throws Exception {
+                return service.getSpecimenAt(index);
             }
 
-            updateUIFields(s);
-        }
-    }
+            @Override
+            protected void done() {
+                try {
+                    Specimen s = get();
+                    if (s != null) {
+                        SpecimenBridgeDialog.this.targetSpecimen = s;
+                        SpecimenBridgeDialog.this.currentIndex = index;
 
+                        Settings.setValue("cnr", String.valueOf(index));
+                        updateUIFields(s);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    // UNLOCK everything here
+                    isNavigating = false;
+                    setCursor(Cursor.getDefaultCursor());
+                }
+            }
+        }.execute();
+    }
     private void handleNavigation(int nextIndex) {
         if (isNavigating) return;
-        isNavigating = true;
+        isNavigating = true; // Lock navigation
 
         try {
             LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
@@ -542,29 +559,32 @@ public class SpecimenBridgeDialog extends JDialog {
             if (isDirty()) {
                 if (hasSelectedLocality) {
                     boolean saved = saveBridge();
-                    if (!saved) return; // Halt navigation if validation/save failed
+                    if (!saved) {
+                        isNavigating = false; // Release lock if save fails
+                        return;
+                    }
                 } else if(wasPreviouslyLinked) {
                     deleteBridge();
                 }
             }
 
-            // Advance/Close logic moved here where it belongs
             if (nextIndex != -1 && nextIndex < totalCount) {
-                loadSpecimen(nextIndex);
+                loadSpecimen(nextIndex); // The lock is released inside this method's worker
             } else if (nextIndex >= totalCount) {
                 dispose();
+            } else {
+                isNavigating = false; // Release if index is invalid
             }
 
-            // Always clear the canvas when moving off the record
             canvas.delLayer("Rubin");
             canvas.delLayer("distance");
             canvas.repaint();
 
-        } finally {
-            isNavigating = false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            isNavigating = false; // Release on unexpected error
         }
     }
-
     private void updateUIFields(Specimen s) {
         isAdjusting = true;
 

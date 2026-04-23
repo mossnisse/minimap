@@ -15,7 +15,7 @@ public class DBConnection {
 	private static String password;
 
 	public static Connection getConn() throws SQLException {
-		if (conn == null || conn.isClosed()) {
+		if (conn == null || conn.isClosed() || !conn.isValid(2)) {
 			createConn();
 		}
 		return conn;

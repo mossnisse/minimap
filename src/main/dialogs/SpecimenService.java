@@ -78,7 +78,6 @@ public class SpecimenService {
             mysqlSql.append(" AND specimen_locality.locality_id IS NULL");
         }
 
-
         mysqlSql.append(" ORDER BY Year ASC, Month ASC, Day ASC, original_text ASC");
 
         String h2Insert = "INSERT INTO tempspecimens (AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
@@ -185,13 +184,15 @@ public class SpecimenService {
     public Specimen getSpecimenAt(int index) {
         // index 0 maps to cache_id 1
         String sql = "SELECT * FROM tempspecimens WHERE cache_id = ?;";
-        try (Connection conn = DBConnection.getH2Conn();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try {
+            Connection conn = DBConnection.getH2Conn();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, index + 1);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return mapResultSetToSpecimen(rs);
+                ps.setInt(1, index + 1);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return mapResultSetToSpecimen(rs);
+                    }
                 }
             }
         } catch (SQLException e) {
@@ -201,12 +202,14 @@ public class SpecimenService {
     }
 
     public int getCacheCount() {
-        // Properly close the Statement by including it in the try-with-resources block
-        try (Connection conn = DBConnection.getH2Conn();
-             java.sql.Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM tempspecimens")) {
-            if (rs.next()) return rs.getInt(1);
-        } catch (SQLException e) {
+        try {
+            Connection conn = DBConnection.getH2Conn();
+            try (
+                    java.sql.Statement stmt = conn.createStatement();
+                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM tempspecimens")) {
+                if (rs.next()) return rs.getInt(1);
+            }
+        }catch (SQLException e) {
             e.printStackTrace();
         }
         return 0;
@@ -275,17 +278,19 @@ public class SpecimenService {
         // If not, fetch from MySQL
         List<LocalityRecord> list = new ArrayList<>();
         String sql = "SELECT ID, locality FROM locality WHERE District = ? AND Province = ? ORDER BY locality ASC";
-        try (Connection conn = DBConnection.getConn();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, district);
-            ps.setString(2, province);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(new LocalityRecord(rs.getInt("ID"), rs.getString("locality")));
+        try {
+            Connection conn = DBConnection.getConn();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, district);
+                ps.setString(2, province);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        list.add(new LocalityRecord(rs.getInt("ID"), rs.getString("locality")));
+                    }
                 }
+                // Save to cache
+                localityCache.put(cacheKey, list);
             }
-            // Save to cache
-            localityCache.put(cacheKey, list);
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -318,37 +323,38 @@ public class SpecimenService {
                 + "modifiedby = VALUES(modifiedby), "
                 + "modified = CURRENT_TIMESTAMP;";
 
-        try (Connection conn = DBConnection.getConn();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try {
+            Connection conn = DBConnection.getConn();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, s.getId());
-            ps.setInt(2, localityId);
-            ps.setString(3, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
-            ps.setString(4, s.getCollectionCode() != null ? s.getCollectionCode() : "");
-            ps.setString(5, s.getAccessionNo() != null ? s.getAccessionNo() : "");
+                ps.setInt(1, s.getId());
+                ps.setInt(2, localityId);
+                ps.setString(3, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
+                ps.setString(4, s.getCollectionCode() != null ? s.getCollectionCode() : "");
+                ps.setString(5, s.getAccessionNo() != null ? s.getAccessionNo() : "");
 
-            // Handle NULL for distance
-            if (dist > 0) ps.setInt(6, dist);
-            else ps.setNull(6, java.sql.Types.INTEGER);
+                // Handle NULL for distance
+                if (dist > 0) ps.setInt(6, dist);
+                else ps.setNull(6, java.sql.Types.INTEGER);
 
-            // Handle NULL for direction
-            if (dir != null && !dir.isEmpty()) ps.setString(7, dir);
-            else ps.setNull(7, java.sql.Types.VARCHAR);
+                // Handle NULL for direction
+                if (dir != null && !dir.isEmpty()) ps.setString(7, dir);
+                else ps.setNull(7, java.sql.Types.VARCHAR);
 
-            ps.setString(8, oDist);
-            ps.setString(9, oProv);
-            ps.setString(10, user); // createdby
-            ps.setString(11, user); // modifiedby
+                ps.setString(8, oDist);
+                ps.setString(9, oProv);
+                ps.setString(10, user); // createdby
+                ps.setString(11, user); // modifiedby
 
-            boolean mysqlSuccess = ps.executeUpdate() > 0;
+                boolean mysqlSuccess = ps.executeUpdate() > 0;
 
-            // If MySQL updated successfully, update the local H2 Cache!
-            if (mysqlSuccess) {
-                updateH2CacheLink(s.getAccessionNo(), localityId, oDist, oProv, dist, dir);
+                // If MySQL updated successfully, update the local H2 Cache!
+                if (mysqlSuccess) {
+                    updateH2CacheLink(s.getAccessionNo(), localityId, oDist, oProv, dist, dir);
+                }
+
+                return mysqlSuccess;
             }
-
-            return mysqlSuccess;
-
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
@@ -361,20 +367,22 @@ public class SpecimenService {
         String sql = "DELETE FROM specimen_locality "
                 + "WHERE InstitutionCode = ? AND CollectionCode = ? AND AccessionNo = ?";
 
-        try (Connection conn = DBConnection.getConn();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try {
+            Connection conn = DBConnection.getConn();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
-            ps.setString(2, s.getCollectionCode() != null ? s.getCollectionCode() : "");
-            ps.setString(3, s.getAccessionNo() != null ? s.getAccessionNo() : "");
+                ps.setString(1, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
+                ps.setString(2, s.getCollectionCode() != null ? s.getCollectionCode() : "");
+                ps.setString(3, s.getAccessionNo() != null ? s.getAccessionNo() : "");
 
-            boolean mysqlSuccess = ps.executeUpdate() > 0;
+                boolean mysqlSuccess = ps.executeUpdate() > 0;
 
-            // Clear it from the local H2 Cache as well
-            if (mysqlSuccess) {
-                updateH2CacheLink(s.getAccessionNo(), -1, "", "", 0, "");
+                // Clear it from the local H2 Cache as well
+                if (mysqlSuccess) {
+                    updateH2CacheLink(s.getAccessionNo(), -1, "", "", 0, "");
+                }
+                return mysqlSuccess;
             }
-            return mysqlSuccess;
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
