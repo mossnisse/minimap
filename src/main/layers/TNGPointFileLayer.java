@@ -24,6 +24,7 @@ public class TNGPointFileLayer implements Layer {
 	
 	public static class Locality extends Coordinate {
 		public String name;
+		public int id;
 		
 		public Locality(int x, int y, String name) {
 			super(x,y);
@@ -57,6 +58,10 @@ public class TNGPointFileLayer implements Layer {
 		public String getName() {
 			return name;
 		}
+
+		public int getId() { return id; }
+
+		public void setId(int id) { this.id = id; }
 		
 		public String toString() {
 			String cs = super.toString();

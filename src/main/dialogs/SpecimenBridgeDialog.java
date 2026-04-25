@@ -1004,7 +1004,7 @@ public class SpecimenBridgeDialog extends JDialog {
         Frame parentFrame = (Frame) javax.swing.SwingUtilities.getWindowAncestor(this);
 
         // Open and Position the Dialog
-        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, canvas, selectedText, province);
+        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, null, canvas, selectedText, province);
 
         d.pack();
         d.setLocationRelativeTo(this);

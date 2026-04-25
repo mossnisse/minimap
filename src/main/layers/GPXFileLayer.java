@@ -8,20 +8,19 @@ import java.io.File;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 public class GPXFileLayer implements Layer {
-	private CoordSystem cs = CoordSystem.RT90;
+	private CoordSystem cs = CoordSystem.SWEREF99TM;
 	private Color color = Color.BLACK;
 	private int maxZoom = 0; // 0 indicates unset
 	private int minZoom = 0;
-	private String fileName, name;
+	private String name;
+	private final String fileName;
 	private GPXCoordinate[] coordinates = new GPXCoordinate[0];
 	private boolean hidden;
-	static final Stroke LINE_STROKE = new BasicStroke(2);
+	private static final Stroke LINE_STROKE = new BasicStroke(2);
 
 	public static class GPXCoordinate {
 		double latitude, longitude, elevation;
@@ -32,14 +31,10 @@ public class GPXFileLayer implements Layer {
 	public GPXFileLayer(String fileName) throws Exception {
 		this.fileName = fileName;
 		this.name = fileName;
-		try {
-			readFile();
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
+		readFile();
 	}
 
-	private void readFile() throws Exception, ParserConfigurationException, SAXException {
+	private void readFile() throws Exception {
 		DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 		Document doc = docBuilder.parse(new File(fileName));
@@ -93,9 +88,7 @@ public class GPXFileLayer implements Layer {
 	public String getName() { return name; }
 
 	@Override
-	public void setName(String name) {
-		this.name=name;
-	}
+	public void setName(String name) { this.name=name; }
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
@@ -105,8 +98,8 @@ public class GPXFileLayer implements Layer {
 			g2d.setStroke(LINE_STROKE);
 			for(GPXCoordinate coord : coordinates) {
 				// Using the pre-calculated point is much faster!
-				int x = (int) ((coord.projectedPoint.getX() * xScale) + xShift);
-				int y = (int) ((coord.projectedPoint.getY() * yScale) + yShift);
+				int x = (int) ((coord.projectedPoint.x * xScale) + xShift);
+				int y = (int) ((coord.projectedPoint.y * yScale) + yShift);
 				g2d.drawOval(x - 8, y - 8, 16, 16); // Center the oval on the point
 				g2d.drawLine(x - 10, y - 10,  x + 10, y + 10);
 				g2d.drawLine(x - 10, y + 10,  x + 10, y - 10);
@@ -129,20 +122,14 @@ public class GPXFileLayer implements Layer {
 	}
 
 	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
+	public boolean isHidden() { return hidden; }
 
 	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
+	public void setHidden(boolean hidden) { this.hidden = hidden; }
 
 	@Override
 	public void setCRS(CoordSystem cs) { this.cs = cs; }
 
 	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
+	public CoordSystem getCRS() { return cs; }
 }

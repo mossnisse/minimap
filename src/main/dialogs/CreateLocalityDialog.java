@@ -29,7 +29,6 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private JTextField localityT, districtT, provinceT, countryT, continentT, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;
-	private JScrollPane commentScroll;
 	private JButton cancel, ok;
 
 	public CreateLocalityDialog(Frame owner, GUI gui, main.core.Canvas canvas, SpecimenBridgeDialog bridge, Coordinate SWTM) {
@@ -91,7 +90,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		commentsT = new JTextArea(4, 35);
 		commentsT.setLineWrap(true);
 		commentsT.setWrapStyleWord(true);
-		commentScroll = new JScrollPane(commentsT);
+		JScrollPane commentScroll = new JScrollPane(commentsT);
 		locSizeT = new JTextField(10);
 		categoryT = new JTextField(15);
 		zoomLevelT = new JTextField(5);

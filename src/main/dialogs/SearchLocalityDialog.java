@@ -3,6 +3,7 @@ package main.dialogs;
 import main.core.Canvas;
 import main.core.DBConnection;
 import main.coords.*;
+import main.core.GUI;
 import main.layers.H2TableLayer;
 import main.layers.TNGPointFileLayer;
 
@@ -23,6 +24,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	@Serial
 	private static final long serialVersionUID = 5830869660497471486L;
 	private final Canvas canvas;
+	private final GUI gui;
 	private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
 			"Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
 			"Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
@@ -34,12 +36,12 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	private JCheckBox isPlace;
 	private JComboBox<String> provinceBox;
 	private JPanel resultPanel;
-	private JScrollPane scrollPane;
 	private TNGPointFileLayer lastResults;
 
-	public SearchLocalityDialog(Frame aFrame, Canvas canvas, String text, String province) {
+	public SearchLocalityDialog(Frame aFrame, GUI gui, Canvas canvas, String text, String province) {
 		super(aFrame, "Search Localities", false);
 		this.canvas = canvas;
+		this.gui = gui;
 		initComponents(text, province);
 		pack();
 		setLocationRelativeTo(aFrame);
@@ -91,7 +93,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		// Results
 		resultPanel = new JPanel();
 		resultPanel.setLayout(new BoxLayout(resultPanel, BoxLayout.Y_AXIS));
-		scrollPane = new JScrollPane(resultPanel);
+		JScrollPane scrollPane = new JScrollPane(resultPanel);
 		scrollPane.setPreferredSize(new Dimension(400, 300));
 		content.add(scrollPane);
 
@@ -129,7 +131,6 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 		// Dynamic filters
 		if (!lokal.getText().isEmpty()) {
-
 			String p = lokal.getText().trim().replace("*", "%");
 			// Matches exact, starts with, ends with, or is in the middle of a comma-separated list
 			sql.append(" AND (locality LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ?)");
@@ -139,7 +140,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			params.add("%, " + p);     // alt: last in list
 			params.add("%, " + p + ",%");// alt: middle of list
 		}
-		// 2. Helper for metadata fields (Handles NULL or Empty vs LIKE)
+		// Helper for metadata fields (Handles NULL or Empty vs LIKE)
 		addNullableLikeFilter(sql, params, "country", country.getText());
 		addNullableLikeFilter(sql, params, "district", district.getText());
 		addNullableLikeFilter(sql, params, "coordinate_source", source.getText());
@@ -163,7 +164,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		}
 		addNullableLikeFilter(sql, params, "category", category.getText());
 
-		if (!provinceBox.getSelectedItem().equals("*")) {
+		if (!"*".equals(provinceBox.getSelectedItem())) {
 			sql.append(" AND province = ?");
 			params.add(provinceBox.getSelectedItem());
 		}
@@ -182,16 +183,17 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 				for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
 				try (ResultSet rs = stmt.executeQuery()) {
 					while (rs.next()) {
-						//int id = rs.getInt("ID");
+						int id = rs.getInt("ID");
 						String name = rs.getString("locality");
 						String distr = rs.getString("district");
+						String label = String.format("%s (%s)", name, distr);
+						allNames.add(label);
 
 						Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
 						Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
-
 						allPoints.add(sweref);
-						String label = String.format("%s (%s)", name, distr);
-						allNames.add(label);
+
+						addResultButton(sweref, label, id);
 					}
 				}
 			}
@@ -205,8 +207,10 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			if (od != null && !lokal.getText().isEmpty()) {
 				TNGPointFileLayer h2Res = od.find(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
 				for (TNGPointFileLayer.Locality locus : h2Res.getLocalities()) {
-					allPoints.add(new Coordinate(locus.getPoint()));
+					Coordinate sweref = new Coordinate(locus.getPoint());
+					allPoints.add(sweref);
 					allNames.add(locus.getName() + " (Lantmäteriet)");
+					addResultButton(sweref, locus.getName() + " (Lantmäteriet)", -1);
 				}
 			}
 		}
@@ -216,7 +220,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			lastResults.setColor(Color.blue);
 			canvas.delLayer("Search Results");
 			canvas.addLayerTop(lastResults);
-			for (TNGPointFileLayer.Locality l : lastResults.getLocalities()) addResultButton(l);
+			//for (TNGPointFileLayer.Locality l : lastResults.getLocalities()) addResultButton(l,0,-1);
 			resultPanel.add(Box.createVerticalGlue());
 			zoomb.setEnabled(true);
 		}
@@ -238,14 +242,57 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		}
 	}
 
-	private void addResultButton(TNGPointFileLayer.Locality locus) {
-		JButton btn = new JButton(locus.getName());
+	private void addResultButton(Coordinate coord, String label, int id) {
+		JButton btn = new JButton(label);
 		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
 		btn.setMaximumSize(new Dimension(Integer.MAX_VALUE, 30));
+
+		// Left click: Pan to map
 		btn.addActionListener(e -> {
-			canvas.focus(locus);
+			canvas.focus(new TNGPointFileLayer.Locality(coord, label));
 			canvas.repaint();
 		});
+
+		// Right click: Open Edit Dialog
+		btn.addMouseListener(new java.awt.event.MouseAdapter() {
+			@Override
+			public void mousePressed(java.awt.event.MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e) && id != -1) {
+					doPop(e);
+				}
+			}
+
+			@Override
+			public void mouseReleased(java.awt.event.MouseEvent e) {
+				if (SwingUtilities.isRightMouseButton(e) && id != -1) {
+					doPop(e);
+				}
+			}
+
+			private void doPop(java.awt.event.MouseEvent e) {
+				JPopupMenu menu = new JPopupMenu();
+				JMenuItem editItem = new JMenuItem("Edit Locality Details...");
+
+				editItem.addActionListener(al -> {
+					// Get the parent frame to own the new dialog
+					Frame owner = (Frame) SwingUtilities.getWindowAncestor(SearchLocalityDialog.this);
+
+					// Open EditLocalityDialog using the ID from the search results
+					EditLocalityDialog editDlg = new EditLocalityDialog(
+							gui,
+							owner,
+							id,
+							null, // bridgeDialog
+							canvas
+					);
+					editDlg.setVisible(true);
+				});
+
+				menu.add(editItem);
+				menu.show(e.getComponent(), e.getX(), e.getY());
+			}
+		});
+
 		resultPanel.add(btn);
 	}
 

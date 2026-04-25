@@ -243,7 +243,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			warning.append("? Used by ").append(usesCount).append(" specimen records.\n");
 		}
 
-		if (warning.length() == 0) {
+		if (warning.isEmpty()) {
 			warning.append("Are you sure you want to delete this locality?");
 		} else {
 			warning.append("\nDeleting it will break these links. Proceed?");

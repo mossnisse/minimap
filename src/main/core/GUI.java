@@ -6,11 +6,9 @@ import java.io.File;
 import java.io.IOException;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import javax.xml.parsers.ParserConfigurationException;
 import java.awt.Desktop;
 import java.net.URI;
 import java.util.Locale;
-import org.xml.sax.SAXException;
 
 import main.dialogs.*;
 import main.layers.*;
@@ -325,7 +323,7 @@ public class GUI  {
 	}
 
 	public void searchLocality() {
-		new SearchLocalityDialog(frame, canvas, "", "").setVisible(true);
+		new SearchLocalityDialog(frame, this, canvas, "", "").setVisible(true);
 	}
 
 	public void showCoordinateInfoAtCoord() {
