@@ -104,7 +104,7 @@ public class GUI  {
 
 	public JMenuBar createMenuBar() {
 		JMenuBar menuBar;
-		JMenu menu, menu2, menu3;
+		JMenu menu, menu2, menu3, menu4;
 		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12;
 		menuBar = new JMenuBar();
 
@@ -164,7 +164,12 @@ public class GUI  {
 		menuItem5.addActionListener(e->canvas.zoom(2));
 		menu2.add(menuItem5);
 
-		
+		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_T);
+		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
+		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
+		menuItem10.addActionListener(e->showLayerDialog());
+		menu2.add(menuItem10);
+
 		menuItem12 = new JMenuItem("Mark/Find Coordinate", KeyEvent.VK_U);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK));
@@ -213,24 +218,22 @@ public class GUI  {
 		menuItem11.addActionListener(e->createLocalityAtCoord());
 		menu2.add(menuItem11);
 
+		menu3 = new JMenu("Layers");
+		menuBar.add(menu3);
+
 		menuBar.add(Box.createHorizontalGlue());
 
-		menu3 = new JMenu("Help");
-		menuBar.add(menu3);
+		menu4 = new JMenu("Help");
+		menuBar.add(menu4);
 
 		menuItem9 = new JMenuItem("About");
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem9.addActionListener(e->JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013"));
-		menu3.add(menuItem9);
+		menu4.add(menuItem9);
 		
 		menuItem11 = new JMenuItem("Shortcuts");
 		menuItem11.addActionListener(e->showShortcuts());
-		menu3.add(menuItem11);
-
-		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_L);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK));
-		menu2.add(menuItem10);
+		menu4.add(menuItem11);
 
 		return menuBar;
 	}
@@ -326,6 +329,10 @@ public class GUI  {
 		new SearchLocalityDialog(frame, this, canvas, "", "").setVisible(true);
 	}
 
+	public void showLayerDialog() {
+		new LayerDialog(frame, canvas);
+	}
+
 	public void showCoordinateInfoAtCoord() {
 		Coordinate c = canvas.getCoordinate();
 		new CoordinateDialog(frame, canvas, c).setVisible(true);
@@ -388,7 +395,13 @@ public class GUI  {
 						"Press c and click on the map to show info about the coordinate\n" +
 						"Press r and click on the map to show the 5x5 km RUBIN ruta\n" +
 						"Press k and click on the map to open Kartbild.com at the coordinate\n" +
-						"Press d and click on the map to show distance and direction";
+						"Press d and click on the map to show distance and direction\n" +
+						"Press g and click on the map for the distance tool\n" +
+						"in Link specimen mark text and\n" +
+						"Ctr+F for search locality in the locality db and a Lantmäteriets ortnamn db\n" +
+						"Ctr+B for search in Ortnamnsregistret\n" +
+						"Ctr+L copy data from last saved link";
+
 		JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
 	}
 
