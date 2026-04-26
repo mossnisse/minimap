@@ -226,8 +226,7 @@ public class TopowebLayer implements Layer {
 
 	@Override
 	public Extent getBoundaries() {
-		//Todo: implement the method
-		return null;
+		return cs.getBoundaries();
 	}
 
 	@Override

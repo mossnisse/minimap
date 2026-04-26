@@ -24,13 +24,6 @@ public class Canvas extends JPanel {
 	
 	public Canvas() {
 		cs = CoordSystem.SWEREF99TM;
-		
-		// Sverige Sweref99TM   // use coordSystem get Somehing
-		int xMin = 194181;
-		int xMax = 812496;
-		int yMin = 6113836;
-		int yMax = 7700000;
-		//bounds = new Extent(yMin, xMin, yMax, xMax);
 		bounds = cs.getBoundaries();
 		coord = null;
 		layers = new ArrayList<Layer>();
@@ -42,23 +35,10 @@ public class Canvas extends JPanel {
 
 	private void initialize() {
 		try {
-			TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng");
-			prFile.setColor(Color.BLACK);
-			prFile.setName("provinser");
-			addLayerBottom(prFile);
-
-			TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng");
-			socFile.setColor(Color.RED);
-			socFile.setName("socknar");
-			socFile.setHidden(false);
-			addLayerBottom(socFile);
-
-			H2TableLayer od = new H2TableLayer("ortnamnSWTM");
-			od.setColor(Color.BLACK);
-			od.setName("Ortnamnsdb");
-			od.setHidden(false);
-			od.setMaxZoomL(5);
-			addLayerBottom(od);
+			TopowebLayer tb = new TopowebLayer(this);
+			tb.setName("TopoWeb");
+			tb.setHidden(false);
+			addLayerBottom(tb);
 
 			MYSQLTableLayer md = new MYSQLTableLayer();
 			md.setColor(Color.BLACK);
@@ -71,10 +51,23 @@ public class Canvas extends JPanel {
 			});
 			addLayerBottom(md);
 
-			TopowebLayer tb = new TopowebLayer(this);
-			tb.setName("TopoWeb");
-			tb.setHidden(false);
-			addLayerBottom(tb);
+			H2TableLayer od = new H2TableLayer("ortnamnSWTM");
+			od.setColor(Color.BLACK);
+			od.setName("Ortnamnsdb");
+			od.setHidden(false);
+			od.setMaxZoomL(5);
+			addLayerBottom(od);
+
+			TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng");
+			socFile.setColor(Color.RED);
+			socFile.setName("socknar");
+			socFile.setHidden(false);
+			addLayerBottom(socFile);
+
+			TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng");
+			prFile.setColor(Color.BLACK);
+			prFile.setName("provinser");
+			addLayerBottom(prFile);
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -99,17 +92,23 @@ public class Canvas extends JPanel {
 	}
 	
 	public void addLayerBottom(Layer l) {
-		layers.addFirst(l);
+		synchronized (layers) {
+			layers.addFirst(l);
+		}
 		repaint();
 	}
 	
 	public void addLayerTop(Layer l) {
-		layers.add(l);
+		synchronized (layers) {
+			layers.add(l);
+		}
 		repaint();
 	}
 
 	public void delLayer(String name) {
-		layers.removeIf(l -> l != null && name.equals(l.getName()));
+		synchronized (layers) {
+			layers.removeIf(l -> l != null && name.equals(l.getName()));
+		}
 	}
 	
 	public Layer getLayer(String name) {
@@ -180,27 +179,6 @@ public class Canvas extends JPanel {
 		bounds.focus(coord);
 		repaint();
 	}
-
-	/*
-	// translates p from pixels to world coordinates
-	public Coordinate translatePoint(Point p) {
-		Dimension size = getSize();
-		if (size.width <= 0 || size.height <= 0 || bounds == null) return null;
-
-		double rawXScale = size.width / (double) bounds.getWidth();
-		double rawYScale = size.height / (double) bounds.getHeight();
-		double scale = Math.min(rawXScale, rawYScale);
-
-		Point m = bounds.getMidlePoint();
-		double xShift = (size.width / 2.0) - (m.getX() * scale);
-		double yShift = (size.height / 2.0) - (m.getY() * -scale);
-
-		// Inverse transform (Pixels back to Meters)
-		int x = (int) ((p.getX() - xShift) / scale);
-		int y = (int) ((p.getY() - yShift) / -scale);
-
-		return new Coordinate(y, x);
-	}*/
 
 	public Coordinate translatePoint(Point p) {
 		Dimension size = getSize();
@@ -280,10 +258,11 @@ public class Canvas extends JPanel {
 
 		// Draw Layers using the LOCAL drawBounds
 		synchronized (layers) {
-			for (Layer l : layers) {
+			for (int i = layers.size() - 1; i >= 0; i--) {
+				Layer l = layers.get(i);
 				if (!l.isHidden() && l.isInZoomLevel(zoomL)) {
 					try {
-						g2d.setColor(l.getColor());
+						//g2d.setColor(l.getColor());
 						// Pass drawBounds here so Topoweb knows exactly which tiles to fetch
 						l.draw(g2d, xShift, scale, yShift, -scale, drawBounds);
 					} catch (Exception e) {
