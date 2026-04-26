@@ -28,8 +28,13 @@ public class DistanceLayer implements Layer {
 	}
 
 	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	@Override
@@ -38,8 +43,28 @@ public class DistanceLayer implements Layer {
 	}
 
 	@Override
-	public String getName() {
-		return name;
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
+
+	@Override
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	@Override
+	public void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		this.cs = cs;
 	}
 
 	@Override
@@ -56,33 +81,18 @@ public class DistanceLayer implements Layer {
 	}
 
 	@Override
-	public void setName(String name) {
-		this.name = name;
+	public Extent getBoundaries() {
+		System.out.println("C1: "+c1 +" c2: "+c2);
+		// Calculate the absolute min and max to ensure a valid Extent
+		double minE = Math.min(c1.getEast(), c2.getEast());
+		double maxE = Math.max(c1.getEast(), c2.getEast());
+		double minN = Math.min(c1.getNorth(), c2.getNorth());
+		double maxN = Math.max(c1.getNorth(), c2.getNorth());
+		return new Extent(minN, minE, maxN, maxE);
 	}
 
 	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
-
-	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
-
-	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale,
-	                 double yShift, double yScale, BoundingBox bounds) {
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
 		if (hidden) return;
 
 		g2d.setColor(color);

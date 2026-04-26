@@ -5,8 +5,11 @@ import java.io.Serial;
 import java.util.ArrayList;
 import javax.swing.*;
 
+import main.coords.Coordinate;
+import main.coords.Extent;
 import main.core.Canvas;
 import main.core.Layer;
+import main.geometry.BoundingBox;
 
 public class LayerDialog extends JDialog {
 	@Serial
@@ -68,13 +71,16 @@ public class LayerDialog extends JDialog {
 			canvas.repaint();
 		});
 
-		// Zoom to Layer (Simplified logic)
+		// Zoom to Layer
 		JButton zoomBtn = new JButton("Zoom");
 		zoomBtn.addActionListener(e -> {
-			// Note: Layer interface currently lacks getBounds().
-			// If the layer supports it (like TNG layers), we zoom there.
-			// For now, we zoom to a default or centered area.
-			JOptionPane.showMessageDialog(this, "Zooming to " + l.getName());
+			Extent extent = l.getBoundaries();
+
+			// Update canvas bounds and center it
+			canvas.setBounds(extent);
+			Coordinate m = extent.getMidlePoint();
+			System.out.println("pan to: " + m);
+			canvas.focus(extent.getMidlePoint());
 			canvas.repaint();
 		});
 

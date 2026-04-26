@@ -121,14 +121,6 @@ public class GUI  {
 		menuItem0.addActionListener(e->openFile());
 		menu.add(menuItem0);
 
-		menuItem1 = new JMenuItem("Open .gpx File", KeyEvent.VK_G);
-		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
-		menuItem1.getAccessibleContext().setAccessibleDescription(
-				"This doesn't really do anything");
-		menuItem1.addActionListener(e->openGPXFile());
-		menu.add(menuItem1);
-
 		menuItem2 = new JMenuItem("Save as .csv", KeyEvent.VK_S);
 		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
@@ -221,6 +213,21 @@ public class GUI  {
 		menu3 = new JMenu("Layers");
 		menuBar.add(menu3);
 
+		menuItem1 = new JMenuItem("Add Topowebkartan");
+		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
+		//menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
+		//menuItem1.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
+		menuItem1.addActionListener(e->addTopowebkartan());
+		menu3.add(menuItem1);
+
+		menuItem1 = new JMenuItem("Add .gpx layer", KeyEvent.VK_G);
+		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
+		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
+		menuItem1.getAccessibleContext().setAccessibleDescription(
+				"This doesn't really do anything");
+		menuItem1.addActionListener(e->openGPXFile());
+		menu3.add(menuItem1);
+
 		menuBar.add(Box.createHorizontalGlue());
 
 		menu4 = new JMenu("Help");
@@ -308,6 +315,13 @@ public class GUI  {
 			}
 
 		}
+	}
+
+	public void addTopowebkartan() {
+		TopowebLayer tb = new TopowebLayer(canvas);
+		tb.setName("TopoWeb");
+		tb.setHidden(false);
+		canvas.addLayerBottom(tb);
 	}
 
 	public void saveCSV() {

@@ -108,16 +108,21 @@ public class RasterFilLayer implements Layer {
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale,
-			double yShift, double yScale, BoundingBox bounds) {
-		if (bounds.intersects(box)) {
-			int x1 = (int) ((box.getX1()*xScale)+xShift);
-			int y1 = (int) ((box.getY1()*yScale)+yShift);
-			int x2 = (int) ((box.getX2()*xScale)+xShift);
-			int y2 = (int) ((box.getY2()*yScale)+yShift);
-			//System.out.println("x1:"+x1+", y1:"+(y2)+", x2:"+(x2-x1)+", y2:"+(y1-y2));
-			g2d.drawImage(img,x1,y2,x2-x1,y1-y2,null);
-		}
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	@Override
+	public void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) { this.cs = cs; }
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
 	}
 
 	@Override
@@ -138,20 +143,21 @@ public class RasterFilLayer implements Layer {
 	}
 
 	@Override
-	public boolean isHidden() {
-		return hidden;
+	public Extent getBoundaries() {
+		//Todo: implement the method
+		return null;
 	}
 
 	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
-
-	@Override
-	public void setCRS(CoordSystem cs) { this.cs = cs; }
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
+	public void draw(Graphics2D g2d, double xShift, double xScale,
+	                 double yShift, double yScale, BoundingBox bounds) {
+		if (bounds.intersects(box)) {
+			int x1 = (int) ((box.getX1()*xScale)+xShift);
+			int y1 = (int) ((box.getY1()*yScale)+yShift);
+			int x2 = (int) ((box.getX2()*xScale)+xShift);
+			int y2 = (int) ((box.getY2()*yScale)+yShift);
+			//System.out.println("x1:"+x1+", y1:"+(y2)+", x2:"+(x2-x1)+", y2:"+(y1-y2));
+			g2d.drawImage(img,x1,y2,x2-x1,y1-y2,null);
+		}
 	}
 }

@@ -190,6 +190,31 @@ public class TopowebLayer implements Layer {
 	}
 
 	@Override
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	@Override
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	@Override
+	public void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		this.cs = cs;
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
+	}
+
+	@Override
 	public void setMinZoomL(int zoomLevel) {
 		this.minZoom = zoomLevel;
 	}
@@ -200,15 +225,16 @@ public class TopowebLayer implements Layer {
 	}
 
 	@Override
+	public Extent getBoundaries() {
+		//Todo: implement the method
+		return null;
+	}
+
+	@Override
 	public boolean isInZoomLevel(int zoomLevel) {
 		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
 		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
 		return meetsMin && meetsMax;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
 	}
 	
 	private static int tileWidth (int tilematrix) {
@@ -259,25 +285,5 @@ public class TopowebLayer implements Layer {
 				}
 			}
 		}
-	}
-
-	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
-
-	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
 	}
 }

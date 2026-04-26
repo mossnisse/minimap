@@ -44,6 +44,61 @@ public class RubinLayer implements Layer {
 		}
 	}
 
+	public Coordinate getMiddle() {
+		return RUBIN.toSweref99TM(rubin);
+	}
+
+	@Override
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
+
+	@Override
+	public Color getColor() {
+		return color;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	@Override
+	public boolean isHidden() { return hidden; }
+
+	@Override
+	public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+	@Override
+	public void setCRS(CoordSystem cs) { this.cs = cs; }
+
+	@Override
+	public CoordSystem getCRS() { return cs; }
+
+	@Override
+	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
+
+	@Override
+	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
+
+	@Override
+	public boolean isInZoomLevel(int zoomLevel) {
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
+	}
+
+	@Override
+	public Extent getBoundaries() {
+		//Todo: implement the method
+		return null;
+	}
+
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
 		if (hidden || swerefCorners.size() < 4) return;
@@ -67,53 +122,4 @@ public class RubinLayer implements Layer {
 
 		g2d.setStroke(originalStroke);
 	}
-
-	public Coordinate getMiddle() {
-		return RUBIN.toSweref99TM(rubin);
-	}
-
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public boolean isHidden() { return hidden; }
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
-	@Override
-	public void setCRS(CoordSystem cs) { this.cs = cs; }
-
-	@Override
-	public CoordSystem getCRS() { return cs; }
 }

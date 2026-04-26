@@ -18,19 +18,20 @@ public class Canvas extends JPanel {
 	@Serial
 	private static final long serialVersionUID = 1L;
 	private final CoordSystem cs;
-	BoundingBox bounds;
+	Extent bounds;
 	Coordinate coord;
 	private final ArrayList<Layer> layers;
 	
 	public Canvas() {
 		cs = CoordSystem.SWEREF99TM;
 		
-		// Sverige Sweref99TM
+		// Sverige Sweref99TM   // use coordSystem get Somehing
 		int xMin = 194181;
 		int xMax = 812496;
 		int yMin = 6113836;
 		int yMax = 7700000;
-		bounds = new BoundingBox(xMin,yMin,xMax,yMax);
+		//bounds = new Extent(yMin, xMin, yMax, xMax);
+		bounds = cs.getBoundaries();
 		coord = null;
 		layers = new ArrayList<Layer>();
 
@@ -125,25 +126,25 @@ public class Canvas extends JPanel {
 	}
 
 	public void zoom(double step) {
-		Point middle = bounds.getMidlePoint();
+		Coordinate middle = bounds.getMidlePoint();
 		double halfW = (bounds.getWidth() * step) / 2.0;
 		double halfH = (bounds.getHeight() * step) / 2.0;
 
-		int xMin = (int) (middle.getX() - halfW);
-		int xMax = (int) (middle.getX() + halfW);
-		int yMin = (int) (middle.getY() - halfH);
-		int yMax = (int) (middle.getY() + halfH);
+		double xMin = middle.getEast() - halfW;
+		double xMax = middle.getEast() + halfW;
+		double yMin = middle.getNorth() - halfH;
+		double yMax = middle.getNorth() + halfH;
 
-		bounds = new BoundingBox(xMin, yMin, xMax, yMax);
+		bounds = new Extent(yMin, xMin, yMax, xMax);
 		repaint();
 	}
 	
-	public void setBounds(BoundingBox b) {
+	public void setBounds(Extent b) {
 		bounds = b;
 		repaint();
 	}
 	
-	public BoundingBox getBoundingBox() {
+	public Extent getBoundingBox() {
 		return bounds;
 	}
 
@@ -163,21 +164,20 @@ public class Canvas extends JPanel {
 
 		// Shift the bounds
 		// To pan the map "with" the mouse, we subtract the meter delta
-		int xMin = (int) (bounds.getX1() - meterDX);
-		int xMax = (int) (bounds.getX2() - meterDX);
+		int xMin = (int) (bounds.c1.getEast() - meterDX);
+		int xMax = (int) (bounds.c2.getEast() - meterDX);
 
 		// Since Swing Y is down and Map Y is up, dragging "down" (positive dy)
 		// means we want to see higher Y coordinates (North). So we ADD dy.
-		int yMin = (int) (bounds.getY1() + meterDY);
-		int yMax = (int) (bounds.getY2() + meterDY);
+		int yMin = (int) (bounds.c1.getNorth() + meterDY);
+		int yMax = (int) (bounds.c2.getNorth() + meterDY);
 
-		bounds = new BoundingBox(xMin, yMin, xMax, yMax);
+		bounds = new Extent(yMin, xMin, yMax, xMax);
 		repaint();
 	}
 	
 	public void focus(Coordinate coord) {
-		Point p = coord.getPoint();
-		bounds.focus(p);
+		bounds.focus(coord);
 		repaint();
 	}
 
@@ -207,10 +207,10 @@ public class Canvas extends JPanel {
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return null;
 
 		double scale = Math.min(size.width / (double)bounds.getWidth(), size.height / (double)bounds.getHeight());
-		Point m = bounds.getMidlePoint();
+		Coordinate m = bounds.getMidlePoint();
 
-		double xShift = (size.width / 2.0) - (m.getX() * scale);
-		double yShift = (size.height / 2.0) - (m.getY() * -scale);
+		double xShift = (size.width / 2.0) - (m.getEast() * scale);
+		double yShift = (size.height / 2.0) - (m.getNorth() * -scale);
 
 		// Inverse of the logic above
 		double east = (p.x - xShift) / scale;
@@ -224,11 +224,11 @@ public class Canvas extends JPanel {
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return new Point(0,0);
 
 		double scale = Math.min(size.width / (double)bounds.getWidth(), size.height / (double)bounds.getHeight());
-		Point m = bounds.getMidlePoint();
+		Coordinate m = bounds.getMidlePoint();
 
 		// Use the exact same shift logic as paintComponent
-		double xShift = (size.width / 2.0) - (m.getX() * scale);
-		double yShift = (size.height / 2.0) - (m.getY() * -scale);
+		double xShift = (size.width / 2.0) - (m.getEast() * scale);
+		double yShift = (size.height / 2.0) - (m.getNorth() * -scale);
 
 		int x = (int) (c.getEast() * scale + xShift);
 		int y = (int) (c.getNorth() * -scale + yShift); // Note the -scale for Y
@@ -262,18 +262,18 @@ public class Canvas extends JPanel {
 		// Create "Draw Bounds" (The actual area visible in the window)
 		double drawWidth = size.width / scale;
 		double drawHeight = size.height / scale;
-		Point m = bounds.getMidlePoint();
+		Coordinate m = bounds.getMidlePoint();
 
 		BoundingBox drawBounds = new BoundingBox(
-				(int)(m.getX() - drawWidth / 2.0),
-				(int)(m.getY() - drawHeight / 2.0),
-				(int)(m.getX() + drawWidth / 2.0),
-				(int)(m.getY() + drawHeight / 2.0)
+				(int)(m.getEast() - drawWidth / 2.0),
+				(int)(m.getNorth() - drawHeight / 2.0),
+				(int)(m.getEast() + drawWidth / 2.0),
+				(int)(m.getNorth() + drawHeight / 2.0)
 		);
 
 		// Calculate Shifts to center the map in the window
-		double xShift = (size.width / 2.0) - (m.getX() * scale);
-		double yShift = (size.height / 2.0) - (m.getY() * -scale);
+		double xShift = (size.width / 2.0) - (m.getEast() * scale);
+		double yShift = (size.height / 2.0) - (m.getNorth() * -scale);
 
 		// zoomL is meters per pixel (approximate)
 		int zoomL = (int) (1.0 / scale);

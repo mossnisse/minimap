@@ -29,63 +29,6 @@ public class H2TableLayer implements Layer {
 		this.tableName = tableName;
 	}
 
-	@Override
-	public void setColor(Color c) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) {
-		minZoom = zoomLevel;
-	}
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) {
-		maxZoom = zoomLevel;
-	}
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		if (hidden) return;
-
-		// Only query the DB if the view has moved or zoomed
-		if (lastQueryBounds == null || !lastQueryBounds.equals(bounds)) {
-			updateCache(bounds);
-			lastQueryBounds = new BoundingBox(bounds.getX1(), bounds.getY1(), bounds.getX2(), bounds.getY2());
-		}
-
-		g2d.setColor(color);
-		for (Locality loc : cache) {
-			int x = (int) ((loc.east * xScale) + xShift);
-			int y = (int) ((loc.north * yScale) + yShift);
-
-			g2d.drawOval(x - 3, y - 3, 6, 6);
-			g2d.drawString(loc.name, x + 5, y); // Offset text slightly
-		}
-	}
-
 	private void updateCache(BoundingBox bounds) {
 		cache.clear();
 		try {
@@ -109,16 +52,6 @@ public class H2TableLayer implements Layer {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-	}
-	
-	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
 	}
 
 	public TNGPointFileLayer find(int provinsNr, String value, String district) {
@@ -218,6 +151,16 @@ public class H2TableLayer implements Layer {
 	}
 
 	@Override
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	@Override
+	public void setHidden(boolean hidden) {
+		this.hidden = hidden;
+	}
+
+	@Override
 	public void setCRS(CoordSystem cs) {
 		this.cs = cs;
 	}
@@ -225,5 +168,68 @@ public class H2TableLayer implements Layer {
 	@Override
 	public CoordSystem getCRS() {
 		return cs;
+	}
+
+	@Override
+	public void setColor(Color c) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
+
+	@Override
+	public Color getColor() {
+		return color;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	@Override
+	public void setMinZoomL(int zoomLevel) {
+		minZoom = zoomLevel;
+	}
+
+	@Override
+	public void setMaxZoomL(int zoomLevel) {
+		maxZoom = zoomLevel;
+	}
+
+	@Override
+	public boolean isInZoomLevel(int zoomLevel) {
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
+	}
+
+	@Override
+	public Extent getBoundaries() {
+		//Todo: implement the method
+		return null;
+	}
+
+	@Override
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+		if (hidden) return;
+
+		// Only query the DB if the view has moved or zoomed
+		if (lastQueryBounds == null || !lastQueryBounds.equals(bounds)) {
+			updateCache(bounds);
+			lastQueryBounds = new BoundingBox(bounds.getX1(), bounds.getY1(), bounds.getX2(), bounds.getY2());
+		}
+
+		g2d.setColor(color);
+		for (Locality loc : cache) {
+			int x = (int) ((loc.east * xScale) + xShift);
+			int y = (int) ((loc.north * yScale) + yShift);
+
+			g2d.drawOval(x - 3, y - 3, 6, 6);
+			g2d.drawString(loc.name, x + 5, y); // Offset text slightly
+		}
 	}
 }

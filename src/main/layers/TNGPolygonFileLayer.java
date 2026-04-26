@@ -31,17 +31,13 @@ public class TNGPolygonFileLayer implements Layer {
 			this.name = name;
 			this.box = box;
 		}
-		
-		public BoundingBox getBoundingBox() {
-			return box;
-		}
-		
+
 		public String getName() {
 			return name;
 		}
-		
-		public void setName(String name) {
-			this.name = name;
+
+		public BoundingBox getBoundingBox() {
+			return box;
 		}
 		
 		public boolean isInside(Coordinate c) {
@@ -100,14 +96,11 @@ public class TNGPolygonFileLayer implements Layer {
 		return provinces;
 	}
 
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
+	public Province inPolygon(Coordinate c) {
+		for (Province pr: provinces) {
+			if(pr.isInside(c)) return pr;
+		}
+		return null;
 	}
 
 	@Override
@@ -119,11 +112,51 @@ public class TNGPolygonFileLayer implements Layer {
 	public void setName(String name) {
 		this.name = name;
 	}
-	
-	public Province inPolygon(Coordinate c) {
-		for (Province pr: provinces) {
-			if(pr.isInside(c)) return pr;
-		}
+
+	@Override
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
+
+	@Override
+	public Color getColor() {
+		return color;
+	}
+
+	@Override
+	public boolean isHidden() {
+		return hidden;
+	}
+
+	@Override
+	public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+	@Override
+	public void setCRS(CoordSystem cs) {
+		this.cs = cs;
+	}
+
+	@Override
+	public CoordSystem getCRS() {
+		return cs;
+	}
+
+	@Override
+	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
+
+	@Override
+	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
+
+	@Override
+	public boolean isInZoomLevel(int zoomLevel) {
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
+	}
+
+	@Override
+	public Extent getBoundaries() {
+		//Todo: implement the method
 		return null;
 	}
 
@@ -160,36 +193,5 @@ public class TNGPolygonFileLayer implements Layer {
 			}
 		}
 		g2d.setStroke(oldStroke);
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
-	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
 	}
 }

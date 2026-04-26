@@ -114,70 +114,6 @@ public class ShapePointFileLayer implements Layer {
 			desc.print();
 		}
 	}
-
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale,
-			double yShift, double yScale, BoundingBox bounds) {
-		if (!hidden) {
-		g2d.setColor(color);
-		
-		/*
-		for (PointESRI point : points) {
-			int x = (int) ((point.getX()*xScale)+xShift);
-			int y = (int) ((point.getY()*yScale)+yShift);
-			g2d.drawOval(x-3,y-3,6,6);
-		}*/
-		
-		Iterator<PointESRI> it = points.iterator();
-		for (dbfRecord record : data) {
-			g2d.setColor(color);
-			PointESRI point = it.next();
-			int x = (int) ((point.getX()*xScale)+xShift);
-			int y = (int) ((point.getY()*yScale)+yShift);
-			g2d.drawOval(x-3,y-3,6,6);
-			//String rnamn = record.getField(0);
-			//System.out.println(rnamn);
-			//record.print();
-			
-			/*g2d.setColor(Color.black);
-			g2d.drawString(rnamn,x,y);*/
-		}
-		}
-		
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
 	
 	public TNGPointFileLayer find(String kname, String value) {
 		value = value.trim();
@@ -201,6 +137,39 @@ public class ShapePointFileLayer implements Layer {
 	}
 
 	@Override
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
+
+	@Override
+	public Color getColor() {
+		return color;
+	}
+
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	@Override
+	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
+
+	@Override
+	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
+
+	@Override
+	public boolean isInZoomLevel(int zoomLevel) {
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
+	}
+
+	@Override
 	public boolean isHidden() {
 		return hidden;
 	}
@@ -220,5 +189,42 @@ public class ShapePointFileLayer implements Layer {
 	@Override
 	public CoordSystem getCRS() {
 		return cs;
+	}
+
+	@Override
+	public Extent getBoundaries() {
+		//Todo: implement the method
+		return null;
+	}
+
+	@Override
+	public void draw(Graphics2D g2d, double xShift, double xScale,
+	                 double yShift, double yScale, BoundingBox bounds) {
+		if (!hidden) {
+			g2d.setColor(color);
+
+		/*
+		for (PointESRI point : points) {
+			int x = (int) ((point.getX()*xScale)+xShift);
+			int y = (int) ((point.getY()*yScale)+yShift);
+			g2d.drawOval(x-3,y-3,6,6);
+		}*/
+
+			Iterator<PointESRI> it = points.iterator();
+			for (dbfRecord record : data) {
+				g2d.setColor(color);
+				PointESRI point = it.next();
+				int x = (int) ((point.getX()*xScale)+xShift);
+				int y = (int) ((point.getY()*yScale)+yShift);
+				g2d.drawOval(x-3,y-3,6,6);
+				//String rnamn = record.getField(0);
+				//System.out.println(rnamn);
+				//record.print();
+
+			/*g2d.setColor(Color.black);
+			g2d.drawString(rnamn,x,y);*/
+			}
+		}
+
 	}
 }

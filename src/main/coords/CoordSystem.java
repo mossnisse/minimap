@@ -5,9 +5,11 @@ import main.geometry.BoundingBox;
 import java.awt.*;
 
 public enum CoordSystem {
+
+    //1 128 550
     SWEREF99TM("SWEREF99 TM",
             new TransverseMercatorStrategy(0.0, 500000.0, 15.00, 0.9996, 6378137.0, 1.0 / 298.257222101),
-            6000000, 7700000, 200000, 960000),
+            6_000_000, 7_700_000, 200_000, 960_000),
     // parameters to compensate for the Bessel ellipsoid, to convert direct to the "wgs84" ellipsoid
     RT90("RT90 2.5 gon V 0:-15.",
             new TransverseMercatorStrategy(-667.711, 1500064.274, 15.0 + 48.0 / 60.0 + 22.624306 / 3600.0, 1.00000561024, 6378137.0, 1.0 / 298.257222101),
@@ -81,5 +83,9 @@ public enum CoordSystem {
 
     public BoundingBox getBoundingBox() {
         return new BoundingBox((int) Math.floor(eMin), (int) Math.ceil(eMax), (int) Math.floor(nMin), (int) Math.ceil(nMax));
+    }
+
+    public Extent getBoundaries() {
+        return new Extent(nMax, eMax, nMin, eMax);
     }
 }

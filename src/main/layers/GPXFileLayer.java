@@ -77,18 +77,68 @@ public class GPXFileLayer implements Layer {
 	}
 
 	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
+	public String getName() { return name; }
+
+	@Override
+	public void setName(String name) { this.name=name; }
 
 	@Override
 	public Color getColor() { return color; }
 
 	@Override
-	public String getName() { return name; }
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
 
 	@Override
-	public void setName(String name) { this.name=name; }
+	public boolean isHidden() { return hidden; }
+
+	@Override
+	public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+	@Override
+	public void setCRS(CoordSystem cs) { this.cs = cs; }
+
+	@Override
+	public CoordSystem getCRS() { return cs; }
+
+	@Override
+	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
+
+	@Override
+	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
+
+	@Override
+	public boolean isInZoomLevel(int zoomLevel) {
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
+	}
+
+	@Override
+	public Extent getBoundaries() {
+		// If there are no coordinates, we can't define a boundary
+		if (coordinates == null || coordinates.length == 0) {
+			return null;
+		}
+
+		// Initialize with the values from the first coordinate
+		double minE = coordinates[0].projectedPoint.x;
+		double maxE = coordinates[0].projectedPoint.x;
+		double minN = coordinates[0].projectedPoint.y;
+		double maxN = coordinates[0].projectedPoint.y;
+
+		// Iterate through all coordinates to expand the boundaries
+		for (GPXCoordinate coord : coordinates) {
+			if (coord.projectedPoint.x < minE) minE = coord.projectedPoint.x;
+			if (coord.projectedPoint.x > maxE) maxE = coord.projectedPoint.x;
+			if (coord.projectedPoint.y < minN) minN = coord.projectedPoint.y;
+			if (coord.projectedPoint.y > maxN) maxN = coord.projectedPoint.y;
+		}
+
+		// Return a new BoundingBox representing the full extent of the GPX data
+		return new Extent(minN, minE, maxN, maxE);
+	}
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
@@ -107,29 +157,4 @@ public class GPXFileLayer implements Layer {
 			g2d.setStroke(originalStroke);
 		}
 	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
-	public boolean isHidden() { return hidden; }
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
-	@Override
-	public void setCRS(CoordSystem cs) { this.cs = cs; }
-
-	@Override
-	public CoordSystem getCRS() { return cs; }
 }

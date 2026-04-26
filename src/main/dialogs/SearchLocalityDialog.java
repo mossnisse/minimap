@@ -298,7 +298,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 	@Override public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == searchb) performSearch();
-		else if (e.getSource() == zoomb && lastResults != null) canvas.setBounds(lastResults.getBounds().expand(2000));
+		else if (e.getSource() == zoomb && lastResults != null) canvas.setBounds(lastResults.getBoundaries().expand(2000));
 		else if (e.getSource() == closeb) dispose();
 	}
 

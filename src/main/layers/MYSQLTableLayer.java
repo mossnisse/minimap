@@ -48,83 +48,6 @@ public class MYSQLTableLayer implements Layer {
 		this.repaintCallback = repaintCallback;
 	}
 
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() { return color; }
-
-	@Override
-	public String getName() { return name; }
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
-	public void setName(String name) { this.name = name; }
-
-	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale,
-	                 double yShift, double yScale, BoundingBox bounds) {
-		if (hidden) return;
-
-		// Trigger background fetch if needed, but don't block the UI!
-		if (shouldRefreshCache(bounds)) {
-			refreshCacheAsync(bounds);
-		}
-
-		// Draw whatever is currently in RAM
-		g2d.setColor(color);
-		Font old = g2d.getFont();
-		g2d.setFont(LABEL_FONT);
-
-		// Grabbing the rectangle once is much faster than checking the Shape
-		Rectangle clipBounds = g2d.getClipBounds();
-		// Capture local reference to avoid list changing mid-draw
-		List<LocalityRec> localCache = this.cache;
-
-		for (LocalityRec rec : localCache) {
-			int x = (int) ((rec.e * xScale) + xShift);
-			int y = (int) ((rec.n * yScale) + yShift);
-
-			// Fast clipping
-			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
-
-			if (selectedLocalityID != null && rec.id == selectedLocalityID) {
-				g2d.setColor(Color.RED);
-				g2d.setStroke(new BasicStroke(2));
-				g2d.drawOval(x - 8, y - 8, 16, 16); // Draw a larger "target" circle
-				int r = (int) (rec.precision * xScale);
-				g2d.drawOval(x - r, y - r, r * 2, r * 2);
-
-				// Always draw the name for the selected item, even if zoomed out
-				g2d.drawString(rec.name, x + 10, y);
-				g2d.setColor(color);
-				g2d.setStroke(new BasicStroke(1)); // Reset stroke
-			} else {
-				g2d.drawOval(x - 3, y - 3, 6, 6);
-				if (rec.precision > 0) {
-					int r = (int) (rec.precision * xScale);
-					if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
-				}
-				if (xScale > 0.02) g2d.drawString(rec.name, x + 5, y);
-			}
-		}
-		g2d.setFont(old);
-	}
-
 	private boolean shouldRefreshCache(BoundingBox currentBounds) {
 		if (cachedBounds == null) return true;
 		return !cachedBounds.isInside(currentBounds);
@@ -191,12 +114,6 @@ public class MYSQLTableLayer implements Layer {
 		this.cachedBounds = null;
 	}
 
-	@Override
-	public boolean isHidden() { return hidden; }
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
 	// point should be in world coordinate
 	public void selectNearest(Coordinate c) {
 		// We search within a "tolerance" (e.g., 10 pixels converted to world units)
@@ -240,8 +157,97 @@ public class MYSQLTableLayer implements Layer {
 	}
 
 	@Override
+	public void setColor(Color color) {
+		this.color = (color != null) ? color : Color.BLACK;
+	}
+
+	@Override
+	public Color getColor() { return color; }
+
+	@Override
+	public String getName() { return name; }
+
+	@Override
+	public void setName(String name) { this.name = name; }
+
+	@Override
+	public boolean isHidden() { return hidden; }
+
+	@Override
+	public void setHidden(boolean hidden) { this.hidden = hidden; }
+
+	@Override
 	public void setCRS(CoordSystem cs) { this.cs = cs;  }
 
 	@Override
 	public CoordSystem getCRS() { return cs; }
+
+	@Override
+	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
+
+	@Override
+	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
+
+	@Override
+	public boolean isInZoomLevel(int zoomLevel) {
+		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
+		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
+		return meetsMin && meetsMax;
+	}
+
+	@Override
+	public Extent getBoundaries() {
+		//Todo: implement the method
+		return null;
+	}
+
+	@Override
+	public void draw(Graphics2D g2d, double xShift, double xScale,
+	                 double yShift, double yScale, BoundingBox bounds) {
+		if (hidden) return;
+
+		// Trigger background fetch if needed, but don't block the UI!
+		if (shouldRefreshCache(bounds)) {
+			refreshCacheAsync(bounds);
+		}
+
+		// Draw whatever is currently in RAM
+		g2d.setColor(color);
+		Font old = g2d.getFont();
+		g2d.setFont(LABEL_FONT);
+
+		// Grabbing the rectangle once is much faster than checking the Shape
+		Rectangle clipBounds = g2d.getClipBounds();
+		// Capture local reference to avoid list changing mid-draw
+		List<LocalityRec> localCache = this.cache;
+
+		for (LocalityRec rec : localCache) {
+			int x = (int) ((rec.e * xScale) + xShift);
+			int y = (int) ((rec.n * yScale) + yShift);
+
+			// Fast clipping
+			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
+
+			if (selectedLocalityID != null && rec.id == selectedLocalityID) {
+				g2d.setColor(Color.RED);
+				g2d.setStroke(new BasicStroke(2));
+				g2d.drawOval(x - 8, y - 8, 16, 16); // Draw a larger "target" circle
+				int r = (int) (rec.precision * xScale);
+				g2d.drawOval(x - r, y - r, r * 2, r * 2);
+
+				// Always draw the name for the selected item, even if zoomed out
+				g2d.drawString(rec.name, x + 10, y);
+				g2d.setColor(color);
+				g2d.setStroke(new BasicStroke(1)); // Reset stroke
+			} else {
+				g2d.drawOval(x - 3, y - 3, 6, 6);
+				if (rec.precision > 0) {
+					int r = (int) (rec.precision * xScale);
+					if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
+				}
+				if (xScale > 0.02) g2d.drawString(rec.name, x + 5, y);
+			}
+		}
+		g2d.setFont(old);
+	}
 }
