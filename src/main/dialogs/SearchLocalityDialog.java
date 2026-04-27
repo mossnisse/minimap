@@ -203,7 +203,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		// should also search on district
 		String sCountry = country.getText().trim();
 		if (!lokal.getText().isEmpty() && ("Sweden".equals(sCountry) || "*".equals(sCountry))) {
-			H2TableLayer od = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
+			H2TableLayer od = (H2TableLayer) canvas.layerManager.getLayer("Ortnamnsdb");
 			if (od != null && !lokal.getText().isEmpty()) {
 				TNGPointFileLayer h2Res = od.find(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
 				for (TNGPointFileLayer.Locality locus : h2Res.getLocalities()) {
@@ -218,8 +218,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		if (!allPoints.isEmpty()) {
 			lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
 			lastResults.setColor(Color.blue);
-			canvas.delLayer("Search Results");
-			canvas.addLayerTop(lastResults);
+			canvas.layerManager.delLayer("Search Results");
+			canvas.layerManager.addLayerTop(lastResults);
 			//for (TNGPointFileLayer.Locality l : lastResults.getLocalities()) addResultButton(l,0,-1);
 			resultPanel.add(Box.createVerticalGlue());
 			zoomb.setEnabled(true);

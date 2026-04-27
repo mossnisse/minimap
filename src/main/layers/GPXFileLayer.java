@@ -11,15 +11,9 @@ import org.w3c.dom.NodeList;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-public class GPXFileLayer implements Layer {
-	private CoordSystem cs = CoordSystem.SWEREF99TM;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
-	private String name;
+public class GPXFileLayer extends Layer {
 	private final String fileName;
 	private GPXCoordinate[] coordinates = new GPXCoordinate[0];
-	private boolean hidden;
 	private static final Stroke LINE_STROKE = new BasicStroke(2);
 
 	public static class GPXCoordinate {
@@ -29,8 +23,8 @@ public class GPXFileLayer implements Layer {
 	}
 
 	public GPXFileLayer(String fileName) throws Exception {
+		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
-		this.name = fileName;
 		readFile();
 	}
 
@@ -77,45 +71,6 @@ public class GPXFileLayer implements Layer {
 	}
 
 	@Override
-	public String getName() { return name; }
-
-	@Override
-	public void setName(String name) { this.name=name; }
-
-	@Override
-	public Color getColor() { return color; }
-
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public boolean isHidden() { return hidden; }
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
-	@Override
-	public void setCRS(CoordSystem cs) { this.cs = cs; }
-
-	@Override
-	public CoordSystem getCRS() { return cs; }
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
 	public Extent getBoundaries() {
 		// If there are no coordinates, we can't define a boundary
 		if (coordinates == null || coordinates.length == 0) {
@@ -142,8 +97,8 @@ public class GPXFileLayer implements Layer {
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		if (!hidden) {
-			g2d.setColor(color);
+		if (!isHidden()) {
+			g2d.setColor(getColor());
 			Stroke originalStroke = g2d.getStroke();
 			g2d.setStroke(LINE_STROKE);
 			for(GPXCoordinate coord : coordinates) {

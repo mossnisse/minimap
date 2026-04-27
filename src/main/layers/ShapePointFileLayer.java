@@ -17,28 +17,23 @@ import main.shapeFile.FieldDescriptor;
 import main.shapeFile.PointESRI;
 import main.shapeFile.dbfRecord;
 
-public class ShapePointFileLayer implements Layer {
-	private String name, fileName;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
+public class ShapePointFileLayer extends Layer {
+	private final String fileName;
+
 	private int fileLength, shpVersion, shapeType, nrRecords, nrFields;
 	//private byte dbfVersion;
-	private boolean hidden;
 	Vector<dbfRecord> data;
 	Vector<FieldDescriptor> descriptors;
 	// BoundingBoxESRI box;
 	double minX, minY, maxX, maxY, minZ, maxZ, minM, maxM;
 	// Vector<ShapeESRI> records;
 	Vector<PointESRI> points;
-	private CoordSystem cs;
 	
 	public ShapePointFileLayer(String fileName) throws IOException {
+		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
-		this.name = fileName;
 		readShapeFile();
 		readDBF();
-		cs = CoordSystem.SWEREF99TM;
 		//printDBFFeidlDescriptors();
 	}
 	
@@ -135,60 +130,9 @@ public class ShapePointFileLayer implements Layer {
 		}
 		return new TNGPointFileLayer(ans, names, "ans");
 	}
-
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
 	
 	public Vector<dbfRecord> getRecords() {
 		return data;
-	}
-
-	@Override
-	public void setCRS(CoordSystem cs) { this.cs = cs; }
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
 	}
 
 	@Override
@@ -200,8 +144,8 @@ public class ShapePointFileLayer implements Layer {
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
 	                 double yShift, double yScale, BoundingBox bounds) {
-		if (!hidden) {
-			g2d.setColor(color);
+		if (!isHidden()) {
+			g2d.setColor(getColor());
 
 		/*
 		for (PointESRI point : points) {
@@ -212,7 +156,6 @@ public class ShapePointFileLayer implements Layer {
 
 			Iterator<PointESRI> it = points.iterator();
 			for (dbfRecord record : data) {
-				g2d.setColor(color);
 				PointESRI point = it.next();
 				int x = (int) ((point.getX()*xScale)+xShift);
 				int y = (int) ((point.getY()*yScale)+yShift);

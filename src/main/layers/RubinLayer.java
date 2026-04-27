@@ -8,21 +8,16 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RubinLayer implements Layer {
-	private String name, rubin;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
-	private boolean hidden;
-	private CoordSystem cs;
+public class RubinLayer extends Layer {
+	private String rubin;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 
 	// Store corners in projected (Sweref) coordinates
-	private List<Coordinate> swerefCorners = new ArrayList<>();
+	private final List<Coordinate> swerefCorners = new ArrayList<>();
 
 	public RubinLayer(String rubin, String name, Color c) {
-		this.name = name;
-		this.color = c;
+		super(name, false, CoordSystem.SWEREF99TM);
+		setColor(c);
 		setRubin(rubin);
 	}
 
@@ -49,51 +44,6 @@ public class RubinLayer implements Layer {
 	}
 
 	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public boolean isHidden() { return hidden; }
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
-	@Override
-	public void setCRS(CoordSystem cs) { this.cs = cs; }
-
-	@Override
-	public CoordSystem getCRS() { return cs; }
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
 	public Extent getBoundaries() {
 		//Todo: implement the method
 		return null;
@@ -101,9 +51,9 @@ public class RubinLayer implements Layer {
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		if (hidden || swerefCorners.size() < 4) return;
+		if (isHidden() || swerefCorners.size() < 4) return;
 
-		g2d.setColor(color);
+		g2d.setColor(getColor());
 		Stroke originalStroke = g2d.getStroke();
 		g2d.setStroke(LINE_STROKE);
 

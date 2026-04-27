@@ -14,13 +14,13 @@ public class Extent {
     }
 
     public boolean isInside(Coordinate c) {
-        return c1.getEast() < c.getEast() && c.getEast() < c2.getEast()
-                && c1.getNorth()  < c.getNorth()  && c.getNorth()  < c2.getNorth() ;
+        return c1.getEast() <= c.getEast() && c.getEast() <= c2.getEast()
+                && c1.getNorth()  <= c.getNorth()  && c.getNorth()  <= c2.getNorth() ;
     }
 
     public boolean isInside(Extent b) {
-        return c1.getEast() < b.c1.getEast() && c2.getEast() > b.c2.getEast()
-                && c1.getNorth() < b.c1.getNorth() && c2.getNorth() > b.c2.getNorth();
+        return c1.getEast() <= b.c1.getEast() && c2.getEast() >= b.c2.getEast()
+                && c1.getNorth() <= b.c1.getNorth() && c2.getNorth() >= b.c2.getNorth();
     }
 
     /*

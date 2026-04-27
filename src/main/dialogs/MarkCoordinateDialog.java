@@ -28,8 +28,8 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		this.canvas = canvas;
 
 		// Safely fetch layers
-		provinces = (canvas.getLayer("provinser") instanceof TNGPolygonFileLayer l) ? l : null;
-		districts = (canvas.getLayer("socknar") instanceof TNGPolygonFileLayer l) ? l : null;
+		provinces = (canvas.layerManager.getLayer("provinser") instanceof TNGPolygonFileLayer l) ? l : null;
+		districts = (canvas.layerManager.getLayer("socknar") instanceof TNGPolygonFileLayer l) ? l : null;
 
 		// Input fields
 		north = new JTextField(15);
@@ -150,8 +150,8 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 				wgs84 = CoordSystem.RT90.toWGS84(rt90r);
 
 				RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
-				canvas.delLayer("Rubin");
-				canvas.addLayerTop(r);
+				canvas.layerManager.delLayer("Rubin");
+				canvas.layerManager.addLayerTop(r);
 			} else {
 				coordinateSys.setText("Invalid Input");
 				return;

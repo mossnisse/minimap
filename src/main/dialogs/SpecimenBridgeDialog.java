@@ -576,8 +576,8 @@ public class SpecimenBridgeDialog extends JDialog {
                 isNavigating = false; // Release if index is invalid
             }
 
-            canvas.delLayer("Rubin");
-            canvas.delLayer("distance");
+            canvas.layerManager.delLayer("Rubin");
+            canvas.layerManager.delLayer("distance");
             canvas.repaint();
 
         } catch (Exception e) {
@@ -846,14 +846,14 @@ public class SpecimenBridgeDialog extends JDialog {
         String directionS = (String) directionCombo.getSelectedItem();
 
         // Clear old distance layer regardless
-        canvas.delLayer("distance");
+        canvas.layerManager.delLayer("distance");
 
         if (!distText.isEmpty() && directionS != null && !directionS.isEmpty()) {
             try {
                 int distanceI = Integer.parseInt(distText);
                 if (distanceI > 0) {
                     // Add the visual vector layer
-                    canvas.addLayerTop(new DistanceLayer(canvas, "distance", c, distanceI, directionS, CoordSystem.SWEREF99TM ));
+                    canvas.layerManager.addLayerTop(new DistanceLayer(canvas, "distance", c, distanceI, directionS, CoordSystem.SWEREF99TM ));
                 }
             } catch (NumberFormatException e) {
                 // Silent fail for visualization if number is garbled
@@ -868,8 +868,8 @@ public class SpecimenBridgeDialog extends JDialog {
         String rubin = targetSpecimen.getRubin();
         if (rubin != null && !rubin.isEmpty()) {
             RubinLayer r = new RubinLayer(rubin, "Rubin", Color.GREEN);
-            canvas.delLayer("Rubin");
-            canvas.addLayerTop(r);
+            canvas.layerManager.delLayer("Rubin");
+            canvas.layerManager.addLayerTop(r);
             canvas.focus(r.getMiddle());
         }
     }

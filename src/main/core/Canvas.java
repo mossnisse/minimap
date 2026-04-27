@@ -3,13 +3,8 @@ package main.core;
 import main.coords.*;
 import main.dialogs.DistanceTool;
 import main.geometry.BoundingBox;
-import main.layers.H2TableLayer;
-import main.layers.MYSQLTableLayer;
-import main.layers.TNGPolygonFileLayer;
-import main.layers.TopowebLayer;
 
 import java.awt.*;
-import java.io.IOException;
 import java.io.Serial;
 import java.util.ArrayList;
 import javax.swing.*;
@@ -20,58 +15,16 @@ public class Canvas extends JPanel {
 	private final CoordSystem cs;
 	Extent bounds;
 	Coordinate coord;
-	private final ArrayList<Layer> layers;
+	public final LayerManager layerManager;
+
 	
 	public Canvas() {
 		cs = CoordSystem.SWEREF99TM;
 		bounds = cs.getBoundaries();
 		coord = null;
-		layers = new ArrayList<Layer>();
-
+		layerManager = new LayerManager(this);
 		DistanceTool tool = new DistanceTool(this);
 		addMouseListener(tool);
-		initialize();
-	}
-
-	private void initialize() {
-		try {
-			TopowebLayer tb = new TopowebLayer(this);
-			tb.setName("TopoWeb");
-			tb.setHidden(false);
-			addLayerBottom(tb);
-
-			MYSQLTableLayer md = new MYSQLTableLayer();
-			md.setColor(Color.BLACK);
-			md.setName("LokalDB");
-			md.setHidden(false);
-			md.setMaxZoomL(40);
-			md.setRepaintCallback(() -> {
-				// Force the map to redraw on the Swing thread when data arrives
-				SwingUtilities.invokeLater(() -> this.repaint());
-			});
-			addLayerBottom(md);
-
-			H2TableLayer od = new H2TableLayer("ortnamnSWTM");
-			od.setColor(Color.BLACK);
-			od.setName("Ortnamnsdb");
-			od.setHidden(false);
-			od.setMaxZoomL(5);
-			addLayerBottom(od);
-
-			TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng");
-			socFile.setColor(Color.RED);
-			socFile.setName("socknar");
-			socFile.setHidden(false);
-			addLayerBottom(socFile);
-
-			TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng");
-			prFile.setColor(Color.BLACK);
-			prFile.setName("provinser");
-			addLayerBottom(prFile);
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
 	}
 
 	// todo use the MYSQLTableLayer concurently with the UI thread. check for null?
@@ -90,39 +43,7 @@ public class Canvas extends JPanel {
 		coord = null;
 		repaint();
 	}
-	
-	public void addLayerBottom(Layer l) {
-		synchronized (layers) {
-			layers.addFirst(l);
-		}
-		repaint();
-	}
-	
-	public void addLayerTop(Layer l) {
-		synchronized (layers) {
-			layers.add(l);
-		}
-		repaint();
-	}
 
-	public void delLayer(String name) {
-		synchronized (layers) {
-			layers.removeIf(l -> l != null && name.equals(l.getName()));
-		}
-	}
-	
-	public Layer getLayer(String name) {
-		for(Layer l: layers) {
-			if (l.getName().equals(name)) {
-				return l;
-			}
-		}
-		return null;
-	}
-	
-	public ArrayList<Layer> getLayers() {
-		return layers;
-	}
 
 	public void zoom(double step) {
 		Coordinate middle = bounds.getMidlePoint();
@@ -152,8 +73,8 @@ public class Canvas extends JPanel {
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return;
 
 		// Calculate the EXACT same scale used in paintComponent
-		double rawXScale = size.width / (double)bounds.getWidth();
-		double rawYScale = size.height / (double)bounds.getHeight();
+		double rawXScale = size.width / bounds.getWidth();
+		double rawYScale = size.height / bounds.getHeight();
 		double uniformScale = Math.min(rawXScale, rawYScale);
 
 		// Convert pixel movement to map meters
@@ -184,7 +105,7 @@ public class Canvas extends JPanel {
 		Dimension size = getSize();
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return null;
 
-		double scale = Math.min(size.width / (double)bounds.getWidth(), size.height / (double)bounds.getHeight());
+		double scale = Math.min(size.width / bounds.getWidth(), size.height / bounds.getHeight());
 		Coordinate m = bounds.getMidlePoint();
 
 		double xShift = (size.width / 2.0) - (m.getEast() * scale);
@@ -201,7 +122,7 @@ public class Canvas extends JPanel {
 		Dimension size = getSize();
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return new Point(0,0);
 
-		double scale = Math.min(size.width / (double)bounds.getWidth(), size.height / (double)bounds.getHeight());
+		double scale = Math.min(size.width / bounds.getWidth(), size.height / bounds.getHeight());
 		Coordinate m = bounds.getMidlePoint();
 
 		// Use the exact same shift logic as paintComponent
@@ -257,6 +178,7 @@ public class Canvas extends JPanel {
 		int zoomL = (int) (1.0 / scale);
 
 		// Draw Layers using the LOCAL drawBounds
+		ArrayList<Layer> layers = layerManager.getLayers();
 		synchronized (layers) {
 			for (int i = layers.size() - 1; i >= 0; i--) {
 				Layer l = layers.get(i);

@@ -63,8 +63,8 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		String province = "";
 		String district = "";
 
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.getLayer("socknar");
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.layerManager.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.layerManager.getLayer("socknar");
 
 		if (provinces != null) {
 			TNGPolygonFileLayer.Province pr = provinces.inPolygon(SWTM);
@@ -78,7 +78,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 
 		// Logic for Suggesting Name
 		String suggestName = "";
-		H2TableLayer odb = (H2TableLayer) canvas.getLayer("Ortnamnsdb");
+		H2TableLayer odb = (H2TableLayer) canvas.layerManager.getLayer("Ortnamnsdb");
 		if (odb != null) {
 			suggestName = odb.findNearest(SWTM, 1000);
 		}
@@ -250,7 +250,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 				bridgeDialog.invalidateLocalityList() ;
 			}
 			// invalidate the MySQLLayer cache
-			Layer layer = canvas.getLayer("LokalDB");
+			Layer layer = canvas.layerManager.getLayer("LokalDB");
 			if (layer instanceof MYSQLTableLayer mysqlLayer) {
 				mysqlLayer.invalidateCache();
 			}

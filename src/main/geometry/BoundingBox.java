@@ -56,13 +56,13 @@ public class BoundingBox {
 	}
 
 	public boolean isInside(Point p) {
-		return p1.getX() < p.getX() && p.getX() < p2.getX()
-				&& p1.getY() < p.getY() && p.getY() < p2.getY();
+		return p1.getX() <= p.getX() && p.getX() <= p2.getX()
+				&& p1.getY() <= p.getY() && p.getY() <= p2.getY();
 	}
 	
 	public boolean isInside(BoundingBox b) {
-		return getX1() < b.getX1() && getX2() > b.getX2()
-				&& getY1() < b.getY1() && getY2() > b.getY2();
+		return getX1() <= b.getX1() && getX2() >= b.getX2()
+				&& getY1() <= b.getY1() && getY2() >= b.getY2();
 	}
 	
 	public boolean intersects(BoundingBox b) {

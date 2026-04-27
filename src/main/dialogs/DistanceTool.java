@@ -36,7 +36,6 @@ public class DistanceTool extends MouseAdapter {
             double bearing = startCoord.getBearingTM(currentCoord);
             String direction = Coordinate.getDirectionFromBearing(bearing);
 
-
             // Create and add the layer (using your existing DistanceLayer)
             DistanceLayer layer = new DistanceLayer(
                     canvas,
@@ -47,7 +46,7 @@ public class DistanceTool extends MouseAdapter {
                     canvas.getCRS()
             );
 
-            canvas.addLayerTop(layer);
+            canvas.layerManager.addLayerTop(layer);
 
             // Show result to user
             JOptionPane.showMessageDialog(canvas,
@@ -55,7 +54,7 @@ public class DistanceTool extends MouseAdapter {
 
             // Reset for next measurement
             startCoord = null;
-            canvas.delLayer("Measurement");
+            canvas.layerManager.delLayer("Measurement");
             canvas.repaint();
         }
     }

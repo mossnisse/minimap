@@ -24,8 +24,8 @@ public class CoordinateDialog extends JDialog {
 		// Get Layers
 		String prov = "outside layer";
 		String dist = "outside layer";
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.getLayer("socknar");
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.layerManager.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.layerManager.getLayer("socknar");
 
 		if (provinces != null) {
 			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);

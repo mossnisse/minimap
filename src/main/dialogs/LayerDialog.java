@@ -27,7 +27,7 @@ public class LayerDialog extends JDialog {
 
 		// Use a ListModel to handle the data
 		listModel = new DefaultListModel<>();
-		ArrayList<Layer> layers = canvas.getLayers();
+		ArrayList<Layer> layers = canvas.layerManager.getLayers();
 		for (Layer l : layers) {
 			listModel.addElement(l);
 		}
@@ -100,7 +100,7 @@ public class LayerDialog extends JDialog {
 		if (l != null) {
 			int confirm = JOptionPane.showConfirmDialog(this, "Delete layer: " + l.getName() + "?");
 			if (confirm == JOptionPane.YES_OPTION) {
-				canvas.delLayer(l.getName());
+				canvas.layerManager.delLayer(l.getName());
 				listModel.removeElement(l);
 				canvas.repaint();
 			}
@@ -167,8 +167,8 @@ public class LayerDialog extends JDialog {
 				listModel.add(insertIndex, movedLayer);
 
 				// Sync with Canvas Layers safely
-				synchronized (canvas.getLayers()) {
-					ArrayList<Layer> canvasLayers = canvas.getLayers();
+				synchronized (canvas.layerManager.getLayers()) {
+					ArrayList<Layer> canvasLayers = canvas.layerManager.getLayers();
 					canvasLayers.remove(fromIndex);
 					canvasLayers.add(insertIndex, movedLayer); // Use the pre-calculated insertIndex
 				}

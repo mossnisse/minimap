@@ -16,15 +16,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class MYSQLTableLayer implements Layer {
-	private String name;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
-	private boolean hidden;
-	private CoordSystem cs;
+public class MYSQLTableLayer extends Layer {
 	private Integer selectedLocalityID = null;
-
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
 
 	// Volatile ensures the new list is immediately visible to the drawing thread
@@ -39,7 +32,9 @@ public class MYSQLTableLayer implements Layer {
 
 	private record LocalityRec(int n, int e, String name, int precision, int id) {}
 
-	public MYSQLTableLayer() {}
+	public MYSQLTableLayer() {
+		super("MySQL Layer", false, CoordSystem.SWEREF99TM);
+	}
 
 	/**
 	 * Pass in your canvas.repaint() so the layer can trigger a refresh when data arrives.
@@ -157,45 +152,6 @@ public class MYSQLTableLayer implements Layer {
 	}
 
 	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() { return color; }
-
-	@Override
-	public String getName() { return name; }
-
-	@Override
-	public void setName(String name) { this.name = name; }
-
-	@Override
-	public boolean isHidden() { return hidden; }
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
-	@Override
-	public void setCRS(CoordSystem cs) { this.cs = cs;  }
-
-	@Override
-	public CoordSystem getCRS() { return cs; }
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
 	public Extent getBoundaries() {
 		//Todo: implement the method
 		return null;
@@ -204,7 +160,7 @@ public class MYSQLTableLayer implements Layer {
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
 	                 double yShift, double yScale, BoundingBox bounds) {
-		if (hidden) return;
+		if (isHidden()) return;
 
 		// Trigger background fetch if needed, but don't block the UI!
 		if (shouldRefreshCache(bounds)) {
@@ -212,7 +168,7 @@ public class MYSQLTableLayer implements Layer {
 		}
 
 		// Draw whatever is currently in RAM
-		g2d.setColor(color);
+		g2d.setColor(getColor());
 		Font old = g2d.getFont();
 		g2d.setFont(LABEL_FONT);
 
@@ -229,7 +185,7 @@ public class MYSQLTableLayer implements Layer {
 			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
 
 			if (selectedLocalityID != null && rec.id == selectedLocalityID) {
-				g2d.setColor(Color.RED);
+				g2d.setColor(getColor());
 				g2d.setStroke(new BasicStroke(2));
 				g2d.drawOval(x - 8, y - 8, 16, 16); // Draw a larger "target" circle
 				int r = (int) (rec.precision * xScale);
@@ -237,7 +193,6 @@ public class MYSQLTableLayer implements Layer {
 
 				// Always draw the name for the selected item, even if zoomed out
 				g2d.drawString(rec.name, x + 10, y);
-				g2d.setColor(color);
 				g2d.setStroke(new BasicStroke(1)); // Reset stroke
 			} else {
 				g2d.drawOval(x - 3, y - 3, 6, 6);

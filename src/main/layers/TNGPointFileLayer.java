@@ -11,14 +11,9 @@ import java.util.ArrayList;
 
 import main.shapeFile.DataInputStreamSE;
 
-public class TNGPointFileLayer implements Layer {
-	private String fileName, name;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
+public class TNGPointFileLayer extends Layer {
+	private String fileName;
 	private Locality[] localities;
-	private boolean hidden;
-	private CoordSystem cs;
 	private int nameLength;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 	
@@ -70,14 +65,13 @@ public class TNGPointFileLayer implements Layer {
 	}
 	
 	public TNGPointFileLayer(String fileName) throws IOException {
+		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
-		this.name = fileName;
-		this.cs = CoordSystem.SWEREF99TM;
 		readFile();
 	}
 	
 	public TNGPointFileLayer(ArrayList<Coordinate> loca, ArrayList<String> names, String name) {
-		this.name = name;
+		super(name, false, CoordSystem.SWEREF99TM);
 		localities = new Locality[loca.size()];
 		int i=0;
 		for(Coordinate loci:loca) {
@@ -108,88 +102,17 @@ public class TNGPointFileLayer implements Layer {
 	public Locality[] getLocalities() {
 		return localities;
 	}
-
-
-	/*
-	public BoundingBox getBounds() {
-		if (localities.length == 0) return new BoundingBox(0,0,0,0);
-
-		int minX = Integer.MAX_VALUE, maxX = Integer.MIN_VALUE;
-		int minY = Integer.MAX_VALUE, maxY = Integer.MIN_VALUE;
-
-		for (Locality coord : localities) {
-			if (coord.getEast() < minX) minX = (int) Math.round(coord.getEast());
-			if (coord.getEast() > maxX) maxX = (int) Math.round(coord.getEast());
-			if (coord.getNorth() < minY) minY = (int) Math.round(coord.getNorth());
-			if (coord.getNorth() > maxY) maxY = (int) Math.round(coord.getNorth());
-		}
-		// Order: minX, minY, maxX, maxY
-		return new BoundingBox(minX, minY, maxX, maxY);
-	}*/
 	
 	public String toString() {
-		String ans = name+": ";
-		for(Locality koord:localities) {
-			ans=ans+koord.toString();
+		String ans = getName()+": ";
+		for(Locality coord:localities) {
+			ans = ans + coord.toString();
 		}
 		return ans;
 	}
 	
 	public int size() {
 		return localities.length;
-	}
-
-	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
-
-	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
-
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
 	}
 
 	@Override
@@ -211,11 +134,11 @@ public class TNGPointFileLayer implements Layer {
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		if (hidden) return;
+		if (isHidden()) return;
 
 		Stroke s = g2d.getStroke();
 		g2d.setStroke(LINE_STROKE);
-		g2d.setColor(color);
+		g2d.setColor(getColor());
 
 		for (Locality coord : localities) {
 			// Standard Mapping: X -> Horizontal, Y -> Vertical

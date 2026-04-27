@@ -1,7 +1,6 @@
 package main.layers;
 
 import main.coords.*;
-import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.io.File;
@@ -14,20 +13,14 @@ import main.core.Canvas;
 import main.core.Layer;
 import main.geometry.BoundingBox;
 
-public class TopowebLayer implements Layer {
+public class TopowebLayer extends Layer {
 	private final Canvas canvas;
 	//private final String key = "007d0995-da35-38ed-81b6-2a11e9c29d10";
 	//private final String url = "https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/";
 	private final String url = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";
 	// http://hades.slu.se/lm/topowebb/wms/v1/?SERVICE=WMS&REQUEST=GetCapabilities
 	private final static int TILEMATRIX_LIMIT = 12;
-	private String name;
-	private boolean hidden;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
 	private final TileBuffer tileBuffer;
-	private CoordSystem cs;
 	
 	public static class TileIndex {
 		public int zoomLevel;  // == tilematrix;
@@ -169,71 +162,14 @@ public class TopowebLayer implements Layer {
 	}
 	
 	public TopowebLayer(Canvas canvas) {
+		super("Topowebkartan", false, CoordSystem.SWEREF99TM);
 		this.canvas = canvas;
 		tileBuffer = new TileBuffer();
-		cs = CoordSystem.SWEREF99TM;
-	}
-
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
-
-	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) {
-		this.minZoom = zoomLevel;
-	}
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) {
-		this.maxZoom = zoomLevel;
 	}
 
 	@Override
 	public Extent getBoundaries() {
-		return cs.getBoundaries();
-	}
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
+		return getCRS().getBoundaries();
 	}
 	
 	private static int tileWidth (int tilematrix) {

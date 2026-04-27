@@ -274,7 +274,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 						bridgeDialog.invalidateLocalityList();
 					}
 
-					Layer layer = canvas.getLayer("LokalDB");
+					Layer layer = canvas.layerManager.getLayer("LokalDB");
 					if (layer instanceof MYSQLTableLayer mysqlLayer) {
 						mysqlLayer.invalidateCache();
 					}
@@ -392,7 +392,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 						bridgeDialog.invalidateLocalityList();
 					}
 				}
-				Layer layer = canvas.getLayer("LokalDB");
+				Layer layer = canvas.layerManager.getLayer("LokalDB");
 				if (layer instanceof MYSQLTableLayer mysqlLayer) {
 					mysqlLayer.invalidateCache();
 				}
@@ -429,7 +429,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 				stmt.executeUpdate();
 
 				// Refresh layers
-				Layer layer = canvas.getLayer("LokalDB");
+				Layer layer = canvas.layerManager.getLayer("LokalDB");
 				if (layer instanceof MYSQLTableLayer mysqlLayer) {
 					mysqlLayer.invalidateCache();
 				}

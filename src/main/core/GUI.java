@@ -278,7 +278,7 @@ public class GUI  {
 			//System.out.println("Open: " + file.getName());
 			try {
 				RasterFilLayer rFile = new RasterFilLayer(file.getPath());
-				canvas.addLayerBottom(rFile);
+				canvas.layerManager.addLayerBottom(rFile);
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -308,7 +308,7 @@ public class GUI  {
 				GPXFileLayer l = new GPXFileLayer(file.getCanonicalPath());
 				l.setColor(Color.BLUE);
 				l.setName(file.getName());
-				canvas.addLayerTop(l);
+				canvas.layerManager.addLayerTop(l);
 				canvas.repaint();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -321,7 +321,7 @@ public class GUI  {
 		TopowebLayer tb = new TopowebLayer(canvas);
 		tb.setName("TopoWeb");
 		tb.setHidden(false);
-		canvas.addLayerBottom(tb);
+		canvas.layerManager.addLayerBottom(tb);
 	}
 
 	public void saveCSV() {
@@ -365,8 +365,8 @@ public class GUI  {
 			RubinLayer r = new RubinLayer(s.trim(), "Rubin", Color.green);
 			Coordinate c = r.getMiddle();
 			if (c != null) {
-				canvas.delLayer("Rubin");
-				canvas.addLayerTop(r);
+				canvas.layerManager.delLayer("Rubin");
+				canvas.layerManager.addLayerTop(r);
 				canvas.focus(c);
 				canvas.repaint();
 			} else {
@@ -381,8 +381,8 @@ public class GUI  {
 		Coordinate c = canvas.translatePoint(e.getPoint());
 		String rubin = RUBIN.fromSweref99TM(c);
 		RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
-		canvas.delLayer("Rubin");
-		canvas.addLayerTop(r);
+		canvas.layerManager.delLayer("Rubin");
+		canvas.layerManager.addLayerTop(r);
 	}
 
 	public void distanceAtCoord() {
@@ -421,7 +421,7 @@ public class GUI  {
 
 	public void showLocality(MouseEvent e) {
 		Coordinate c = canvas.translatePoint(new Point(e.getX(), e.getY()));
-		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
+		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.layerManager.getLayer("LokalDB");
 		int localityID = ldb.findNearest(c, 1000);
 
 		if (localityID != -1) {
@@ -431,7 +431,7 @@ public class GUI  {
 	
 	public void showLocalityAtCoord() {
 		Coordinate c = canvas.getCoordinate();
-		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.getLayer("LokalDB");
+		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.layerManager.getLayer("LokalDB");
 		int localityID = ldb.findNearest(c,1000);
 		if (localityID != -1) {
 			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);

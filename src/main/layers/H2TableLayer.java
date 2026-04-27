@@ -12,20 +12,14 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
-public class H2TableLayer implements Layer {
+public class H2TableLayer extends Layer {
 	private final String tableName;
-	private String name;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
-	private boolean hidden;
-	private CoordSystem cs = CoordSystem.SWEREF99TM;
 	private final ArrayList<Locality> cache = new ArrayList<>();
 	private BoundingBox lastQueryBounds;
-
 	private static record Locality(int north, int east, String name) {}
 	
 	public H2TableLayer(String tableName) {
+		super(tableName, false, CoordSystem.SWEREF99TM);
 		this.tableName = tableName;
 	}
 
@@ -109,31 +103,36 @@ public class H2TableLayer implements Layer {
 	}
 
 	public String findNearest(Coordinate c, int limit) {
-		Point p = c.getPoint();
-		int eastVal = p.x;
-		int northVal = p.y;
+		// Coordinate uses geographical North/East logic[cite: 7, 8]
+		int eastVal = (int) c.getEast();
+		int northVal = (int) c.getNorth();
 
-		try {
-			Connection conn = DBConnection.getH2Conn();
+		// Use a Bounding Box approach for the initial SQL filter
+		String sql = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
+				" WHERE NORTH BETWEEN ? AND ? AND EAST BETWEEN ? AND ?";
 
-			String sqlstmt = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
-					" WHERE NORTH > " + (northVal - limit) +
-					" AND NORTH < " + (northVal + limit) +
-					" AND EAST > " + (eastVal - limit) +
-					" AND EAST < " + (eastVal + limit);
+		try (Connection conn = DBConnection.getH2Conn();
+		     PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-			try (Statement select = conn.createStatement();
-			     ResultSet result = select.executeQuery(sqlstmt)) {
+			// Define the search square[cite: 7]
+			pstmt.setInt(1, northVal - limit);
+			pstmt.setInt(2, northVal + limit);
+			pstmt.setInt(3, eastVal - limit);
+			pstmt.setInt(4, eastVal + limit);
 
+			try (ResultSet result = pstmt.executeQuery()) {
 				double ndist = Double.MAX_VALUE;
 				String nearest = "";
+
+				// Create a reference point for distance calculation
+				Point p = new Point(eastVal, northVal);
 
 				while (result.next()) {
 					int north = result.getInt(1);
 					int east = result.getInt(2);
 					String name = result.getString(3);
 
-					// Ensure pc is created as (East, North) to match p
+					// Calculate precise Euclidean distance
 					Point pc = new Point(east, north);
 					double dist = p.distance(pc);
 
@@ -144,92 +143,37 @@ public class H2TableLayer implements Layer {
 				}
 				return nearest;
 			}
-		} catch(Exception e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 		return "";
 	}
 
 	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) {
-		this.hidden = hidden;
-	}
-
-	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
-
-	@Override
-	public void setColor(Color c) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) {
-		minZoom = zoomLevel;
-	}
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) {
-		maxZoom = zoomLevel;
-	}
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
 	public Extent getBoundaries() {
-		//Todo: implement the method
-		return null;
+		return getCRS().getBoundaries();
 	}
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		if (hidden) return;
+		if (isHidden()) return;
 
-		// Only query the DB if the view has moved or zoomed
-		if (lastQueryBounds == null || !lastQueryBounds.equals(bounds)) {
-			updateCache(bounds);
-			lastQueryBounds = new BoundingBox(bounds.getX1(), bounds.getY1(), bounds.getX2(), bounds.getY2());
+		// Refresh if we don't have a cache, or if the new view is not fully contained in the old one
+		if (lastQueryBounds == null || !lastQueryBounds.isInside(bounds)) {
+			// Optimization: Fetch a slightly larger area than needed (25% bigger)
+			// to prevent constant database hits during small pans.
+			BoundingBox bufferedBounds = bounds.grow(1.25);
+			updateCache(bufferedBounds);
+			lastQueryBounds = bufferedBounds;
 		}
 
-		g2d.setColor(color);
+		g2d.setColor(getColor());
+		// Draw logic remains the same
 		for (Locality loc : cache) {
 			int x = (int) ((loc.east * xScale) + xShift);
 			int y = (int) ((loc.north * yScale) + yShift);
-
 			g2d.drawOval(x - 3, y - 3, 6, 6);
-			g2d.drawString(loc.name, x + 5, y); // Offset text slightly
+			g2d.drawString(loc.name, x + 5, y);
 		}
 	}
 }

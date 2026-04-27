@@ -10,20 +10,14 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import main.shapeFile.DataInputStreamSE;
 
-public class TNGPolygonFileLayer implements Layer {
+public class TNGPolygonFileLayer extends Layer {
 	private final String fileName;
-	private String name;
 	private int nameLength;
-	private Color color = Color.BLACK;
-	private int maxZoom = 0; // 0 indicates unset
-	private int minZoom = 0;
 	private Province[] provinces;
-	private boolean hidden;
-	private CoordSystem cs;
 	static final Stroke LINE_STROKE = new BasicStroke(1.5f);
 	
 	public static class Province extends Polygon{
-		private String name;
+		private final String name;
 		private final BoundingBox box;
 		
 		Province (String name, BoundingBox box, int[] parts, Point[] points) {
@@ -51,10 +45,9 @@ public class TNGPolygonFileLayer implements Layer {
 	}
 	
 	public TNGPolygonFileLayer(String fileName) throws IOException {
+		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
-		this.name = fileName;
 		readFile();
-		cs = CoordSystem.SWEREF99TM;
 	}
 	
 	private void readFile() throws IOException {
@@ -104,57 +97,6 @@ public class TNGPolygonFileLayer implements Layer {
 	}
 
 	@Override
-	public String getName() {
-		return name;
-	}
-
-	@Override
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	@Override
-	public void setColor(Color color) {
-		this.color = (color != null) ? color : Color.BLACK;
-	}
-
-	@Override
-	public Color getColor() {
-		return color;
-	}
-
-	@Override
-	public boolean isHidden() {
-		return hidden;
-	}
-
-	@Override
-	public void setHidden(boolean hidden) { this.hidden = hidden; }
-
-	@Override
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
-	}
-
-	@Override
-	public CoordSystem getCRS() {
-		return cs;
-	}
-
-	@Override
-	public void setMinZoomL(int zoomLevel) { this.minZoom = zoomLevel; }
-
-	@Override
-	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
-
-	@Override
-	public boolean isInZoomLevel(int zoomLevel) {
-		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
-		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
-		return meetsMin && meetsMax;
-	}
-
-	@Override
 	public Extent getBoundaries() {
 		//Todo: implement the method
 		return null;
@@ -162,10 +104,10 @@ public class TNGPolygonFileLayer implements Layer {
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
-		if (hidden || provinces == null) return;
+		if (isHidden() || provinces == null) return;
 
 		// Use the guaranteed non-null color
-		g2d.setColor(color);
+		g2d.setColor(getColor());
 
 		Stroke oldStroke = g2d.getStroke();
 		g2d.setStroke(LINE_STROKE);
