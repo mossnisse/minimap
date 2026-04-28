@@ -278,7 +278,7 @@ public class shapeFile {
 				out.writeInt((int) Math.round(box.getX1()));
 				out.writeInt((int) Math.round(box.getY1()));
 				out.writeInt((int) Math.round(box.getX2()));
-				out.writeInt((int) Math.round(box.getY2()));*/
+				out.writeInt((int) Math.round(box.getY2()));
 				//out.writeInt(poly.getNumParts());
 				//out.writeInt(poly.getNumPoints());
 				for (int part : poly.getParts()) {
