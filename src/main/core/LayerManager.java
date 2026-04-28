@@ -4,18 +4,18 @@ import main.layers.H2TableLayer;
 import main.layers.MYSQLTableLayer;
 import main.layers.TNGPolygonFileLayer;
 import main.layers.TopowebLayer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
-import java.util.ArrayList;
 
 public class LayerManager {
-    private final ArrayList<Layer> layers;
+    private final CopyOnWriteArrayList<Layer> layers = new CopyOnWriteArrayList<>();
     private final Canvas canvas;
 
     LayerManager(Canvas canvas) {
-        layers = new ArrayList<Layer>();
+        //layers = new CopyOnWriteArrayList<Layer>();
         this.canvas = canvas;
         initialize();
     }
@@ -61,37 +61,36 @@ public class LayerManager {
         }
     }
 
-
     public void addLayerTop(Layer l) {
-        synchronized (layers) {
-            layers.addFirst(l);
-        }
+        layers.add(layers.size(), l);
         canvas.repaint();
     }
 
     public void addLayerBottom(Layer l) {
-        synchronized (layers) {
-            layers.add(l);
-        }
+        layers.add(0, l);
         canvas.repaint();
     }
 
     public void delLayer(String name) {
-        synchronized (layers) {
-            layers.removeIf(l -> l != null && name.equals(l.getName()));
-        }
+        layers.removeIf(l -> l != null && name.equals(l.getName()));
     }
 
     public Layer getLayer(String name) {
-        for(Layer l: layers) {
-            if (l.getName().equals(name)) {
-                return l;
-            }
+        for (Layer l : layers) {
+            if (l.getName().equals(name)) { return l; }
         }
         return null;
     }
 
-    public ArrayList<Layer> getLayers() {
+    public Iterable<Layer> getLayers() {
         return layers;
+    }
+
+    public void setLayerOrder(java.util.List<Layer> newOrder) {
+        // Clear current and add in the order provided
+        layers.clear();
+        // Assuming newOrder is provided from Bottom-to-Top (Data Order)
+        layers.addAll(newOrder);
+        canvas.repaint();
     }
 }

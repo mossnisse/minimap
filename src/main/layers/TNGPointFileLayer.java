@@ -14,7 +14,6 @@ import main.shapeFile.DataInputStreamSE;
 public class TNGPointFileLayer extends Layer {
 	private String fileName;
 	private Locality[] localities;
-	private int nameLength;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 	
 	public static class Locality extends Coordinate {
@@ -81,22 +80,23 @@ public class TNGPointFileLayer extends Layer {
 	}
 	
 	private void readFile() throws IOException {
-		 DataInputStreamSE in =
+		 try (DataInputStreamSE in =
 			        new DataInputStreamSE(
 			          new BufferedInputStream(
-			            new FileInputStream(fileName)));
-		in.readInt();
-		int nrRecords = in.readInt();
+			            new FileInputStream(fileName))))
+		 {
+			in.readInt();
+			int nrRecords = in.readInt();
 
-		nameLength = in.readInt();
-		localities = new Locality[nrRecords];
-		for (int i = 0; i < nrRecords; i++) {
-			String name = in.readString(nameLength).trim();
-			int y = in.readInt();
-			int x = in.readInt();
-			localities[i] = new Locality(x,y,name);
+			int nameLength = in.readInt();
+			localities =new Locality[nrRecords];
+			for( int i = 0; i<nrRecords; i++) {
+				String name = in.readString(nameLength).trim();
+				int y = in.readInt();
+				int x = in.readInt();
+				localities[i] = new Locality(x, y, name);
+			}
 		}
-		in.close();
 	}
 	
 	public Locality[] getLocalities() {
@@ -104,8 +104,8 @@ public class TNGPointFileLayer extends Layer {
 	}
 	
 	public String toString() {
-		String ans = getName()+": ";
-		for(Locality coord:localities) {
+		String ans = getName() + ": ";
+		for(Locality coord: localities) {
 			ans = ans + coord.toString();
 		}
 		return ans;
@@ -128,7 +128,6 @@ public class TNGPointFileLayer extends Layer {
 			if (coord.getNorth() < minY) minY = coord.getNorth();
 			if (coord.getNorth() > maxY) maxY = coord.getNorth();
 		}
-		// Order: minX, minY, maxX, maxY
 		return new Extent(minY, minX, maxY, maxX);
 	}
 

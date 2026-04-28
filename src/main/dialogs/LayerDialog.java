@@ -5,7 +5,7 @@ import java.awt.datatransfer.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.Serial;
-import java.util.ArrayList;
+import java.util.List;
 import javax.swing.*;
 
 import main.coords.Extent;
@@ -27,9 +27,10 @@ public class LayerDialog extends JDialog {
 
 		// Use a ListModel to handle the data
 		listModel = new DefaultListModel<>();
-		ArrayList<Layer> layers = canvas.layerManager.getLayers();
-		for (Layer l : layers) {
-			listModel.addElement(l);
+
+		List<Layer> layers = (List<Layer>) canvas.layerManager.getLayers();
+		for (int i = layers.size() - 1; i >= 0; i--) {
+			listModel.addElement(layers.get(i));
 		}
 
 		layerList = new JList<>(listModel);
@@ -64,14 +65,15 @@ public class LayerDialog extends JDialog {
 		layerList.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				int index = layerList.locationToIndex(e.getPoint());
-				if (index != -1) {
-					Layer l = listModel.getElementAt(index);
-					// If the click was roughly in the checkbox area (left side)
-					if (e.getX() < 30) {
+				// Detect if the user double-clicked or clicked the specific checkbox area
+				// If your checkbox is 20px wide + some padding, check e.getX() <= 25
+				if (e.getX() <= 30) {
+					int index = layerList.locationToIndex(e.getPoint());
+					if (index != -1) {
+						Layer l = listModel.getElementAt(index);
 						l.setHidden(!l.isHidden());
 						canvas.repaint();
-						layerList.repaint(); // Redraw the "stamp"
+						layerList.repaint(); // Updates the checkbox state visually
 					}
 				}
 			}
@@ -93,7 +95,6 @@ public class LayerDialog extends JDialog {
 			}
 		}
 	}
-
 
 	private void removeSelected() {
 		Layer l = layerList.getSelectedValue();
@@ -139,7 +140,9 @@ public class LayerDialog extends JDialog {
 	// Handles the actual reordering logic
 	private class LayerTransferHandler extends TransferHandler {
 		@Override
-		public int getSourceActions(JComponent c) { return MOVE; }
+		public int getSourceActions(JComponent c) {
+			return MOVE;
+		}
 
 		@Override
 		protected Transferable createTransferable(JComponent c) {
@@ -147,35 +150,41 @@ public class LayerDialog extends JDialog {
 		}
 
 		@Override
-		public boolean canImport(TransferSupport support) { return support.isDataFlavorSupported(DataFlavor.stringFlavor); }
+		public boolean canImport(TransferSupport support) {
+			return support.isDataFlavorSupported(DataFlavor.stringFlavor);
+		}
 
 		@Override
 		public boolean importData(TransferSupport support) {
 			try {
-				int fromIndex = Integer.parseInt((String) support.getTransferable().getTransferData(DataFlavor.stringFlavor));
+				// Get indices and perform the visual UI move
+				int uiFromIndex = Integer.parseInt((String) support.getTransferable().getTransferData(DataFlavor.stringFlavor));
 				JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
-				int toIndex = dl.getIndex();
+				int uiToIndex = dl.getIndex();
 
-				if (fromIndex == toIndex) return false;
+				if (uiFromIndex == uiToIndex) return false;
 
-				// Calculate the correct index ONCE
-				int insertIndex = toIndex;
-				if (insertIndex > fromIndex) insertIndex--;
-
-				// Update UI Data Model
-				Layer movedLayer = listModel.remove(fromIndex);
+				int insertIndex = (uiToIndex > uiFromIndex) ? uiToIndex - 1 : uiToIndex;
+				Layer movedLayer = listModel.remove(uiFromIndex);
 				listModel.add(insertIndex, movedLayer);
 
-				// Sync with Canvas Layers safely
-				synchronized (canvas.layerManager.getLayers()) {
-					ArrayList<Layer> canvasLayers = canvas.layerManager.getLayers();
-					canvasLayers.remove(fromIndex);
-					canvasLayers.add(insertIndex, movedLayer); // Use the pre-calculated insertIndex
+				// Sync the LayerManager
+				// listModel is [Top, ... Bottom]
+				// LayerManager needs [Bottom, ... Top]
+				java.util.List<Layer> newDataOrder = new java.util.ArrayList<>();
+
+				// Loop backwards through the UI list to build the Bottom-to-Top list
+				for (int i = listModel.size() - 1; i >= 0; i--) {
+					newDataOrder.add(listModel.getElementAt(i));
 				}
 
-				canvas.repaint();
+				// Push to Manager
+				canvas.layerManager.setLayerOrder(newDataOrder);
+
 				return true;
-			} catch (Exception e) { e.printStackTrace(); }
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			return false;
 		}
 	}

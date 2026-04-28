@@ -9,8 +9,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
+
+/*
+It's wierd that find TNGPointFileLayer. Try to come up with some better structure
+ */
 
 public class H2TableLayer extends Layer {
 	private final String tableName;
@@ -57,7 +60,7 @@ public class H2TableLayer extends Layer {
 			ArrayList<Coordinate> ans = new ArrayList<>();
 			ArrayList<String> names = new ArrayList<>();
 
-			// 1. Build the Dynamic SQL
+			// Build the Dynamic SQL
 			StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM " + tableName + " WHERE Ortnamn ILIKE ?");
 
 			if (provinsNr != -1) {
@@ -111,37 +114,39 @@ public class H2TableLayer extends Layer {
 		String sql = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
 				" WHERE NORTH BETWEEN ? AND ? AND EAST BETWEEN ? AND ?";
 
-		try (Connection conn = DBConnection.getH2Conn();
-		     PreparedStatement pstmt = conn.prepareStatement(sql)) {
+		try {
+			Connection conn = DBConnection.getH2Conn();
+			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-			// Define the search square[cite: 7]
-			pstmt.setInt(1, northVal - limit);
-			pstmt.setInt(2, northVal + limit);
-			pstmt.setInt(3, eastVal - limit);
-			pstmt.setInt(4, eastVal + limit);
+				// Define the search square[cite: 7]
+				pstmt.setInt(1, northVal - limit);
+				pstmt.setInt(2, northVal + limit);
+				pstmt.setInt(3, eastVal - limit);
+				pstmt.setInt(4, eastVal + limit);
 
-			try (ResultSet result = pstmt.executeQuery()) {
-				double ndist = Double.MAX_VALUE;
-				String nearest = "";
+				try (ResultSet result = pstmt.executeQuery()) {
+					double ndist = Double.MAX_VALUE;
+					String nearest = "";
 
-				// Create a reference point for distance calculation
-				Point p = new Point(eastVal, northVal);
+					// Create a reference point for distance calculation
+					Point p = new Point(eastVal, northVal);
 
-				while (result.next()) {
-					int north = result.getInt(1);
-					int east = result.getInt(2);
-					String name = result.getString(3);
+					while (result.next()) {
+						int north = result.getInt(1);
+						int east = result.getInt(2);
+						String name = result.getString(3);
 
-					// Calculate precise Euclidean distance
-					Point pc = new Point(east, north);
-					double dist = p.distance(pc);
+						// Calculate precise Euclidean distance
+						Point pc = new Point(east, north);
+						double dist = p.distance(pc);
 
-					if (dist < ndist) {
-						ndist = dist;
-						nearest = name;
+						if (dist < ndist) {
+							ndist = dist;
+							nearest = name;
+						}
 					}
+					return nearest;
 				}
-				return nearest;
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();

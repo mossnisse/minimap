@@ -85,22 +85,19 @@ public class MYSQLTableLayer extends Layer {
 						this.cache = temp;
 						this.cachedBounds = bufferedArea;
 					}
-				} catch (SQLException e) {
-					System.err.println("=== SQL ERROR IN layers.MYSQLTableLayer ===");
-					System.err.println("Message: " + e.getMessage());
-					e.printStackTrace();
-				} finally {
-					// Always release the lock so future pan/zooms can trigger fetches
-					isFetching.set(false);
-
-					// Tell the UI thread that new data is ready to be drawn
-					if (repaintCallback != null) {
-						repaintCallback.run();
-					}
 				}
 			} catch (SQLException e) {
-				System.err.println("=== Couldn't connect to the VH MySQL server ===");
+				System.err.println("=== SQL ERROR IN layers.MYSQLTableLayer ===");
+				System.err.println("Message: " + e.getMessage());
 				e.printStackTrace();
+			} finally {
+				// Always release the lock so future pan/zooms can trigger fetches
+				isFetching.set(false);
+
+				// Tell the UI thread that new data is ready to be drawn
+				if (repaintCallback != null) {
+					repaintCallback.run();
+				}
 			}
 		});
 	}

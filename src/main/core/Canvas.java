@@ -6,15 +6,14 @@ import main.geometry.BoundingBox;
 
 import java.awt.*;
 import java.io.Serial;
-import java.util.ArrayList;
 import javax.swing.*;
 
 public class Canvas extends JPanel {
 	@Serial
 	private static final long serialVersionUID = 1L;
 	private final CoordSystem cs;
-	Extent bounds;
-	Coordinate coord;
+	private Extent bounds;
+	private volatile Coordinate coord;
 	public final LayerManager layerManager;
 
 	
@@ -72,27 +71,18 @@ public class Canvas extends JPanel {
 		Dimension size = getSize();
 		if (size.width <= 0 || size.height <= 0 || bounds == null) return;
 
-		// Calculate the EXACT same scale used in paintComponent
-		double rawXScale = size.width / bounds.getWidth();
-		double rawYScale = size.height / bounds.getHeight();
-		double uniformScale = Math.min(rawXScale, rawYScale);
+		double scale = Math.min(size.width / bounds.getWidth(), size.height / bounds.getHeight());
 
-		// Convert pixel movement to map meters
-		// We divide by the scale. If scale is 0.001 px/m, 10px = 10,000m.
-		double meterDX = dx / uniformScale;
-		double meterDY = dy / uniformScale;
+		// Perform calculations in double
+		double meterDX = dx / scale;
+		double meterDY = dy / scale;
 
-		// Shift the bounds
-		// To pan the map "with" the mouse, we subtract the meter delta
-		int xMin = (int) (bounds.c1.getEast() - meterDX);
-		int xMax = (int) (bounds.c2.getEast() - meterDX);
-
-		// Since Swing Y is down and Map Y is up, dragging "down" (positive dy)
-		// means we want to see higher Y coordinates (North). So we ADD dy.
-		int yMin = (int) (bounds.c1.getNorth() + meterDY);
-		int yMax = (int) (bounds.c2.getNorth() + meterDY);
-
-		bounds = new Extent(yMin, xMin, yMax, xMax);
+		this.bounds = new Extent(
+				bounds.c1.getNorth() + meterDY,
+				bounds.c1.getEast() - meterDX,
+				bounds.c2.getNorth() + meterDY,
+				bounds.c2.getEast() - meterDX
+		);
 		repaint();
 	}
 	
@@ -178,18 +168,13 @@ public class Canvas extends JPanel {
 		int zoomL = (int) (1.0 / scale);
 
 		// Draw Layers using the LOCAL drawBounds
-		ArrayList<Layer> layers = layerManager.getLayers();
-		synchronized (layers) {
-			for (int i = layers.size() - 1; i >= 0; i--) {
-				Layer l = layers.get(i);
-				if (!l.isHidden() && l.isInZoomLevel(zoomL)) {
-					try {
-						//g2d.setColor(l.getColor());
-						// Pass drawBounds here so Topoweb knows exactly which tiles to fetch
-						l.draw(g2d, xShift, scale, yShift, -scale, drawBounds);
-					} catch (Exception e) {
-						System.err.println("Error drawing layer: " + l.getName());
-					}
+		//ArrayList<Layer> layers = layerManager.getLayers();
+		for (Layer l : layerManager.getLayers()) {
+			if (!l.isHidden() && l.isInZoomLevel(zoomL)) {
+				try {
+					l.draw(g2d, xShift, scale, yShift, -scale, drawBounds);
+				} catch (Exception e) {
+					System.err.println("Error drawing layer: " + l.getName());
 				}
 			}
 		}
