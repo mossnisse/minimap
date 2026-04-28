@@ -1,0 +1,75 @@
+package main.layers;
+
+import main.coords.*;
+import main.core.Layer;
+import main.geometry.BoundingBox;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
+
+public class RubinLayer extends Layer {
+	private String rubin;
+	static final Stroke LINE_STROKE = new BasicStroke(2);
+
+	// Store corners in projected (Sweref) coordinates
+	private final List<Coordinate> swerefCorners = new ArrayList<>();
+
+	public RubinLayer(String rubin, String name, Color c) {
+		super(name, false, CoordSystem.SWEREF99TM);
+		setColor(c);
+		setRubin(rubin);
+	}
+
+	public void setRubin(String rubin) {
+		this.rubin = rubin;
+		this.swerefCorners.clear();
+
+		int[][] rt90Corners = RUBIN.getCorners(rubin);
+
+		if (rt90Corners != null) {
+			for (int[] corner : rt90Corners) {
+				// Set current corner in RT90
+				Coordinate wgs84 = CoordSystem.RT90.toWGS84(corner[0], corner[1]);
+				Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
+
+				// Store the Sweref coordinates
+				swerefCorners.add(sweref);
+			}
+		}
+	}
+
+	public Coordinate getMiddle() {
+		return RUBIN.toSweref99TM(rubin);
+	}
+
+	@Override
+	public Extent getBoundaries() {
+		//Todo: implement the method
+		return null;
+	}
+
+	@Override
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+		if (isHidden() || swerefCorners.size() < 4) return;
+
+		g2d.setColor(getColor());
+		Stroke originalStroke = g2d.getStroke();
+		g2d.setStroke(LINE_STROKE);
+
+		// Convert the 4 Sweref corners to screen pixel paths
+		int[] xPoints = new int[4];
+		int[] yPoints = new int[4];
+
+		for (int i = 0; i < 4; i++) {
+			Coordinate pt = swerefCorners.get(i);
+			xPoints[i] = (int) ((pt.getEast() * xScale) + xShift);
+			yPoints[i] = (int) ((pt.getNorth() * yScale) + yShift);
+		}
+
+		// This handles cases where the grid might be slightly rotated/skewed after conversion
+		g2d.drawPolygon(xPoints, yPoints, 4);
+
+		g2d.setStroke(originalStroke);
+	}
+}
