@@ -131,7 +131,7 @@ public class shapeFile {
 		br.readByte(); // 3  // byte d = 
 		// printHex("year: ", y);
 		nrRecords = br.readIntSE(); // 4-7
-		
+
 		int headerSize = br.readInt16(); // 8-9
 		nrFields = (headerSize - 32) / 32;
 		br.readInt16(); // 10-11 // int recordSize = 
@@ -232,7 +232,7 @@ public class shapeFile {
 				i++;
 				if (i<20)
 					System.out.println("writeTNG name: " + record.getField(nameField)+" numParts: "+poly.getNumParts()+" Bounding box"+box);
-				
+
 				for (int part : poly.getParts()) {
 					out.writeInt(part);
 				}
@@ -280,8 +280,7 @@ public class shapeFile {
 				out.writeInt((int) Math.round(box.getX2()));
 				out.writeInt((int) Math.round(box.getY2()));*/
 				//out.writeInt(poly.getNumParts());
-				//out.writeInt(poly.getNumPoints()); 
-	/*
+				//out.writeInt(poly.getNumPoints());
 				for (int part : poly.getParts()) {
 					out.writeInt(part);
 				}
