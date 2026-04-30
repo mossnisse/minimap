@@ -220,6 +220,22 @@ public class GUI  {
 		menuItem1.addActionListener(e->addTopowebkartan());
 		menu3.add(menuItem1);
 
+		menuItem1 = new JMenuItem("Add Open Street Map");
+		menuItem1.addActionListener(e->addOSM());
+		menu3.add(menuItem1);
+
+		menuItem1 = new JMenuItem("Add Landskap Layer");
+		menuItem1.addActionListener(e->addLandskap());
+		menu3.add(menuItem1);
+
+		menuItem1 = new JMenuItem("Add Socken Layer");
+		menuItem1.addActionListener(e->addSocknar());
+		menu3.add(menuItem1);
+
+		menuItem1 = new JMenuItem("Add Lantmäteriet ortnamn Layer");
+		menuItem1.addActionListener(e->addOrtnamn());
+		menu3.add(menuItem1);
+
 		menuItem1 = new JMenuItem("Add .gpx layer", KeyEvent.VK_G);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
@@ -305,7 +321,7 @@ public class GUI  {
 			System.out.println("Open: " + file.getName());
 
 			try {
-				GPXFileLayer l = new GPXFileLayer(file.getCanonicalPath());
+				GPXFileLayer l = new GPXFileLayer(file.getCanonicalPath(), canvas);
 				l.setColor(Color.BLUE);
 				l.setName(file.getName());
 				canvas.layerManager.addLayerTop(l);
@@ -320,8 +336,37 @@ public class GUI  {
 	public void addTopowebkartan() {
 		TopowebLayer tb = new TopowebLayer(canvas);
 		tb.setName("TopoWeb");
-		tb.setHidden(false);
+		canvas.setCRS(tb.getCRS());
 		canvas.layerManager.addLayerBottom(tb);
+	}
+
+	public void addOSM() {
+		OSMLayer osm = new OSMLayer(canvas);
+		osm.setName("Open Street Map");
+		canvas.setCRS(osm.getCRS());
+		canvas.layerManager.addLayerBottom(osm);
+	}
+
+	public void addLandskap() {
+		TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", canvas);
+		prFile.setColor(Color.BLACK);
+		prFile.setName("provinser");
+		canvas.layerManager.addLayerTop(prFile);
+	}
+
+	public void addSocknar() {
+		TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", canvas);
+		socFile.setColor(Color.RED);
+		socFile.setName("socknar");
+		canvas.layerManager.addLayerTop(socFile);
+	}
+
+	public void addOrtnamn() {
+		H2TableLayer od = new H2TableLayer("ortnamnSWTM", canvas);
+		od.setColor(Color.BLACK);
+		od.setName("Ortnamnsdb");
+		od.setMaxZoomL(5);
+		canvas.layerManager.addLayerTop(od);
 	}
 
 	public void saveCSV() {

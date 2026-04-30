@@ -8,7 +8,7 @@ import java.io.Serial;
 import java.util.List;
 import javax.swing.*;
 
-import main.coords.Extent;
+import main.geometry.Extent;
 import main.core.Canvas;
 import main.core.Layer;
 

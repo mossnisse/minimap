@@ -53,8 +53,7 @@ public class CoordinateDialog extends JDialog {
 		JTextField mgrsF = createReadOnlyField(mgrs);
 
 		// Build the UI rows
-		JLabel last = null;
-		last = addRow("Province:", provF, panel, layout, last);
+		JLabel last = addRow("Province:", provF, panel, layout, null);
 		last = addRow("District:", distF, panel, layout, last);
 		last = addRow("Sweref99TM (N, E):", swerefF, panel, layout, last);
 		last = addRow("RT90 (N, E):", rt90F, panel, layout, last);

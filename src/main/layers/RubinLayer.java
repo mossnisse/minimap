@@ -3,6 +3,7 @@ package main.layers;
 import main.coords.*;
 import main.core.Layer;
 import main.geometry.BoundingBox;
+import main.geometry.Extent;
 
 import java.awt.*;
 import java.util.ArrayList;

@@ -1,9 +1,12 @@
 package main.layers;
 
 import main.coords.*;
+import main.core.Canvas;
 import main.core.DBConnection;
 import main.core.Layer;
 import main.geometry.BoundingBox;
+import main.geometry.Extent;
+
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,16 +20,19 @@ It's wierd that find TNGPointFileLayer. Try to come up with some better structur
 
 public class H2TableLayer extends Layer {
 	private final String tableName;
+	private final Canvas canvas;
 	private final ArrayList<Locality> cache = new ArrayList<>();
-	private BoundingBox lastQueryBounds;
-	private static record Locality(int north, int east, String name) {}
+	private Extent lastQueryBounds;
+
+	private static record Locality(Coordinate c, String name) {}
 	
-	public H2TableLayer(String tableName) {
+	public H2TableLayer(String tableName, Canvas canvas) {
 		super(tableName, false, CoordSystem.SWEREF99TM);
 		this.tableName = tableName;
+		this.canvas = canvas;
 	}
 
-	private void updateCache(BoundingBox bounds) {
+	private void updateCache(Extent bounds) {
 		cache.clear();
 		try {
 			Connection conn = DBConnection.getH2Conn();
@@ -34,15 +40,16 @@ public class H2TableLayer extends Layer {
 					" WHERE NORTH BETWEEN ? AND ? AND EAST BETWEEN ? AND ?";
 
 			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
-				pstmt.setInt(1, bounds.getY1());
-				pstmt.setInt(2, bounds.getY2());
-				pstmt.setInt(3, bounds.getX1());
-				pstmt.setInt(4, bounds.getX2());
+				pstmt.setInt(1, (int) bounds.c1.getNorth());
+				pstmt.setInt(2, (int) bounds.c2.getNorth());
+				pstmt.setInt(3, (int) bounds.c1.getEast());
+				pstmt.setInt(4, (int) bounds.c2.getEast());
 
 				try (ResultSet rs = pstmt.executeQuery()) {
 					while (rs.next()) {
 						// Cache the raw coordinates and name
-						cache.add(new Locality(rs.getInt(1), rs.getInt(2), rs.getString(3)));
+						Coordinate c =  new Coordinate (rs.getInt(1), rs.getInt(2));
+						cache.add(new Locality(getCRS().convertTo(c, canvas.getCRS()), rs.getString(3)));
 					}
 				}
 			}
@@ -163,11 +170,15 @@ public class H2TableLayer extends Layer {
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
 		if (isHidden()) return;
 
+		Coordinate c1 = new Coordinate(bounds.getY1(), bounds.getX1());
+		Coordinate c2 = new Coordinate(bounds.getY2(), bounds.getX2());
+		Extent queryBounds = new Extent( canvas.getCRS().convertTo(c1, getCRS()), canvas.getCRS().convertTo(c2, getCRS()));
+
 		// Refresh if we don't have a cache, or if the new view is not fully contained in the old one
-		if (lastQueryBounds == null || !lastQueryBounds.isInside(bounds)) {
+		if (lastQueryBounds == null || !lastQueryBounds.isInside(queryBounds)) {
 			// Optimization: Fetch a slightly larger area than needed (25% bigger)
 			// to prevent constant database hits during small pans.
-			BoundingBox bufferedBounds = bounds.grow(1.25);
+			Extent bufferedBounds = queryBounds.grow(0.25);
 			updateCache(bufferedBounds);
 			lastQueryBounds = bufferedBounds;
 		}
@@ -175,8 +186,8 @@ public class H2TableLayer extends Layer {
 		g2d.setColor(getColor());
 		// Draw logic remains the same
 		for (Locality loc : cache) {
-			int x = (int) ((loc.east * xScale) + xShift);
-			int y = (int) ((loc.north * yScale) + yShift);
+			int x = (int) ((loc.c.getEast() * xScale) + xShift);
+			int y = (int) ((loc.c.getNorth() * yScale) + yShift);
 			g2d.drawOval(x - 3, y - 3, 6, 6);
 			g2d.drawString(loc.name, x + 5, y);
 		}

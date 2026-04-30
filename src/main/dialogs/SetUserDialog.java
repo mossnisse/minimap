@@ -20,7 +20,10 @@ public class SetUserDialog extends JDialog implements PropertyChangeListener {
 		super((java.awt.Frame)null, "Set User", true); // Make it modal!
 
 		String current = "";
-		try { current = Settings.getValue("user"); } catch (Exception e) {}
+		try { current = Settings.getValue("user"); }
+		catch (Exception e) {
+			e.printStackTrace();
+		}
 
 		this.user = new JTextField(current, 20);
 		Object[] array = {"Enter Registrator Name:", user};

@@ -42,8 +42,7 @@ public class DistanceTool extends MouseAdapter {
                     "Measurement",
                     startCoord,
                     (int)dist,
-                    direction,
-                    canvas.getCRS()
+                    direction
             );
 
             canvas.layerManager.addLayerTop(layer);

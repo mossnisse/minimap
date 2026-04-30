@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Vector;
 
+import main.geometry.Extent;
 import main.shapeFile.DataInputStreamSE;
 import main.shapeFile.FieldDescriptor;
 import main.shapeFile.PointESRI;

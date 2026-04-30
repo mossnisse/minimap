@@ -14,6 +14,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.swing.JOptionPane;
 
+import main.geometry.Extent;
 import main.shapeFile.DataInputStreamSE;
 
 public class RasterFilLayer extends Layer {

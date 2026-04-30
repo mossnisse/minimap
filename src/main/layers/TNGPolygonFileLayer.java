@@ -1,9 +1,12 @@
 package main.layers;
 
 import main.coords.*;
+import main.core.Canvas;
 import main.core.Layer;
 import main.geometry.BoundingBox;
-import main.geometry.Polygon;
+import main.geometry.CPolygon;
+import main.geometry.Extent;
+
 import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -12,15 +15,16 @@ import main.shapeFile.DataInputStreamSE;
 
 public class TNGPolygonFileLayer extends Layer {
 	private final String fileName;
+	private final Canvas canvas;
 	private int nameLength;
 	private Province[] provinces;
 	static final Stroke LINE_STROKE = new BasicStroke(1.5f);
-	
-	public static class Province extends Polygon{
+
+	public static class Province extends CPolygon {
 		private final String name;
-		private final BoundingBox box;
-		
-		Province (String name, BoundingBox box, int[] parts, Point[] points) {
+		private final Extent box;
+
+		Province (String name, Extent box, int[] parts, Coordinate[] points) {
 			super(parts, points);
 			this.name = name;
 			this.box = box;
@@ -30,58 +34,70 @@ public class TNGPolygonFileLayer extends Layer {
 			return name;
 		}
 
+		//public Extent getBoundingBox() {return box;}
+
 		public BoundingBox getBoundingBox() {
-			return box;
+			return new BoundingBox(box.c1.getPoint(), box.c2.getPoint());
 		}
 		
 		public boolean isInside(Coordinate c) {
-			Point p = c.getPoint();
-			if (box.isInside(p)) {
+			if (box.isInside(c)) {
 				//System.out.println("inside Box: "+name);
-				return super.isInside(p);
+				return super.isInside(c);
 			} 
 			return false;
 		}
 	}
 	
-	public TNGPolygonFileLayer(String fileName) throws IOException {
+	public TNGPolygonFileLayer(String fileName, Canvas canvas) {
 		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
+		this.canvas = canvas;
 		readFile();
 	}
 	
-	private void readFile() throws IOException {
-		 DataInputStreamSE in =
-			        new DataInputStreamSE(
-			          new BufferedInputStream(
-			            new FileInputStream(fileName)));
-		int shapeType = in.readInt();
-		if (shapeType != 5) throw new IOException("wrong shape type");
-		int nrRecords = in.readInt();
-		nameLength = in.readInt();
-		provinces = new Province[nrRecords];
-		for (int i = 0; i < nrRecords; i++) {
-			String name = in.readStringUTF8(nameLength).trim();  // length +2 stupid java adds a couple of bytes
-			int x1 = in.readInt();
-			int y1 = in.readInt();
-			int x2 = in.readInt();
-			int y2 = in.readInt();
-			BoundingBox box = new BoundingBox(x1, y1, x2, y2);
-			int numParts = in.readInt();
-			int numPoints = in.readInt();
-			int[] parts = new int[numParts];
-			for (int j = 0; j < numParts; j++) {
-				parts[j] = in.readInt();
+	private void readFile() {
+		try {
+			DataInputStreamSE in =
+					new DataInputStreamSE(
+							new BufferedInputStream(
+									new FileInputStream(fileName)));
+			int shapeType = in.readInt();
+			if (shapeType != 5) throw new IOException("wrong shape type");
+			int nrRecords = in.readInt();
+			nameLength = in.readInt();
+			provinces = new Province[nrRecords];
+			for (int i = 0; i < nrRecords; i++) {
+				String name = in.readStringUTF8(nameLength).trim();  // length +2 stupid java adds a couple of bytes
+				int x1 = in.readInt();
+				int y1 = in.readInt();
+				int x2 = in.readInt();
+				int y2 = in.readInt();
+				Coordinate c1 = new Coordinate(y1, x1);
+				Coordinate cc1 = getCRS().convertTo(c1, canvas.getCRS());
+				Coordinate c2 = new Coordinate(y2, x2);
+				Coordinate cc2 = getCRS().convertTo(c2, canvas.getCRS());
+
+				Extent box = new Extent(cc1, cc2);
+				int numParts = in.readInt();
+				int numPoints = in.readInt();
+				int[] parts = new int[numParts];
+				for (int j = 0; j < numParts; j++) {
+					parts[j] = in.readInt();
+				}
+				Coordinate[] points = new Coordinate[numPoints];
+				for (int j = 0; j < numPoints; j++) {
+					int px = in.readInt();
+					int py = in.readInt();
+					Coordinate swer = new Coordinate(py, px);
+					points[j] = getCRS().convertTo(swer, canvas.getCRS());
+				}
+				provinces[i] = new Province(name, box, parts, points);
 			}
-			Point[] points = new Point[numPoints];
-			for (int j = 0; j < numPoints; j++) {
-				int px = in.readInt();
-				int py = in.readInt();
-				points[j] = new Point(px,py);
-			}
-			provinces[i] = new Province(name, box, parts, points);
+			in.close();
+		} catch(Exception e) {
+			e.printStackTrace();
 		}
-		in.close();
 	}
 	
 	public Province[] getProvinces()
@@ -114,7 +130,7 @@ public class TNGPolygonFileLayer extends Layer {
 
 		for (Province pr : provinces) {
 			if (bounds.intersects(pr.getBoundingBox())) {
-				Point[] pts = pr.getPoints();
+				Coordinate[] pts = pr.getPoints();
 				int[] parts = pr.getParts();
 
 				for (int i = 0; i < parts.length; i++) {
@@ -126,9 +142,9 @@ public class TNGPolygonFileLayer extends Layer {
 					int[] yPoints = new int[end - start];
 
 					for (int j = 0; j < (end - start); j++) {
-						Point p = pts[start + j];
-						xPoints[j] = (int) (p.getX() * xScale + xShift);
-						yPoints[j] = (int) (p.getY() * yScale + yShift);
+						Coordinate p = pts[start + j];
+						xPoints[j] = (int) (p.getEast() * xScale + xShift);
+						yPoints[j] = (int) (p.getNorth() * yScale + yShift);
 					}
 					g2d.drawPolyline(xPoints, yPoints, xPoints.length);
 				}

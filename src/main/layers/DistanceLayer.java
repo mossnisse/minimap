@@ -4,6 +4,8 @@ import main.coords.*;
 import main.core.Layer;
 import main.core.Canvas;
 import main.geometry.BoundingBox;
+import main.geometry.Extent;
+
 import java.awt.*;
 
 public class DistanceLayer extends Layer {
@@ -11,17 +13,16 @@ public class DistanceLayer extends Layer {
 	private final Coordinate c1, c2;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 
-	public DistanceLayer(Canvas canvas, String name, Coordinate c, int distance, String direction, CoordSystem cs) {
-		super(name, false, cs);
+	public DistanceLayer(Canvas canvas, String name, Coordinate c, int distance, String direction) {
+		super(name, false, canvas.getCRS());
 		this.canvas = canvas;
 		this.c1 = c;
 		double bearing = Coordinate.getBearingFromDirection(direction);
-	 	c2 = c.moveTM(distance, bearing);
+	 	c2 = c.move(distance, bearing, getCRS());
 	}
 
 	@Override
 	public Extent getBoundaries() {
-		System.out.println("C1: "+c1 +" c2: "+c2);
 		// Calculate the absolute min and max to ensure a valid Extent
 		double minE = Math.min(c1.getEast(), c2.getEast());
 		double maxE = Math.max(c1.getEast(), c2.getEast());

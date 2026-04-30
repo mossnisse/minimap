@@ -3,6 +3,7 @@ package main.core;
 import main.coords.*;
 import main.dialogs.DistanceTool;
 import main.geometry.BoundingBox;
+import main.geometry.Extent;
 
 import java.awt.*;
 import java.io.Serial;
@@ -11,7 +12,7 @@ import javax.swing.*;
 public class Canvas extends JPanel {
 	@Serial
 	private static final long serialVersionUID = 1L;
-	private final CoordSystem cs;
+	private CoordSystem cs;
 	private Extent bounds;
 	private volatile Coordinate coord;
 	public final LayerManager layerManager;
@@ -42,7 +43,6 @@ public class Canvas extends JPanel {
 		coord = null;
 		repaint();
 	}
-
 
 	public void zoom(double step) {
 		Coordinate middle = bounds.getMidlePoint();
@@ -127,6 +127,10 @@ public class Canvas extends JPanel {
 
 	public CoordSystem getCRS() {
 		return cs;
+	}
+
+	public void setCRS(CoordSystem cs) {
+		this.cs = cs;
 	}
 
 	@Override

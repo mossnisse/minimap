@@ -1,4 +1,7 @@
-package main.coords;
+package main.geometry;
+
+import main.coords.CoordSystem;
+import main.coords.Coordinate;
 
 public class Extent {
     public Coordinate c1, c2;
@@ -45,6 +48,21 @@ public class Extent {
         );
     }
 
+    public Extent grow(double percentage) {
+        double width = Math.abs(c2.getEast() - c1.getEast());
+        double height = Math.abs(c2.getNorth() - c1.getNorth());
+
+        double xBuffer = width * percentage;
+        double yBuffer = height * percentage;
+
+        return new Extent(
+                c1.getNorth() - yBuffer,
+                c1.getEast() - xBuffer,
+                c2.getNorth() + yBuffer,
+                c2.getEast() + xBuffer
+        );
+    }
+
     public double getWidth() {
         return Math.abs(c2.getEast() - c1.getEast());
     }
@@ -59,5 +77,9 @@ public class Extent {
         double sy = m.getNorth() - coord.getNorth();
         c1 = new Coordinate(c1.getNorth() - sy, c1.getEast() - sx);
         c2 = new Coordinate(c2.getNorth() - sy, c2.getEast() - sx);
+    }
+
+    public Extent convertCRS(CoordSystem fromCRS, CoordSystem toCRS) {
+        return new Extent( fromCRS.convertTo(c1, toCRS), fromCRS.convertTo(c2, toCRS) );
     }
 }

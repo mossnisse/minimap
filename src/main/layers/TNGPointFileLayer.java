@@ -9,6 +9,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import main.geometry.Extent;
 import main.shapeFile.DataInputStreamSE;
 
 public class TNGPointFileLayer extends Layer {

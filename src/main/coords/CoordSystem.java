@@ -1,6 +1,7 @@
 package main.coords;
 
 import main.geometry.BoundingBox;
+import main.geometry.Extent;
 
 import java.awt.*;
 

@@ -33,30 +33,27 @@ public class LayerManager {
             );
             addLayerBottom(md);
 
-            H2TableLayer od = new H2TableLayer("ortnamnSWTM");
+            H2TableLayer od = new H2TableLayer("ortnamnSWTM", canvas);
             od.setColor(Color.BLACK);
             od.setName("Ortnamnsdb");
-            od.setHidden(false);
             od.setMaxZoomL(5);
             addLayerBottom(od);
 
-            TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng");
+            TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", canvas);
             prFile.setColor(Color.BLACK);
             prFile.setName("provinser");
             addLayerBottom(prFile);
 
-            TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng");
+            TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", canvas);
             socFile.setColor(Color.RED);
             socFile.setName("socknar");
-            socFile.setHidden(false);
             addLayerBottom(socFile);
 
             TopowebLayer tb = new TopowebLayer(canvas);
             tb.setName("TopoWeb");
-            tb.setHidden(false);
             addLayerBottom(tb);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }

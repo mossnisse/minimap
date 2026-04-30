@@ -5,6 +5,7 @@ import java.awt.Graphics2D;
 
 import main.coords.*;
 import main.geometry.BoundingBox;
+import main.geometry.Extent;
 
 public abstract class Layer {
 	private String name;

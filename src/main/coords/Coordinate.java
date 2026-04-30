@@ -172,6 +172,7 @@ public class Coordinate {
         return R * centralAngle;
     }
 
+    // Great Circle: Initial bearing for shortest distance, but curved on a map and bearing changes.
     public Coordinate moveWGS84(double distance, double bearingDegrees) {
         double R = 6371000; // Mean Earth radius in meters
 
@@ -211,6 +212,12 @@ public class Coordinate {
         return new Coordinate(newNorth, newEast);
     }
 
+    public Coordinate move(double distance, double bearingDegrees, CoordSystem crs) {
+        Coordinate wgs84 = crs.toWGS84(this);
+        Coordinate movedWgs84 = wgs84.moveWGS84(distance, bearingDegrees);
+        return crs.toProjected(movedWgs84);
+    }
+
     public double getBearingWGS84(Coordinate c) {
         double lat1 = Math.toRadians(this.north);
         double lat2 = Math.toRadians(c.getNorth());
@@ -231,8 +238,6 @@ public class Coordinate {
         // Convert to degrees and normalize to 0-360
         return (Math.toDegrees(brng) + 360) % 360;
     }
-
-
 
     public double getBearingTM(Coordinate c) {
         double dEast = c.getEast() - this.east;

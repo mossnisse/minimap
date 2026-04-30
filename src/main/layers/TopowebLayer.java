@@ -12,6 +12,7 @@ import javax.imageio.ImageIO;
 import main.core.Canvas;
 import main.core.Layer;
 import main.geometry.BoundingBox;
+import main.geometry.Extent;
 
 public class TopowebLayer extends Layer {
 	private final Canvas canvas;
