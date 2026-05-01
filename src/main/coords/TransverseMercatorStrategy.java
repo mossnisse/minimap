@@ -100,4 +100,9 @@ public class TransverseMercatorStrategy implements ProjectionStrategy {
 
         return new Coordinate(Math.toDegrees(latRad), Math.toDegrees(lonRad));
     }
+
+    @Override
+    public double getScaleFactor(Coordinate c) {
+        return 1.0;
+    }
 }

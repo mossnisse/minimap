@@ -236,6 +236,10 @@ public class GUI  {
 		menuItem1.addActionListener(e->addOrtnamn());
 		menu3.add(menuItem1);
 
+		menuItem1 = new JMenuItem("Add Virtual Herbarium locality Layer");
+		menuItem1.addActionListener(e->addLocalityLayer());
+		menu3.add(menuItem1);
+
 		menuItem1 = new JMenuItem("Add .gpx layer", KeyEvent.VK_G);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
@@ -369,6 +373,19 @@ public class GUI  {
 		canvas.layerManager.addLayerTop(od);
 	}
 
+	public void addLocalityLayer() {
+		MYSQLTableLayer md = new MYSQLTableLayer(canvas);
+		md.setColor(Color.BLACK);
+		md.setName("LokalDB");
+		md.setHidden(false);
+		md.setMaxZoomL(40);
+		md.setRepaintCallback(() ->
+				// Force the map to redraw on the Swing thread when data arrives
+				SwingUtilities.invokeLater(() -> canvas.repaint())
+		);
+		canvas.layerManager.addLayerTop(md);
+	}
+
 	public void saveCSV() {
 		System.out.println("Save");
 		final JFileChooser fc = new JFileChooser();
@@ -407,7 +424,7 @@ public class GUI  {
 				"Search Grid Square", JOptionPane.PLAIN_MESSAGE, null, null, "");
 
 		if (s != null && !s.trim().isEmpty()) {
-			RubinLayer r = new RubinLayer(s.trim(), "Rubin", Color.green);
+			RubinLayer r = new RubinLayer(s.trim(), canvas, "Rubin", Color.green);
 			Coordinate c = r.getMiddle();
 			if (c != null) {
 				canvas.layerManager.delLayer("Rubin");
@@ -425,7 +442,7 @@ public class GUI  {
 	public void showRubin(MouseEvent e) {
 		Coordinate c = canvas.translatePoint(e.getPoint());
 		String rubin = RUBIN.fromSweref99TM(c);
-		RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
+		RubinLayer r = new RubinLayer(rubin, canvas, "Rubin", Color.green);
 		canvas.layerManager.delLayer("Rubin");
 		canvas.layerManager.addLayerTop(r);
 	}

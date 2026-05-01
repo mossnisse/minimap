@@ -2,7 +2,6 @@ package main.layers;
 
 import main.coords.*;
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -133,7 +132,7 @@ public class TNGPointFileLayer extends Layer {
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		if (isHidden()) return;
 
 		Stroke s = g2d.getStroke();

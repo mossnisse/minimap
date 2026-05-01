@@ -16,4 +16,11 @@ public class WebMercatorStrategy implements ProjectionStrategy {
         double lat = Math.toDegrees(Math.PI / 2.0 - 2.0 * Math.atan(Math.exp(-northing / R)));
         return new Coordinate(lat, lon);
     }
+
+    @Override
+    public double getScaleFactor(Coordinate c) {
+        Coordinate wgs = CoordSystem.WEB_MERCATOR.toWGS84(c);
+        double latRad = Math.toRadians(wgs.getNorth());
+        return 1.0 / Math.cos(latRad);
+    }
 }

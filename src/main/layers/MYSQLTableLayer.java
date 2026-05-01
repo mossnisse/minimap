@@ -1,9 +1,9 @@
 package main.layers;
 
 import main.coords.*;
+import main.core.Canvas;
 import main.core.DBConnection;
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import main.geometry.Extent;
 
 import java.awt.*;
@@ -18,12 +18,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MYSQLTableLayer extends Layer {
+    private final Canvas canvas;
 	private Integer selectedLocalityID = null;
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
 
 	// Volatile ensures the new list is immediately visible to the drawing thread
 	private volatile List<LocalityRec> cache = Collections.emptyList();
-	private volatile BoundingBox cachedBounds = null;
+	private volatile Extent cachedBounds = null;
 
 	// Prevents spawning 100 queries if the user drags the map wildly
 	private final AtomicBoolean isFetching = new AtomicBoolean(false);
@@ -31,10 +32,11 @@ public class MYSQLTableLayer extends Layer {
 	// Callback to tell the canvas to repaint when async load finishes
 	private Runnable repaintCallback;
 
-	private record LocalityRec(int n, int e, String name, int precision, int id) {}
+	private record LocalityRec(Coordinate c, String name, int precision, int id) {}
 
-	public MYSQLTableLayer() {
-		super("MySQL Layer", false, CoordSystem.SWEREF99TM);
+	public MYSQLTableLayer(Canvas canvas) {
+        super("MySQL Layer", false, CoordSystem.WGS84);
+        this.canvas = canvas;
 	}
 
 	/**
@@ -44,38 +46,41 @@ public class MYSQLTableLayer extends Layer {
 		this.repaintCallback = repaintCallback;
 	}
 
-	private boolean shouldRefreshCache(BoundingBox currentBounds) {
+	private boolean shouldRefreshCache(Extent currentBounds) {
 		if (cachedBounds == null) return true;
 		return !cachedBounds.isInside(currentBounds);
 	}
 
-	private void refreshCacheAsync(BoundingBox bounds) {
+	private void refreshCacheAsync(Extent bounds) {
 		// CompareAndSet ensures only ONE background thread fetches at a time.
 		if (!isFetching.compareAndSet(false, true)) {
 			return;
 		}
 
-		BoundingBox bufferedArea = bounds.grow(0.5);
+		Extent bufferedArea = bounds.grow(0.5);
+		// convert to wgs84 for the sql query
+		Extent querryAarea = bufferedArea.convertCRS(canvas.getCRS(), getCRS());
+		CoordSystem canvasCRS = canvas.getCRS();
 
 		CompletableFuture.runAsync(() -> {
 			try {
 				Connection conn = DBConnection.getConn();
 				try (PreparedStatement pstmt = conn.prepareStatement(
-								"SELECT SWTMN, SWTME, locality, Coordinateprecision, id FROM locality " +
-										"WHERE SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?")) {
+								"SELECT lat, `long`, locality, Coordinateprecision, id FROM locality " +
+										"WHERE lat BETWEEN ? AND ? AND `long` BETWEEN ? AND ?")) {
 
-					pstmt.setInt(1, Math.min(bufferedArea.getY1(), bufferedArea.getY2()));
-					pstmt.setInt(2, Math.max(bufferedArea.getY1(), bufferedArea.getY2()));
-					pstmt.setInt(3, Math.min(bufferedArea.getX1(), bufferedArea.getX2()));
-					pstmt.setInt(4, Math.max(bufferedArea.getX1(), bufferedArea.getX2()));
+					pstmt.setDouble(1, Math.min(querryAarea.c1.getNorth(), querryAarea.c2.getNorth()));
+					pstmt.setDouble(2, Math.max(querryAarea.c1.getNorth(), querryAarea.c2.getNorth()));
+					pstmt.setDouble(3, Math.min(querryAarea.c1.getEast(), querryAarea.c2.getEast()));
+					pstmt.setDouble(4, Math.max(querryAarea.c1.getEast(), querryAarea.c2.getEast()));
 
 					try (ResultSet rs = pstmt.executeQuery()) {
 						// Build a completely new list in the background
 						List<LocalityRec> temp = new ArrayList<>();
 						while (rs.next()) {
+                            Coordinate wgs = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
 							temp.add(new LocalityRec(
-									rs.getInt("SWTMN"),
-									rs.getInt("SWTME"),
+                                    getCRS().convertTo(wgs, canvasCRS),
 									rs.getString("locality"),
 									rs.getInt("Coordinateprecision"),
 									rs.getInt("id")
@@ -117,22 +122,23 @@ public class MYSQLTableLayer extends Layer {
 	}
 
 	public int findNearest(Coordinate c, int limit) {
-		String sqlstmt = "SELECT SWTMN, SWTME, ID FROM locality where SWTMN BETWEEN ? AND ? AND SWTME BETWEEN ? AND ?";
+		//Todo: select lat, long instead of sweref coordinates
+		String sqlstmt = "SELECT lat, `long`, ID FROM locality where lat BETWEEN ? AND ? AND `long` BETWEEN ? AND ?";
 		try {
 			Connection conn = DBConnection.getConn();
 			try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
 
-				statement.setInt(1, (int) Math.round(c.getNorth() - limit));
-				statement.setInt(2, (int) Math.round(c.getNorth() + limit));
-				statement.setInt(3, (int) Math.round(c.getEast() - limit));
-				statement.setInt(4, (int) Math.round(c.getEast() + limit));
+				statement.setDouble(1, Math.round(c.getNorth() - limit));
+				statement.setDouble(2, Math.round(c.getNorth() + limit));
+				statement.setDouble(3, Math.round(c.getEast() - limit));
+				statement.setDouble(4, Math.round(c.getEast() + limit));
 
 				try (ResultSet result = statement.executeQuery()) {
 					double ndist = Double.MAX_VALUE;
 					int nID = -1;
 					while (result.next()) {
 						Coordinate pc = new Coordinate(result.getInt(1), result.getInt(2));
-						double dist = c.distanceTM(pc);
+						double dist = c.distanceWGS84(pc);
 						if (dist < ndist) {
 							ndist = dist;
 							nID = result.getInt(3);
@@ -151,13 +157,13 @@ public class MYSQLTableLayer extends Layer {
 
 	@Override
 	public Extent getBoundaries() {
-		//Todo: implement the method
-		return null;
+		// todo conver coordinate to canvas crs
+		return CoordSystem.WEB_MERCATOR.getBoundaries();
 	}
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
-	                 double yShift, double yScale, BoundingBox bounds) {
+	                 double yShift, double yScale, Extent bounds) {
 		if (isHidden()) return;
 
 		// Trigger background fetch if needed, but don't block the UI!
@@ -175,29 +181,29 @@ public class MYSQLTableLayer extends Layer {
 		// Capture local reference to avoid list changing mid-draw
 		List<LocalityRec> localCache = this.cache;
 
-		for (LocalityRec rec : localCache) {
-			int x = (int) ((rec.e * xScale) + xShift);
-			int y = (int) ((rec.n * yScale) + yShift);
 
-			// Fast clipping
+		for (LocalityRec rec : localCache) {
+			int x = (int) ((rec.c.getEast() * xScale) + xShift);
+			int y = (int) ((rec.c.getNorth() * yScale) + yShift);
+
 			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
+
+			// Calculate metric radius once for both branches
+			double k = canvas.getCRS().getScaleFactor(rec.c);
+			int r = (int) Math.round(rec.precision * k * xScale);
 
 			if (selectedLocalityID != null && rec.id == selectedLocalityID) {
 				g2d.setColor(getColor());
 				g2d.setStroke(new BasicStroke(2));
-				g2d.drawOval(x - 8, y - 8, 16, 16); // Draw a larger "target" circle
-				int r = (int) (rec.precision * xScale);
-				g2d.drawOval(x - r, y - r, r * 2, r * 2);
+				g2d.drawOval(x - 8, y - 8, 16, 16);
 
-				// Always draw the name for the selected item, even if zoomed out
+				if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
+
 				g2d.drawString(rec.name, x + 10, y);
-				g2d.setStroke(new BasicStroke(1)); // Reset stroke
+				g2d.setStroke(new BasicStroke(1));
 			} else {
 				g2d.drawOval(x - 3, y - 3, 6, 6);
-				if (rec.precision > 0) {
-					int r = (int) (rec.precision * xScale);
-					if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
-				}
+				if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
 				if (xScale > 0.02) g2d.drawString(rec.name, x + 5, y);
 			}
 		}

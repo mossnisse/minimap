@@ -1,7 +1,6 @@
 package main.layers;
 
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import main.coords.*;
 import java.awt.*;
 import java.io.BufferedInputStream;
@@ -143,8 +142,7 @@ public class ShapePointFileLayer extends Layer {
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale,
-	                 double yShift, double yScale, BoundingBox bounds) {
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		if (!isHidden()) {
 			g2d.setColor(getColor());
 

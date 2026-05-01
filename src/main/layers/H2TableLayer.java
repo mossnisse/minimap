@@ -4,7 +4,6 @@ import main.coords.*;
 import main.core.Canvas;
 import main.core.DBConnection;
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import main.geometry.Extent;
 
 import java.awt.*;
@@ -167,11 +166,11 @@ public class H2TableLayer extends Layer {
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		if (isHidden()) return;
 
-		Coordinate c1 = new Coordinate(bounds.getY1(), bounds.getX1());
-		Coordinate c2 = new Coordinate(bounds.getY2(), bounds.getX2());
+		Coordinate c1 = bounds.c1;
+		Coordinate c2 = bounds.c2;
 		Extent queryBounds = new Extent( canvas.getCRS().convertTo(c1, getCRS()), canvas.getCRS().convertTo(c2, getCRS()));
 
 		// Refresh if we don't have a cache, or if the new view is not fully contained in the old one

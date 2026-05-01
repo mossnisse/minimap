@@ -89,4 +89,8 @@ public enum CoordSystem {
     public Extent getBoundaries() {
         return new Extent(nMax, eMax, nMin, eMax);
     }
+
+    public double getScaleFactor(Coordinate c) {
+        return strategy.getScaleFactor(c);
+    }
 }

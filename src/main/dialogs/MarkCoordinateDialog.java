@@ -149,7 +149,7 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 				Coordinate rt90r = RUBIN.toRT90(rubin);
 				wgs84 = CoordSystem.RT90.toWGS84(rt90r);
 
-				RubinLayer r = new RubinLayer(rubin, "Rubin", Color.green);
+				RubinLayer r = new RubinLayer(rubin, canvas, "Rubin", Color.green);
 				canvas.layerManager.delLayer("Rubin");
 				canvas.layerManager.addLayerTop(r);
 			} else {

@@ -4,7 +4,6 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 
 import main.coords.*;
-import main.geometry.BoundingBox;
 import main.geometry.Extent;
 
 public abstract class Layer {
@@ -65,5 +64,5 @@ public abstract class Layer {
 
 	public abstract Extent getBoundaries();
 
-	public abstract void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) throws Exception;
+	public abstract void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) throws Exception;
 }

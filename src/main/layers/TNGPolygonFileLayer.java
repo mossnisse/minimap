@@ -3,7 +3,6 @@ package main.layers;
 import main.coords.*;
 import main.core.Canvas;
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import main.geometry.CPolygon;
 import main.geometry.Extent;
 
@@ -36,8 +35,8 @@ public class TNGPolygonFileLayer extends Layer {
 
 		//public Extent getBoundingBox() {return box;}
 
-		public BoundingBox getBoundingBox() {
-			return new BoundingBox(box.c1.getPoint(), box.c2.getPoint());
+		public Extent getBoundingBox() {
+			return box;
 		}
 		
 		public boolean isInside(Coordinate c) {
@@ -119,7 +118,7 @@ public class TNGPolygonFileLayer extends Layer {
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		if (isHidden() || provinces == null) return;
 
 		// Use the guaranteed non-null color

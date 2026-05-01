@@ -3,7 +3,6 @@ package main.layers;
 import main.coords.*;
 import main.core.Layer;
 import main.core.Canvas;
-import main.geometry.BoundingBox;
 import main.geometry.Extent;
 
 import java.awt.*;
@@ -32,7 +31,7 @@ public class DistanceLayer extends Layer {
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		if (isHidden()) return;
 
 		g2d.setColor(getColor());

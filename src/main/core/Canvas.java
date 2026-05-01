@@ -157,11 +157,11 @@ public class Canvas extends JPanel {
 		double drawHeight = size.height / scale;
 		Coordinate m = bounds.getMidlePoint();
 
-		BoundingBox drawBounds = new BoundingBox(
-				(int)(m.getEast() - drawWidth / 2.0),
-				(int)(m.getNorth() - drawHeight / 2.0),
-				(int)(m.getEast() + drawWidth / 2.0),
-				(int)(m.getNorth() + drawHeight / 2.0)
+		Extent drawBounds = new Extent(
+				m.getNorth() - drawHeight / 2.0,
+				m.getEast() - drawWidth / 2.0,
+				m.getNorth() + drawHeight / 2.0,
+				m.getEast() + drawWidth / 2.0
 		);
 
 		// Calculate Shifts to center the map in the window

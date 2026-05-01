@@ -6,4 +6,6 @@ public interface ProjectionStrategy {
 
     // Converts Projected (E/N) to Lat/Lon (WGS84)
     Coordinate unproject(double northing, double easting);
+
+    public double getScaleFactor(Coordinate c);
 }

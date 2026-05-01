@@ -22,7 +22,7 @@ public class LayerManager {
 
     private void initialize() {
         try {
-            MYSQLTableLayer md = new MYSQLTableLayer();
+            MYSQLTableLayer md = new MYSQLTableLayer(canvas);
             md.setColor(Color.BLACK);
             md.setName("LokalDB");
             md.setHidden(false);

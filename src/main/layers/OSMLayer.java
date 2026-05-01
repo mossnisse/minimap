@@ -11,7 +11,6 @@ import javax.imageio.ImageIO;
 import main.coords.*;
 import main.core.Canvas;
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import main.geometry.Extent;
 
 public class OSMLayer extends Layer {
@@ -33,16 +32,16 @@ public class OSMLayer extends Layer {
             this.y = y;
         }
 
-        public static TileIndex[] getTileIndexes(BoundingBox box, int zoom) {
+        public static TileIndex[] getTileIndexes(Extent box, int zoom) {
             int numTiles = 1 << zoom;
 
             // Convert Web Mercator meters to Tile XY
-            int colMin = (int) Math.floor(((box.getX1() + WORLD_SIZE) / (2 * WORLD_SIZE)) * numTiles);
-            int colMax = (int) Math.floor(((box.getX2() + WORLD_SIZE) / (2 * WORLD_SIZE)) * numTiles);
+            int colMin = (int) Math.floor(((box.c1.getEast() + WORLD_SIZE) / (2 * WORLD_SIZE)) * numTiles);
+            int colMax = (int) Math.floor(((box.c2.getEast() + WORLD_SIZE) / (2 * WORLD_SIZE)) * numTiles);
 
             // Y is inverted in TMS/Web Mercator
-            int rowMin = (int) Math.floor(((WORLD_SIZE - box.getY2()) / (2 * WORLD_SIZE)) * numTiles);
-            int rowMax = (int) Math.floor(((WORLD_SIZE - box.getY1()) / (2 * WORLD_SIZE)) * numTiles);
+            int rowMin = (int) Math.floor(((WORLD_SIZE - box.c2.getNorth()) / (2 * WORLD_SIZE)) * numTiles);
+            int rowMax = (int) Math.floor(((WORLD_SIZE - box.c1.getNorth()) / (2 * WORLD_SIZE)) * numTiles);
 
             // Clamp to valid range (0 to 2^zoom - 1)
             colMin = Math.clamp(colMin, 0, numTiles - 1);
@@ -148,7 +147,7 @@ public class OSMLayer extends Layer {
     }
 
     @Override
-    public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+    public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
         int zoom = calculateZoom(xScale);
         TileIndex[] indexes = TileIndex.getTileIndexes(bounds, zoom);
 
@@ -156,6 +155,10 @@ public class OSMLayer extends Layer {
         int numTiles = 1 << zoom;
         double worldSize = 20037508.34; // Local copy of constant
         double tileSize = (2 * worldSize) / numTiles;
+
+        // Calculate size based on tile dimensions at this zoom
+        int pixelWidth = (int) Math.round(tileSize * xScale);
+        int pixelHeight = (int) Math.round(tileSize * Math.abs(yScale)); // Use abs to handle Y-flip
 
         for (TileIndex ind : indexes) {
             Image img = tileBuffer.getTileOrFetch(ind);
@@ -166,21 +169,10 @@ public class OSMLayer extends Layer {
                 double mapY2 = worldSize - (ind.y * tileSize); // Top Y
 
                 // Apply projection/transformation to get screen pixel coordinates
-                double screenX = (mapX1 * xScale) + xShift;
-                double screenY = (mapY2 * yScale) + yShift;
+                int screenX = (int) Math.round((mapX1 * xScale) + xShift);
+                int screenY = (int) Math.round((mapY2 * yScale) + yShift);
 
-                // Calculate size based on tile dimensions at this zoom
-                double pixelWidth = tileSize * xScale;
-                double pixelHeight = tileSize * Math.abs(yScale); // Use abs to handle Y-flip
-
-                // Draw using rounded integers only at the final point
-                g2d.drawImage(img,
-                        (int) Math.round(screenX),
-                        (int) Math.round(screenY),
-                        (int) Math.round(pixelWidth) + 1, // +1 prevents thin gaps between tiles
-                        (int) Math.round(pixelHeight) + 1,
-                        null
-                );
+                g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight + 1, null);  // +1 avoids white lines between tiles
             }
         }
     }

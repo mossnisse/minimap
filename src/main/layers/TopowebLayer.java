@@ -11,7 +11,6 @@ import javax.imageio.ImageIO;
 
 import main.core.Canvas;
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import main.geometry.Extent;
 
 public class TopowebLayer extends Layer {
@@ -34,26 +33,26 @@ public class TopowebLayer extends Layer {
 			this.row = row;
 		}
 
-		public static TileIndex[] getTileIndexes(BoundingBox box, int tilematrix) {
+		public static TileIndex[] getTileIndexes(Extent box, int tilematrix) {
 			int origoY = 8500000;
 			int origoX = -1200000;
 			int tileWidth = tileWidth(tilematrix);
 
 			// Calculate min/max directly from bounds
-			int colMin = (box.getX1() - origoX) / tileWidth;
-			int colMax = (box.getX2() - origoX) / tileWidth;
+			int colMin = (int) Math.floor((box.c1.getEast() - origoX) / tileWidth);
+			int colMax = (int) Math.floor((box.c2.getEast() - origoX) / tileWidth);
 
 			// Note: Rows increase South (down), so Y1 (North/Higher) is a smaller row index
-			int rowMin = (origoY - box.getY2()) / tileWidth;
-			int rowMax = (origoY - box.getY1()) / tileWidth;
+			int rowMin = (int) Math.floor((origoY - box.c2.getNorth()) / tileWidth);
+			int rowMax = (int) Math.floor((origoY - box.c1.getNorth()) / tileWidth);
 
-			int numTiles = (rowMax - rowMin + 1) * (colMax - colMin + 1);
+			int numTiles = (int) ((int) (rowMax - rowMin + 1.0) * (colMax - colMin + 1.0));
 			TileIndex[] indexes = new TileIndex[numTiles];
 
 			int i = 0;
 			for (int r = rowMin; r <= rowMax; r++) {
 				for (int c = colMin; c <= colMax; c++) {
-					indexes[i++] = new TileIndex(tilematrix, c, r);
+					indexes[i++] = new TileIndex(tilematrix, (int) c, (int) r);
 				}
 			}
 			return indexes;
@@ -178,11 +177,11 @@ public class TopowebLayer extends Layer {
 		return 1048576 / (1 << tilematrix);
 	}
 	
-	private static BoundingBox getTileBounds(TileIndex ind) {
+	private static Extent getTileBounds(TileIndex ind) {
 		int origoY = 8500000;
 		int origoX = -1200000;
 		int tileWidth = tileWidth(ind.zoomLevel); // meters
-		return new BoundingBox(origoX + tileWidth * ind.col, origoY - tileWidth * (ind.row + 1),  origoX + tileWidth * (ind.col + 1), origoY - tileWidth * (ind.row));
+		return new Extent(origoY - tileWidth * (ind.row + 1), origoX + tileWidth * ind.col,   origoY - tileWidth * (ind.row), origoX + tileWidth * (ind.col + 1));
 	}
 
 	private static int tileMatrix(int tileWidth) {
@@ -192,16 +191,15 @@ public class TopowebLayer extends Layer {
 
 		int log2TileWidth = 31 - Integer.numberOfLeadingZeros(tileWidth) ;
 		int m = 20 - log2TileWidth -1;
-
 		if (m > TILEMATRIX_LIMIT) m = TILEMATRIX_LIMIT;
 		if (m < 0) m = 0; // Safety check
 		return m;
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, BoundingBox bounds) {
+	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		int tilesize = 256;
-		int tilematrix = tileMatrix((int)Math.round(1/xScale * tilesize));
+		int tilematrix = tileMatrix((int)Math.round(1 / xScale * tilesize));
 
 		TileIndex[] indexes = TileIndex.getTileIndexes(bounds, tilematrix);
 
@@ -211,11 +209,11 @@ public class TopowebLayer extends Layer {
 				Image img = tileBuffer.getTileOrFetch(ind);
 
 				if (img != null) {
-					BoundingBox box = getTileBounds(ind);
-					int x1 = (int) ((box.getX1() * xScale) + xShift);
-					int y1 = (int) ((box.getY1() * yScale) + yShift);
-					int x2 = (int) ((box.getX2() * xScale) + xShift);
-					int y2 = (int) ((box.getY2() * yScale) + yShift);
+					Extent box = getTileBounds(ind);
+					int x1 = (int) ((box.c1.getEast() * xScale) + xShift);
+					int y1 = (int) ((box.c1.getNorth() * yScale) + yShift);
+					int x2 = (int) ((box.c2.getEast() * xScale) + xShift);
+					int y2 = (int) ((box.c2.getNorth() * yScale) + yShift);
 
 					g2d.drawImage(img, x1, y2, x2 - x1, Math.abs(y1 - y2), null);
 				}

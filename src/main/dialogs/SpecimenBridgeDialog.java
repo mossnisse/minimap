@@ -867,7 +867,7 @@ public class SpecimenBridgeDialog extends JDialog {
     public void focusRubin() {
         String rubin = targetSpecimen.getRubin();
         if (rubin != null && !rubin.isEmpty()) {
-            RubinLayer r = new RubinLayer(rubin, "Rubin", Color.GREEN);
+            RubinLayer r = new RubinLayer(rubin, canvas, "Rubin", Color.GREEN);
             canvas.layerManager.delLayer("Rubin");
             canvas.layerManager.addLayerTop(r);
             canvas.focus(r.getMiddle());

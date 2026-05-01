@@ -26,11 +26,10 @@ public class Extent {
                 && c1.getNorth() <= b.c1.getNorth() && c2.getNorth() >= b.c2.getNorth();
     }
 
-    /*
     public boolean intersects(Extent b) {
-        return (Math.abs(2* (getX1() - b.getX1())+(getWidth() - b.getWidth()))  < (getWidth() + b.getWidth())) &&
-                (Math.abs(2* (getY1() - b.getY1())+(getHeight() - b.getHeight())) < (getHeight() + b.getHeight()));
-    }*/
+        return (Math.abs(2* (c1.getEast() - b.c1.getEast()) + (getWidth() - b.getWidth())) < (getWidth() + b.getWidth())) &&
+                (Math.abs(2* (c1.getNorth() - b.c1.getNorth()) + (getHeight() - b.getHeight())) < (getHeight() + b.getHeight()));
+    }
 
     public Coordinate getMidlePoint() {
         return new Coordinate(

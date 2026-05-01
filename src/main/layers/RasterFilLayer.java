@@ -1,7 +1,6 @@
 package main.layers;
 
 import main.core.Layer;
-import main.geometry.BoundingBox;
 import main.coords.*;
 import java.awt.*;
 import java.io.BufferedInputStream;
@@ -20,7 +19,7 @@ import main.shapeFile.DataInputStreamSE;
 public class RasterFilLayer extends Layer {
 	private final String fileName;
 	private Image img;
-	private BoundingBox box;
+	private Extent box;
 
 	public RasterFilLayer(String fileName) throws IOException {
 		super(fileName, false, CoordSystem.SWEREF99TM);
@@ -75,7 +74,7 @@ public class RasterFilLayer extends Layer {
 		int width = img.getWidth(null);
 		double x2 = x+width*xp;
 		double y2 = y+height*yp;
-		box = new BoundingBox(new Point((int) x,(int) y2), new Point((int) x2, (int) y) );
+		box = new Extent( y2, x, y, x2 );
 		//System.out.println("raster box: "+box);
 	}
 
@@ -87,12 +86,12 @@ public class RasterFilLayer extends Layer {
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
-	                 double yShift, double yScale, BoundingBox bounds) {
+	                 double yShift, double yScale, Extent bounds) {
 		if (bounds.intersects(box)) {
-			int x1 = (int) ((box.getX1()*xScale)+xShift);
-			int y1 = (int) ((box.getY1()*yScale)+yShift);
-			int x2 = (int) ((box.getX2()*xScale)+xShift);
-			int y2 = (int) ((box.getY2()*yScale)+yShift);
+			int x1 = (int) ((box.c1.getEast()*xScale)+xShift);
+			int y1 = (int) ((box.c1.getNorth()*yScale)+yShift);
+			int x2 = (int) ((box.c2.getNorth()*xScale)+xShift);
+			int y2 = (int) ((box.c2.getNorth()*yScale)+yShift);
 			//System.out.println("x1:"+x1+", y1:"+(y2)+", x2:"+(x2-x1)+", y2:"+(y1-y2));
 			g2d.drawImage(img,x1,y2,x2-x1,y1-y2,null);
 		}

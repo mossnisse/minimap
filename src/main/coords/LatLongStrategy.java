@@ -10,4 +10,10 @@ public class LatLongStrategy implements ProjectionStrategy {
     public Coordinate unproject(double northing, double easting) {
         return new Coordinate(northing, easting);
     }
+
+    //different factor for the lat and lon
+    @Override
+    public double getScaleFactor(Coordinate c) {
+        return 0;
+    }
 }
