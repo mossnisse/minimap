@@ -27,8 +27,21 @@ public class Extent {
     }
 
     public boolean intersects(Extent b) {
-        return (Math.abs(2* (c1.getEast() - b.c1.getEast()) + (getWidth() - b.getWidth())) < (getWidth() + b.getWidth())) &&
-                (Math.abs(2* (c1.getNorth() - b.c1.getNorth()) + (getHeight() - b.getHeight())) < (getHeight() + b.getHeight()));
+        // Standard AABB (Axis-Aligned Bounding Box) intersection check
+        // Logic: They overlap if (Left1 < Right2) AND (Right1 > Left2) AND (Top1 > Bottom2) AND (Bottom1 < Top2)
+
+        double minE1 = Math.min(c1.getEast(), c2.getEast());
+        double maxE1 = Math.max(c1.getEast(), c2.getEast());
+        double minN1 = Math.min(c1.getNorth(), c2.getNorth());
+        double maxN1 = Math.max(c1.getNorth(), c2.getNorth());
+
+        double minE2 = Math.min(b.c1.getEast(), b.c2.getEast());
+        double maxE2 = Math.max(b.c1.getEast(), b.c2.getEast());
+        double minN2 = Math.min(b.c1.getNorth(), b.c2.getNorth());
+        double maxN2 = Math.max(b.c1.getNorth(), b.c2.getNorth());
+
+        return (minE1 <= maxE2 && maxE1 >= minE2) &&
+                (minN1 <= maxN2 && maxN1 >= minN2);
     }
 
     public Coordinate getMidlePoint() {

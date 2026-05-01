@@ -287,7 +287,7 @@ public class GUI  {
 		final JFileChooser fc = new JFileChooser();
 
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(
-				"Map Files", ".shp", ".SHP", "tif", "TIF", "tng", "TNG",
+				"Map Files", ".shp", ".SHP", "tif", "TIF", "tng", "TNG", "png", "PNG", "jpg", "JPG",
 				"gpx", "tools.GPX");
 		fc.setFileFilter(filter);
 		int returnVal = fc.showOpenDialog(canvas);
@@ -297,8 +297,8 @@ public class GUI  {
 			File file = fc.getSelectedFile();
 			//System.out.println("Open: " + file.getName());
 			try {
-				RasterFilLayer rFile = new RasterFilLayer(file.getPath());
-				canvas.layerManager.addLayerBottom(rFile);
+				RasterFileLayer rFile = new RasterFileLayer(file.getPath(), canvas);
+				canvas.layerManager.addLayerTop(rFile);
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();
