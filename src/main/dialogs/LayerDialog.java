@@ -79,18 +79,21 @@ public class LayerDialog extends JDialog {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				int index = layerList.locationToIndex(e.getPoint());
-				if (index != -1) {
-					// Get the renderer component to ask it how wide the checkbox is
-					LayerCellRenderer renderer = (LayerCellRenderer) layerList.getCellRenderer();
-					Component checkbox = renderer.visibleBox;
+				if (index == -1) return;
 
-					// Add a little padding to the preferred size
-					if (e.getX() <= checkbox.getPreferredSize().width + 5) {
-						Layer l = listModel.getElementAt(index);
-						l.setHidden(!l.isHidden());
-						canvas.repaint();
-						layerList.repaint();
-					}
+				Layer l = listModel.getElementAt(index);
+
+				// Checkbox logic
+				LayerCellRenderer renderer = (LayerCellRenderer) layerList.getCellRenderer();
+				if (e.getX() <= renderer.visibleBox.getPreferredSize().width + 10) {
+					l.setHidden(!l.isHidden());
+					canvas.repaint();
+					layerList.repaint();
+				}
+				// Double click logic
+				else if (e.getClickCount() == 2) {
+					new LayerPropertiesDialog(LayerDialog.this, l, canvas).setVisible(true);
+					layerList.repaint(); // In case name changed
 				}
 			}
 		});

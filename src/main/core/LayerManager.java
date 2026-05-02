@@ -62,7 +62,7 @@ public class LayerManager {
         this.onLayersChanged = listener;
     }
 
-    private void notifyListeners() {
+    public void notifyListeners() {
         if (onLayersChanged != null) {
             // Ensure UI updates happen on the Event Dispatch Thread
             SwingUtilities.invokeLater(onLayersChanged);

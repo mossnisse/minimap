@@ -56,6 +56,9 @@ public abstract class Layer {
 
 	public void setMaxZoomL(int zoomLevel) { this.maxZoom = zoomLevel; }
 
+	public int getMinZoom() { return minZoom; }
+	public int getMaxZoom() { return maxZoom; }
+
 	public boolean isInZoomLevel(int zoomLevel) {
 		boolean meetsMin = (minZoom == 0 || zoomLevel >= minZoom);
 		boolean meetsMax = (maxZoom == 0 || zoomLevel <= maxZoom);
