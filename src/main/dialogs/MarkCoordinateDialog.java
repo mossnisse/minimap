@@ -168,8 +168,9 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		wgs84F.setText(wgs84.toString());
 		rubinF.setText(rubin);
 
-		canvas.focus(sweref);
-		canvas.setCoordinate(sweref);
+		Coordinate cavasCoord = canvas.getCRS().toProjected(wgs84);
+		canvas.focus(cavasCoord);
+		canvas.setCoordinate(cavasCoord);
 		if (provinces!= null) {
 			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
 			if (pr != null) {

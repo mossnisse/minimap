@@ -12,10 +12,12 @@ public class CoordinateDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	public CoordinateDialog(Frame owner, Canvas canvas, Coordinate sweref) {
+	public CoordinateDialog(Frame owner, Canvas canvas, Coordinate c) {
 		super(owner, "Coordinate Details", false);
 
-		Coordinate wgs84 = CoordSystem.SWEREF99TM.toWGS84(sweref);
+
+		Coordinate wgs84 = canvas.getCRS().toWGS84(c);
+		Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
 		Coordinate rt90 = CoordSystem.RT90.toProjected(wgs84);
 		String rubin = RUBIN.fromRT90(rt90);
 		UTM utm = UTM.fromWGS84(wgs84);

@@ -1,6 +1,5 @@
 package main.dialogs;
 
-import main.coords.CoordSystem;
 import main.coords.Coordinate;
 import main.layers.DistanceLayer;
 import main.core.Canvas;
