@@ -8,11 +8,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
 
 public class LayerManager {
-    private final CopyOnWriteArrayList<Layer> layers = new CopyOnWriteArrayList<>();
+    private volatile CopyOnWriteArrayList<Layer> layers = new CopyOnWriteArrayList<>();
     private final Canvas canvas;
+    private Runnable onLayersChanged;
 
     LayerManager(Canvas canvas) {
         //layers = new CopyOnWriteArrayList<Layer>();
@@ -29,7 +29,7 @@ public class LayerManager {
             md.setMaxZoomL(40);
             md.setRepaintCallback(() ->
                     // Force the map to redraw on the Swing thread when data arrives
-                    SwingUtilities.invokeLater(() -> canvas.repaint())
+                    SwingUtilities.invokeLater(canvas::repaint)
             );
             addLayerBottom(md);
 
@@ -58,18 +58,44 @@ public class LayerManager {
         }
     }
 
-    public void addLayerTop(Layer l) {
-        layers.add(layers.size(), l);
+    public void setOnLayersChanged(Runnable listener) {
+        this.onLayersChanged = listener;
+    }
+
+    private void notifyListeners() {
+        if (onLayersChanged != null) {
+            // Ensure UI updates happen on the Event Dispatch Thread
+            SwingUtilities.invokeLater(onLayersChanged);
+        }
         canvas.repaint();
+    }
+
+    public void addLayerTop(Layer l) {
+        layers.add( l);
+        notifyListeners();
     }
 
     public void addLayerBottom(Layer l) {
-        layers.add(0, l);
-        canvas.repaint();
+        layers.addFirst(l);
+        notifyListeners();
     }
 
     public void delLayer(String name) {
-        layers.removeIf(l -> l != null && name.equals(l.getName()));
+        if (layers.removeIf(l -> l != null && name.equals(l.getName()))) {
+            notifyListeners();
+        }
+    }
+
+    public void delLayer(Layer layerToRemove) {
+        if (layers.remove(layerToRemove)) {
+            notifyListeners();
+        }
+    }
+
+    public void setLayerOrder(java.util.List<Layer> newOrder) {
+        // Atomic swap. No empty state!
+        layers = new CopyOnWriteArrayList<>(newOrder);
+        notifyListeners();
     }
 
     public Layer getLayer(String name) {
@@ -79,15 +105,7 @@ public class LayerManager {
         return null;
     }
 
-    public Iterable<Layer> getLayers() {
+    public java.util.List<Layer> getLayers() {
         return layers;
-    }
-
-    public void setLayerOrder(java.util.List<Layer> newOrder) {
-        // Clear current and add in the order provided
-        layers.clear();
-        // Assuming newOrder is provided from Bottom-to-Top (Data Order)
-        layers.addAll(newOrder);
-        canvas.repaint();
     }
 }

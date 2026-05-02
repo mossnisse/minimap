@@ -28,7 +28,7 @@ public class LayerDialog extends JDialog {
 		// Use a ListModel to handle the data
 		listModel = new DefaultListModel<>();
 
-		List<Layer> layers = (List<Layer>) canvas.layerManager.getLayers();
+		List<Layer> layers = canvas.layerManager.getLayers();
 		for (int i = layers.size() - 1; i >= 0; i--) {
 			listModel.addElement(layers.get(i));
 		}
@@ -62,18 +62,34 @@ public class LayerDialog extends JDialog {
 		bottomPanel.add(close);
 		add(bottomPanel, BorderLayout.SOUTH);
 
+		// Register the listener to refresh the UI
+		canvas.layerManager.setOnLayersChanged(this::refreshListModel);
+
+		// Crucial: Clear the listener when dialog is closed to avoid memory leaks
+		addWindowListener(new java.awt.event.WindowAdapter() {
+			@Override
+			public void windowClosed(java.awt.event.WindowEvent e) {
+				canvas.layerManager.setOnLayersChanged(null);
+			}
+		});
+
+		refreshListModel(); // Initial load
+
 		layerList.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				// Detect if the user double-clicked or clicked the specific checkbox area
-				// If your checkbox is 20px wide + some padding, check e.getX() <= 25
-				if (e.getX() <= 30) {
-					int index = layerList.locationToIndex(e.getPoint());
-					if (index != -1) {
+				int index = layerList.locationToIndex(e.getPoint());
+				if (index != -1) {
+					// Get the renderer component to ask it how wide the checkbox is
+					LayerCellRenderer renderer = (LayerCellRenderer) layerList.getCellRenderer();
+					Component checkbox = renderer.visibleBox;
+
+					// Add a little padding to the preferred size
+					if (e.getX() <= checkbox.getPreferredSize().width + 5) {
 						Layer l = listModel.getElementAt(index);
 						l.setHidden(!l.isHidden());
 						canvas.repaint();
-						layerList.repaint(); // Updates the checkbox state visually
+						layerList.repaint();
 					}
 				}
 			}
@@ -82,6 +98,21 @@ public class LayerDialog extends JDialog {
 		pack();
 		setLocationRelativeTo(aFrame);
 		setVisible(true);
+	}
+
+	private void refreshListModel() {
+		Layer selected = layerList.getSelectedValue(); // Save current selection
+		listModel.clear();
+
+		java.util.List<Layer> currentLayers = new java.util.ArrayList<>(canvas.layerManager.getLayers());
+
+		for (int i = currentLayers.size() - 1; i >= 0; i--) {
+			listModel.addElement(currentLayers.get(i));
+		}
+
+		if (selected != null) {
+			layerList.setSelectedValue(selected, true); // Restore selection
+		}
 	}
 
 	private void zoomToSelected() {
@@ -101,7 +132,7 @@ public class LayerDialog extends JDialog {
 		if (l != null) {
 			int confirm = JOptionPane.showConfirmDialog(this, "Delete layer: " + l.getName() + "?");
 			if (confirm == JOptionPane.YES_OPTION) {
-				canvas.layerManager.delLayer(l.getName());
+				canvas.layerManager.delLayer(l);
 				listModel.removeElement(l);
 				canvas.repaint();
 			}
