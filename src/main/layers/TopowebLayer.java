@@ -52,7 +52,7 @@ public class TopowebLayer extends Layer {
 			int i = 0;
 			for (int r = rowMin; r <= rowMax; r++) {
 				for (int c = colMin; c <= colMax; c++) {
-					indexes[i++] = new TileIndex(tilematrix, (int) c, (int) r);
+					indexes[i++] = new TileIndex(tilematrix, c, r);
 				}
 			}
 			return indexes;

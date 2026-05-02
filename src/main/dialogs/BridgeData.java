@@ -7,15 +7,6 @@ public class BridgeData {
     public String oDistrict;
     public String oProvince;
 
-    // Empty constructor for "No Link"
-    public BridgeData() {
-        this.localityId = -1;
-        this.distance = "";
-        this.direction = "";
-        this.oDistrict = "";
-        this.oProvince = "";
-    }
-
     // Constructor to capture current UI state
     public BridgeData(int locId, String dist, String dir, String oDist, String oProv) {
         this.localityId = locId;

@@ -5,9 +5,6 @@ import java.awt.*;
 public class BoundingBox {
 	protected Point p1;
 	protected Point p2;
-
-	public BoundingBox() {
-	}
 	
 	public BoundingBox(Point p1, Point p2) {
 		this.p1 = p1;

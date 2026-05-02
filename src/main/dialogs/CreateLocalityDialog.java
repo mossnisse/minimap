@@ -25,18 +25,18 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private final GUI gui;
 	private final Canvas canvas;
 	private final SpecimenBridgeDialog bridgeDialog;
-	Coordinate SWTM;
+	Coordinate c;
 	private JTextField localityT, districtT, provinceT, countryT, continentT, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;
 	private JButton cancel, ok;
 
-	public CreateLocalityDialog(Frame owner, GUI gui, main.core.Canvas canvas, SpecimenBridgeDialog bridge, Coordinate SWTM) {
+	public CreateLocalityDialog(Frame owner, GUI gui, main.core.Canvas canvas, SpecimenBridgeDialog bridge, Coordinate c) {
 		super(owner, "Create New Locality", false);
 		this.gui = gui;
 		this.canvas = canvas;
 		this.bridgeDialog = bridge;
-		this.SWTM = SWTM;
+		this.c = c;
 
 		// Use Content Pane for Layout
 		Container content = this.getContentPane();
@@ -60,27 +60,33 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private void initComponents(Container content) {
 		SpringLayout layout = (SpringLayout) content.getLayout();
 
+		String continent = "";
+		String country = "";
 		String province = "";
 		String district = "";
 
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.layerManager.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.layerManager.getLayer("socknar");
-
-		if (provinces != null) {
-			TNGPolygonFileLayer.Province pr = provinces.inPolygon(SWTM);
+		Layer provLayer = canvas.layerManager.getLayer("provinser");
+		if (provLayer instanceof TNGPolygonFileLayer provinces) {
+			TNGPolygonFileLayer.Province pr = provinces.inPolygon(c);
 			if (pr != null) province = pr.getName();
 		}
 
-		if (districts != null) {
-			TNGPolygonFileLayer.Province so = districts.inPolygon(SWTM);
-			if (so != null) district = so.getName();
+		Layer distrLayer = canvas.layerManager.getLayer("socknar");
+		if (distrLayer instanceof TNGPolygonFileLayer districts) {
+			TNGPolygonFileLayer.Province pr = districts.inPolygon(c);
+			if (pr != null) district = pr.getName();
 		}
 
 		// Logic for Suggesting Name
 		String suggestName = "";
 		H2TableLayer odb = (H2TableLayer) canvas.layerManager.getLayer("Ortnamnsdb");
 		if (odb != null) {
-			suggestName = odb.findNearest(SWTM, 1000);
+			suggestName = odb.findNearest(canvas.getCRS().convertTo(c, CoordSystem.SWEREF99TM), 1000);
+		}
+
+		if (!"".equals(province)) {
+			continent = "Europe";
+			country = "Sweden";
 		}
 
 		// Initialize Components
@@ -95,8 +101,8 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		categoryT = new JTextField(15);
 		zoomLevelT = new JTextField(5);
 		isPlaceT = new JCheckBox("Is Place");
-		continentT = new JTextField("Europe", 15);
-		countryT = new JTextField("Sweden", 15);
+		continentT = new JTextField(continent, 15);
+		countryT = new JTextField(country, 15);
 		provinceT = new JTextField(province, 15);
 		districtT = new JTextField(district, 15);
 		cancel = new JButton("Cancel");
@@ -167,9 +173,63 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private boolean createLocality() {
-		gui.setCursorWait();
+		// Immediate UI Validation (No DB needed)
+		String localityName = localityT.getText().trim();
+		if (localityName.isEmpty()) {
+			JOptionPane.showMessageDialog(this, "Locality name is required.");
+			return false;
+		}
 
-		// Gather all inputs first
+		int size;
+		try {
+			size = Integer.parseInt(locSizeT.getText());
+			if (size < 0) throw new NumberFormatException();
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(this, "Size must be a positive integer.");
+			return false;
+		}
+
+		// Use the coordinate system to transform
+		Coordinate wgs84c = canvas.getCRS().toWGS84(c);
+		Coordinate swerefc = CoordSystem.SWEREF99TM.toProjected(wgs84c);
+		Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
+
+		final String dist = districtT.getText().trim();
+		final String prov = provinceT.getText().trim();
+		final String coun = countryT.getText().trim();
+		final String zlRaw = zoomLevelT.getText().trim();
+
+		// Start Background Worker
+		new SwingWorker<Boolean, Void>() {
+			@Override
+			protected Boolean doInBackground() throws Exception {
+				gui.setCursorWait();
+				Connection conn = DBConnection.getConn();
+				if (localityExists(conn, localityName, dist, prov, coun)) return false;
+				executeInsert(conn, wgs84c, swerefc, rt90c, size);
+				return true;
+			}
+
+			@Override
+			protected void done() {
+				try {
+					if (get()) {
+						refreshMapsAndLists();
+						dispose();
+					} else {
+						JOptionPane.showMessageDialog(CreateLocalityDialog.this, "Locality already exists.");
+					}
+				} catch (Exception e) {
+					JOptionPane.showMessageDialog(CreateLocalityDialog.this, "Error: " + e.getMessage());
+				} finally {
+					gui.setCursorDefault();
+				}
+			}
+		}.execute();
+		return true;
+	}
+
+	private void executeInsert(Connection conn, Coordinate wgs84c, Coordinate swerefc, Coordinate rt90c, int size) throws SQLException {
 		String localityName = localityT.getText();
 		String districtName = districtT.getText();
 		String provinceName = provinceT.getText();
@@ -178,99 +238,71 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		String alternativeVal = alternativeT.getText();
 		String coordsourceVal = coordsourceT.getText();
 		String commentsVal = commentsT.getText();
-		String sizeVal = locSizeT.getText();
 		String categoryVal = categoryT.getText();
+		String zl = zoomLevelT.getText();
+		int zli;
+		try {
+			zli = Integer.parseInt(zl);
+		} catch (NumberFormatException nfe) {
+			zli = -1;
+		}
 		boolean isPlace = isPlaceT.isSelected();
 
-		String zl = zoomLevelT.getText();
-		try {
-			Integer.parseInt(zl);
-		} catch (NumberFormatException nfe) {
-			zl = "-1";
+		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision, category, zoomLevel, isPlace) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+		try (PreparedStatement preparedStmt = conn.prepareStatement(sqlstmt)) {
+			preparedStmt.setString(1, localityName);
+			preparedStmt.setString(2, districtName);
+			preparedStmt.setString(3, provinceName);
+			preparedStmt.setString(4, countryVal);
+			preparedStmt.setString(5, continentVal);
+			preparedStmt.setDouble(6, wgs84c.getNorth());
+			preparedStmt.setDouble(7, wgs84c.getEast());
+			preparedStmt.setInt(8, (int) Math.round(rt90c.getNorth()));
+			preparedStmt.setInt(9, (int) Math.round(rt90c.getEast()));
+			preparedStmt.setInt(10, (int) Math.round(swerefc.getNorth()));
+			preparedStmt.setInt(11, (int) Math.round(swerefc.getEast()));
+			preparedStmt.setString(12, Settings.getValue("user"));
+			preparedStmt.setString(13, alternativeVal);
+			preparedStmt.setString(14, coordsourceVal);
+			preparedStmt.setString(15, commentsVal);
+			preparedStmt.setInt(16, size);
+			preparedStmt.setString(17, categoryVal);
+			preparedStmt.setInt(18, zli);
+			preparedStmt.setBoolean(19, isPlace);
+
+			preparedStmt.executeUpdate();
+		}
+	}
+
+	private boolean localityExists(Connection conn, String localityName, String districtName, String provinceName, String countryName) throws SQLException {
+		// We only need to know if at least one row exists
+		String sql = "SELECT 1 FROM locality WHERE locality = ? AND district = ? AND province = ? AND country = ? LIMIT 1;";
+
+		try (PreparedStatement ps = conn.prepareStatement(sql)) {
+			// Use trim() to prevent accidental space mismatches
+			ps.setString(1, localityName.trim());
+			ps.setString(2, districtName.trim());
+			ps.setString(3, provinceName.trim());
+			ps.setString(4, countryName.trim());
+
+			try (ResultSet rs = ps.executeQuery()) {
+				return rs.next(); // If there is a row, it exists
+			}
+		}
+	}
+
+	private void refreshMapsAndLists() {
+		// Update UI elements
+		if (bridgeDialog != null && bridgeDialog.isVisible()) {
+			bridgeDialog.invalidateLocalityList();
 		}
 
-		try {
-			// Obtain connection (Scope fixed: declared here)
-			Connection conn = DBConnection.getConn();
-
-			// Coordinate calculations
-			Coordinate wgs84c = CoordSystem.SWEREF99TM.toWGS84(SWTM);
-			Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
-			String RT90Nt = Integer.toString((int) Math.round(rt90c.getNorth()));
-			String RT90Et = Integer.toString((int) Math.round(rt90c.getEast()));
-
-			// 4. Check if locality already exists
-			String sqltestifU = "SELECT COUNT(1) FROM locality WHERE locality = ? AND district = ? AND province = ? AND country = 'Sweden';";
-			try (PreparedStatement preparedStmt = conn.prepareStatement(sqltestifU)) {
-				preparedStmt.setString(1, localityName);
-				preparedStmt.setString(2, districtName);
-				preparedStmt.setString(3, provinceName);
-
-				try (ResultSet result = preparedStmt.executeQuery()) {
-					if (result.next() && result.getInt(1) > 0) {
-						JOptionPane.showMessageDialog(null, "There is already a locality with the same name in the district", "InfoBox: Error", JOptionPane.INFORMATION_MESSAGE);
-						return false;
-					}
-				}
-			}
-
-			// Validate size
-			try {
-				int size = Integer.parseInt(sizeVal);
-				if (size < 0) throw new NumberFormatException();
-			} catch (NumberFormatException nfe) {
-				JOptionPane.showMessageDialog(null, "Size is not a positive integer", "InfoBox: Error", JOptionPane.INFORMATION_MESSAGE);
-				return false;
-			}
-
-			// 6. Perform Insert
-			String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision, category, zoomLevel, isPlace) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-			try (PreparedStatement preparedStmt = conn.prepareStatement(sqlstmt)) {
-				preparedStmt.setString(1, localityName);
-				preparedStmt.setString(2, districtName);
-				preparedStmt.setString(3, provinceName);
-				preparedStmt.setString(4, countryVal);
-				preparedStmt.setString(5, continentVal);
-				preparedStmt.setDouble(6, wgs84c.getNorth());
-				preparedStmt.setDouble(7, wgs84c.getEast());
-				preparedStmt.setString(8, RT90Nt);
-				preparedStmt.setString(9, RT90Et);
-				preparedStmt.setInt(10, (int) Math.round(SWTM.getNorth()));
-				preparedStmt.setInt(11, (int) Math.round(SWTM.getEast()));
-				preparedStmt.setString(12, Settings.getValue("user"));
-				preparedStmt.setString(13, alternativeVal);
-				preparedStmt.setString(14, coordsourceVal);
-				preparedStmt.setString(15, commentsVal);
-				preparedStmt.setString(16, sizeVal);
-				preparedStmt.setString(17, categoryVal);
-				preparedStmt.setString(18, zl);
-				preparedStmt.setBoolean(19, isPlace);
-
-				preparedStmt.executeUpdate();
-			}
-
-			// Update UI elements
-			if (bridgeDialog != null && bridgeDialog.isVisible()) {
-				bridgeDialog.invalidateLocalityList();
-			}
-
-			Layer layer = canvas.layerManager.getLayer("LokalDB");
-			if (layer instanceof MYSQLTableLayer mysqlLayer) {
-				mysqlLayer.invalidateCache();
-			}
-			canvas.repaint();
-
-			return true;
-
-		} catch (SQLException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(null, "Database operation failed: " + e.getMessage(), "InfoBox: SQL Error", JOptionPane.INFORMATION_MESSAGE);
-			return false;
-		} finally {
-			// This ensures the cursor always returns to default, regardless of success or failure
-			gui.setCursorDefault();
+		Layer layer = canvas.layerManager.getLayer("LokalDB");
+		if (layer instanceof MYSQLTableLayer mysqlLayer) {
+			mysqlLayer.invalidateCache();
 		}
+		canvas.repaint();
 	}
 
 	@Override

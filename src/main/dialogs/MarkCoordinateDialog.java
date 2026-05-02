@@ -68,7 +68,7 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		addFormRow(formPanel, "WGS84 (Lat, Lon):", wgs84F, gbc, row++);
 		addFormRow(formPanel, "RUBIN Code:", rubinF, gbc, row++);
 		addFormRow(formPanel, "Province:", provinceF, gbc, row++);
-		addFormRow(formPanel, "District:", districtF, gbc, row++);
+		addFormRow(formPanel, "District:", districtF, gbc, row);
 
 		Object[] options = {"Mark", "Close"};
 		optionPane = new JOptionPane(formPanel,

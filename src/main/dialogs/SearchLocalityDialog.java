@@ -71,7 +71,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		JLabel l4 = addField("Country:", country, content, layout, 5, l3);
 		JLabel l5 = addField("Source:", source, content, layout, 5, l4);
 		JLabel l6 = addField("Precision > :", precision, content, layout, 5, l5);
-		JLabel l7 = addField("Category:", category, content, layout, 5, l6);
+		addField("Category:", category, content, layout, 5, l6);
 
 		content.add(isPlace);
 		layout.putConstraint(SpringLayout.WEST, isPlace, 120, SpringLayout.WEST, content);

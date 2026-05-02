@@ -214,9 +214,6 @@ public class GUI  {
 		menuBar.add(menu3);
 
 		menuItem1 = new JMenuItem("Add Topowebkartan");
-		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		//menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
-		//menuItem1.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
 		menuItem1.addActionListener(e->addTopowebkartan());
 		menu3.add(menuItem1);
 

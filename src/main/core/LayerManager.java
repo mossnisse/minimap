@@ -15,7 +15,6 @@ public class LayerManager {
     private Runnable onLayersChanged;
 
     LayerManager(Canvas canvas) {
-        //layers = new CopyOnWriteArrayList<Layer>();
         this.canvas = canvas;
         initialize();
     }

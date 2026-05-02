@@ -2,7 +2,6 @@ package main.core;
 
 import main.coords.*;
 import main.dialogs.DistanceTool;
-import main.geometry.BoundingBox;
 import main.geometry.Extent;
 
 import java.awt.*;
