@@ -173,7 +173,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			sql.append(" AND isPlace = 1");
 		}
 
-		sql.append(" LIMIT 50");
+		sql.append(" LIMIT 500");
 
 		//System.out.println("locality search: "+sql.toString());
 		try {

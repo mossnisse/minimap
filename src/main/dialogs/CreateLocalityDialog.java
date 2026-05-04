@@ -174,6 +174,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 
 	private boolean createLocality() {
 		// Immediate UI Validation (No DB needed)
+		// todo validate continent
 		String localityName = localityT.getText().trim();
 		if (localityName.isEmpty()) {
 			JOptionPane.showMessageDialog(this, "Locality name is required.");
@@ -230,16 +231,16 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private void executeInsert(Connection conn, Coordinate wgs84c, Coordinate swerefc, Coordinate rt90c, int size) throws SQLException {
-		String localityName = localityT.getText();
-		String districtName = districtT.getText();
-		String provinceName = provinceT.getText();
-		String countryVal = countryT.getText();
-		String continentVal = continentT.getText();
-		String alternativeVal = alternativeT.getText();
-		String coordsourceVal = coordsourceT.getText();
-		String commentsVal = commentsT.getText();
-		String categoryVal = categoryT.getText();
-		String zl = zoomLevelT.getText();
+		String localityName = localityT.getText().trim();
+		String districtName = districtT.getText().trim();
+		String provinceName = provinceT.getText().trim();
+		String countryVal = countryT.getText().trim();
+		String continentVal = continentT.getText().trim();
+		String alternativeVal = alternativeT.getText().trim();
+		String coordsourceVal = coordsourceT.getText().trim();
+		String commentsVal = commentsT.getText().trim();
+		String categoryVal = categoryT.getText().trim();
+		String zl = zoomLevelT.getText().trim();
 		int zli;
 		try {
 			zli = Integer.parseInt(zl);

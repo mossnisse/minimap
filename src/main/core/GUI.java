@@ -490,10 +490,13 @@ public class GUI  {
 	
 	public void showLocalityAtCoord() {
 		Coordinate c = canvas.getCoordinate();
-		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.layerManager.getLayer("LokalDB");
-		int localityID = ldb.findNearest(c,1000);
-		if (localityID != -1) {
-			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
+		if (c == null) return;
+		Layer layer = canvas.layerManager.getLayer("LokalDB");
+		if (layer instanceof MYSQLTableLayer ldb) {
+			int localityID = ldb.findNearest(c, 1000);
+			if (localityID != -1) {
+				new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
+			}
 		}
 	}
 
@@ -518,6 +521,17 @@ public class GUI  {
 		moveTarget.setCursor(defaultCursor);
 
 		moveTarget = null;
+	}
+
+	public void cancelMoveMode() {
+		if (moveTarget != null) {
+			Cursor defaultCursor = Cursor.getDefaultCursor();
+			frame.setCursor(defaultCursor);
+			canvas.setCursor(defaultCursor);
+			moveTarget.setCursor(defaultCursor);
+			moveTarget.setTitle("Edit Locality: " + moveTarget.getOldName());
+			moveTarget = null;
+		}
 	}
 
 	private void createLocalityAtCoord() {

@@ -121,36 +121,46 @@ public class MYSQLTableLayer extends Layer {
 		// The canvas should repaint after calling this
 	}
 
-	public int findNearest(Coordinate c, int limit) {
-		//Todo: select lat, long instead of sweref coordinates
-		String sqlstmt = "SELECT lat, `long`, ID FROM locality where lat BETWEEN ? AND ? AND `long` BETWEEN ? AND ?";
+	public int findNearest(Coordinate c, int limitInMeters) {
+		// Ensure we are working with WGS84 for DB comparison
+		Coordinate clickWgs84 = canvas.getCRS().toWGS84(c);
+
+		// Approximate degree offset (very rough: 1 degree ? 111km)
+		// For better accuracy at high latitudes, longitude needs a cos(lat) adjustment
+		double degOffset = limitInMeters / 111320.0;
+		double latRad = Math.toRadians(clickWgs84.getNorth());
+		double lonOffset = degOffset / Math.cos(latRad);
+
+		String sqlstmt = "SELECT lat, `long`, ID FROM locality WHERE lat BETWEEN ? AND ? AND `long` BETWEEN ? AND ?";
+
 		try {
 			Connection conn = DBConnection.getConn();
 			try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
-
-				statement.setDouble(1, Math.round(c.getNorth() - limit));
-				statement.setDouble(2, Math.round(c.getNorth() + limit));
-				statement.setDouble(3, Math.round(c.getEast() - limit));
-				statement.setDouble(4, Math.round(c.getEast() + limit));
+				statement.setDouble(1, clickWgs84.getNorth() - degOffset);
+				statement.setDouble(2, clickWgs84.getNorth() + degOffset);
+				statement.setDouble(3, clickWgs84.getEast() - lonOffset);
+				statement.setDouble(4, clickWgs84.getEast() + lonOffset);
 
 				try (ResultSet result = statement.executeQuery()) {
-					double ndist = Double.MAX_VALUE;
-					int nID = -1;
+					double minDistance = limitInMeters; // Don't accept anything outside the limit
+					int nearestID = -1;
+
 					while (result.next()) {
-						Coordinate pc = new Coordinate(result.getInt(1), result.getInt(2));
-						double dist = c.distanceWGS84(pc);
-						if (dist < ndist) {
-							ndist = dist;
-							nID = result.getInt(3);
+						Coordinate recordWgs84 = new Coordinate(result.getDouble(1), result.getDouble(2));
+
+						// Use the WGS84 specific distance helper (Haversine or similar)
+						double actualDist = clickWgs84.distanceWGS84(recordWgs84);
+
+						if (actualDist < minDistance) {
+							minDistance = actualDist;
+							nearestID = result.getInt(3);
 						}
 					}
-					return nID;
+					return nearestID;
 				}
-			} catch (SQLException e) {
-				e.printStackTrace();
 			}
 		} catch(SQLException e) {
-				e.printStackTrace();
+			e.printStackTrace();
 		}
 		return -1;
 	}

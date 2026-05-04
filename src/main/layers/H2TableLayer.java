@@ -79,7 +79,7 @@ public class H2TableLayer extends Layer {
 				sql.append(" AND SOCKEN ILIKE ?");
 			}
 
-			sql.append(" ORDER BY SOCKEN LIMIT 100");
+			sql.append(" ORDER BY SOCKEN LIMIT 500");
 
 			try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
 				int idx = 1;
