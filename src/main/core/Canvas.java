@@ -130,6 +130,7 @@ public class Canvas extends JPanel {
 
 	public void setCRS(CoordSystem cs) {
 		this.cs = cs;
+		layerManager.invalidateCache();
 	}
 
 	@Override

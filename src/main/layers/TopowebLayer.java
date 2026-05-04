@@ -1,6 +1,5 @@
 package main.layers;
 
-import main.coords.*;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.io.File;
@@ -9,79 +8,85 @@ import java.nio.file.Files;
 import java.util.LinkedHashMap;
 import javax.imageio.ImageIO;
 
+import main.coords.*;
 import main.core.Canvas;
 import main.core.Layer;
 import main.geometry.Extent;
 
 public class TopowebLayer extends Layer {
 	private final Canvas canvas;
-	//private final String key = "007d0995-da35-38ed-81b6-2a11e9c29d10";
-	//private final String url = "https://api.lantmateriet.se/open/topowebb-ccby/v1/wmts/token/";
-	private final String url = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";
-	// http://hades.slu.se/lm/topowebb/wms/v1/?SERVICE=WMS&REQUEST=GetCapabilities
-	private final static int TILEMATRIX_LIMIT = 12;
 	private final TileBuffer tileBuffer;
-	
+
+	private static final String WMTS_URL = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";
+	private static final java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+
+	// SWEREF99TM Constants
+	private static final int ORIGIN_X = -1200000;
+	private static final int ORIGIN_Y = 8500000;
+	private static final int BASE_TILE_WIDTH = 1048576; // Width at zoom 0 (2^20)
+	private static final int TILEMATRIX_LIMIT = 12;
+
 	public static class TileIndex {
-		public int zoomLevel;  // == tilematrix;
-		public int col;		// tile column increase East
-		public int row;			// tile row increase South
-		
-		TileIndex(int zoomLevel, int col, int row) {
-			this.zoomLevel = zoomLevel;
-			this.col = col;
-			this.row = row;
+		public int zoom;
+		public int x; // col
+		public int y; // row
+
+		TileIndex(int zoom, int x, int y) {
+			this.zoom = zoom;
+			this.x = x;
+			this.y = y;
 		}
 
-		public static TileIndex[] getTileIndexes(Extent box, int tilematrix) {
-			int origoY = 8500000;
-			int origoX = -1200000;
-			int tileWidth = tileWidth(tilematrix);
+		public static TileIndex[] getTileIndexes(Extent box, int zoom) {
+			int tileWidth = BASE_TILE_WIDTH / (1 << zoom);
 
-			// Calculate min/max directly from bounds
-			int colMin = (int) Math.floor((box.c1.getEast() - origoX) / tileWidth);
-			int colMax = (int) Math.floor((box.c2.getEast() - origoX) / tileWidth);
+			// Convert SWEREF99TM meters to Tile XY
+			int colMin = (int) Math.floor((box.c1.getEast() - ORIGIN_X) / tileWidth);
+			int colMax = (int) Math.floor((box.c2.getEast() - ORIGIN_X) / tileWidth);
 
-			// Note: Rows increase South (down), so Y1 (North/Higher) is a smaller row index
-			int rowMin = (int) Math.floor((origoY - box.c2.getNorth()) / tileWidth);
-			int rowMax = (int) Math.floor((origoY - box.c1.getNorth()) / tileWidth);
+			// Y is inverted (Rows increase South)
+			int rowMin = (int) Math.floor((ORIGIN_Y - box.c2.getNorth()) / tileWidth);
+			int rowMax = (int) Math.floor((ORIGIN_Y - box.c1.getNorth()) / tileWidth);
 
-			int numTiles = (int) ((int) (rowMax - rowMin + 1.0) * (colMax - colMin + 1.0));
-			TileIndex[] indexes = new TileIndex[numTiles];
+			// Clamp to valid positive indices
+			colMin = Math.max(colMin, 0);
+			colMax = Math.max(colMax, 0);
+			rowMin = Math.max(rowMin, 0);
+			rowMax = Math.max(rowMax, 0);
 
+			int num = (rowMax - rowMin + 1) * (colMax - colMin + 1);
+			TileIndex[] indexes = new TileIndex[num];
 			int i = 0;
 			for (int r = rowMin; r <= rowMax; r++) {
 				for (int c = colMin; c <= colMax; c++) {
-					indexes[i++] = new TileIndex(tilematrix, c, r);
+					indexes[i++] = new TileIndex(zoom, c, r);
 				}
 			}
 			return indexes;
 		}
-		
-		// Overriding equals() to compare two TileIndex
-	    @Override
-	    public boolean equals(Object o) {
-	        if (o == this) { return true; }
-	        if (!(o instanceof TileIndex)) { return false; }
-	        TileIndex tile = (TileIndex) o;
-	        return tile.col == this.col && tile.row == this.row && tile.zoomLevel == this.zoomLevel;
-	    } 
-		
-	    @Override
-	    public int hashCode() {
-			return java.util.Objects.hash(col, row, zoomLevel);
-	    }
-	    
-	    @Override
+
+		@Override
+		public boolean equals(Object o) {
+			if (o == this) return true;
+			if (!(o instanceof TileIndex)) return false;
+			TileIndex tile = (TileIndex) o;
+			return tile.x == this.x && tile.y == this.y && tile.zoom == this.zoom;
+		}
+
+		@Override
+		public int hashCode() {
+			return java.util.Objects.hash(x, y, zoom);
+		}
+
+		@Override
 		public String toString() {
-			return "tilematrix: "+zoomLevel+" Tile column: "+col+" Tile row: "+row;
+			return "zoom: " + zoom + " col: " + x + " row: " + y;
 		}
 	}
 
 	private class TileBuffer {
 		private final int MAX_TILES = 1000;
 		private final String CACHE_ROOT = "tile_cache/topowebb";
-		private static final java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
 		private final java.util.Set<TileIndex> loading = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
 		private final java.util.Map<TileIndex, Image> tiles = java.util.Collections.synchronizedMap(
@@ -94,44 +99,24 @@ public class TopowebLayer extends Layer {
 		);
 
 		public Image getTileOrFetch(TileIndex index) {
-			// Check RAM
-			if (tiles.containsKey(index)) {
-				return tiles.get(index);
-			}
+			if (tiles.containsKey(index)) return tiles.get(index);
 
-			// Check Disk (Synchronous check, but ImageIO.read is fast enough for local disk)
-			File localFile = getLocalPath(index);
+			File localFile = new File(String.format("%s/%d/%d/%d.png", CACHE_ROOT, index.zoom, index.x, index.y));
 			if (localFile.exists()) {
 				try {
 					Image img = ImageIO.read(localFile);
-					if (img != null) {
-						tiles.put(index, img);
-						return img;
-					} else {
-						localFile.delete();
-					}
-				} catch (IOException e) {
-					System.err.println("Failed to read cached tile: " + localFile);
-				}
+					if (img != null) { tiles.put(index, img); return img; }
+				} catch (IOException e) { localFile.delete(); }
 			}
 
-			// Fetch from Network
-			if (loading.add(index)) {
-				downloadTileAsync(index, localFile);
-			}
+			if (loading.add(index)) downloadTileAsync(index, localFile);
 			return null;
 		}
 
-		private File getLocalPath(TileIndex index) {
-			// Path: cache/z/col/row.png
-			return new File(String.format("%s/%d/%d/%d.png",
-					CACHE_ROOT, index.zoomLevel, index.col, index.row));
-		}
-
 		private void downloadTileAsync(TileIndex index, File localFile) {
-			String tileUrl = url + "?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb"
-					+ "&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX=" + index.zoomLevel
-					+ "&TILEROW=" + index.row + "&TILECOL=" + index.col + "&FORMAT=image/png";
+			String tileUrl = WMTS_URL + "?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb"
+					+ "&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX=" + index.zoom
+					+ "&TILEROW=" + index.y + "&TILECOL=" + index.x + "&FORMAT=image/png";
 
 			java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
 					.uri(java.net.URI.create(tileUrl))
@@ -139,28 +124,20 @@ public class TopowebLayer extends Layer {
 
 			client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofByteArray())
 					.thenAccept(response -> {
-						byte[] data = response.body();
-						if (data != null && data.length > 0) {
+						if (response.statusCode() == 200) {
 							try {
-								// Save to Disk
+								byte[] data = response.body();
 								localFile.getParentFile().mkdirs();
 								Files.write(localFile.toPath(), data);
-
-								// Load into RAM
-								Image img = ImageIO.read(new java.io.ByteArrayInputStream(data));
-								if (img != null) {
-									tiles.put(index, img);
-									canvas.repaint();
-								}
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
+								tiles.put(index, ImageIO.read(new java.io.ByteArrayInputStream(data)));
+								canvas.repaint();
+							} catch (IOException e) { e.printStackTrace(); }
 						}
 						loading.remove(index);
 					});
 		}
 	}
-	
+
 	public TopowebLayer(Canvas canvas) {
 		super("Topowebkartan", false, CoordSystem.SWEREF99TM);
 		this.canvas = canvas;
@@ -171,52 +148,48 @@ public class TopowebLayer extends Layer {
 	public Extent getBoundaries() {
 		return getCRS().getBoundaries();
 	}
-	
-	private static int tileWidth (int tilematrix) {
-		//return 1048576/(int)(Math.pow(2, tilematrix));
-		return 1048576 / (1 << tilematrix);
-	}
-	
-	private static Extent getTileBounds(TileIndex ind) {
-		int origoY = 8500000;
-		int origoX = -1200000;
-		int tileWidth = tileWidth(ind.zoomLevel); // meters
-		return new Extent(origoY - tileWidth * (ind.row + 1), origoX + tileWidth * ind.col,   origoY - tileWidth * (ind.row), origoX + tileWidth * (ind.col + 1));
+
+	private static int calculateZoom(double xScale) {
+		double resolution = 1.0 / xScale;
+		int tileWidthMeters = (int) Math.round(resolution * 256);
+
+		// Use leading zeros to simulate base-2 log calculation for zoom mapping
+		int log2TileWidth = 31 - Integer.numberOfLeadingZeros(tileWidthMeters);
+		int zoom = 20 - log2TileWidth - 1;
+
+		return Math.clamp(zoom, 0, TILEMATRIX_LIMIT);
 	}
 
-	private static int tileMatrix(int tileWidth) {
-		// 1048576 is 2^20.
-		// Integer.numberOfLeadingZeros(tileWidth) gives us the log2 indirectly.
-		// In a 32-bit integer, log2(x) is 31 - numberOfLeadingZeros(x).
+	@Override
+	public void invalidateCache() {
 
-		int log2TileWidth = 31 - Integer.numberOfLeadingZeros(tileWidth) ;
-		int m = 20 - log2TileWidth -1;
-		if (m > TILEMATRIX_LIMIT) m = TILEMATRIX_LIMIT;
-		if (m < 0) m = 0; // Safety check
-		return m;
 	}
 
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
-		int tilesize = 256;
-		int tilematrix = tileMatrix((int)Math.round(1 / xScale * tilesize));
+		int zoom = calculateZoom(xScale);
+		TileIndex[] indexes = TileIndex.getTileIndexes(bounds, zoom);
 
-		TileIndex[] indexes = TileIndex.getTileIndexes(bounds, tilematrix);
+		// Pre-calculate constants for this render pass
+		int tileWidth = BASE_TILE_WIDTH / (1 << zoom);
+
+		// Calculate size based on tile dimensions at this zoom
+		int pixelWidth = (int) Math.round(tileWidth * xScale);
+		int pixelHeight = (int) Math.round(tileWidth * Math.abs(yScale));
 
 		for (TileIndex ind : indexes) {
-			if (ind.col > -1 && ind.row > -1) {
-				// This call is now lightning fast
-				Image img = tileBuffer.getTileOrFetch(ind);
+			Image img = tileBuffer.getTileOrFetch(ind);
+			if (img != null) {
+				// Calculate map coordinates
+				double mapX1 = ORIGIN_X + (ind.x * tileWidth);
+				double mapY2 = ORIGIN_Y - (ind.y * tileWidth); // Top Y
 
-				if (img != null) {
-					Extent box = getTileBounds(ind);
-					int x1 = (int) ((box.c1.getEast() * xScale) + xShift);
-					int y1 = (int) ((box.c1.getNorth() * yScale) + yShift);
-					int x2 = (int) ((box.c2.getEast() * xScale) + xShift);
-					int y2 = (int) ((box.c2.getNorth() * yScale) + yShift);
+				// Apply projection/transformation to get screen pixel coordinates
+				int screenX = (int) Math.round((mapX1 * xScale) + xShift);
+				int screenY = (int) Math.round((mapY2 * yScale) + yShift);
 
-					g2d.drawImage(img, x1, y2, x2 - x1, Math.abs(y1 - y2), null);
-				}
+				// +1 overlap trick to avoid white gridlines between map tiles
+				g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight + 1, null);
 			}
 		}
 	}

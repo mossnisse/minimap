@@ -67,5 +67,7 @@ public abstract class Layer {
 
 	public abstract Extent getBoundaries();
 
+	public abstract void invalidateCache();
+
 	public abstract void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) throws Exception;
 }

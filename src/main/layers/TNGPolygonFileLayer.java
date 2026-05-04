@@ -118,6 +118,11 @@ public class TNGPolygonFileLayer extends Layer {
 	}
 
 	@Override
+	public void invalidateCache() {
+
+	}
+
+	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		if (isHidden() || provinces == null) return;
 

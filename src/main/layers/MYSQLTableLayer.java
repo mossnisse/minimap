@@ -108,10 +108,6 @@ public class MYSQLTableLayer extends Layer {
 		});
 	}
 
-	public void invalidateCache() {
-		this.cachedBounds = null;
-	}
-
 	// point should be in world coordinate
 	public void selectNearest(Coordinate c) {
 		// We search within a "tolerance" (e.g., 10 pixels converted to world units)
@@ -169,6 +165,11 @@ public class MYSQLTableLayer extends Layer {
 	public Extent getBoundaries() {
 		// todo conver coordinate to canvas crs
 		return CoordSystem.WEB_MERCATOR.getBoundaries();
+	}
+
+	@Override
+	public void invalidateCache() {
+		this.cachedBounds = null;
 	}
 
 	@Override

@@ -107,4 +107,10 @@ public class LayerManager {
     public java.util.List<Layer> getLayers() {
         return layers;
     }
+
+    public void invalidateCache() {
+        for (Layer l : layers) {
+            l.invalidateCache();
+        }
+    }
 }

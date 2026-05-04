@@ -96,6 +96,11 @@ public class RasterFileLayer extends Layer {
 	}
 
 	@Override
+	public void invalidateCache() {
+
+	}
+
+	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale,
 	                 double yShift, double yScale, Extent bounds) {
 		if (box == null || img == null) return;

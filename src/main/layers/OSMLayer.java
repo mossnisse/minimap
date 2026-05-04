@@ -147,6 +147,11 @@ public class OSMLayer extends Layer {
     }
 
     @Override
+    public void invalidateCache() {
+
+    }
+
+    @Override
     public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
         int zoom = calculateZoom(xScale);
         TileIndex[] indexes = TileIndex.getTileIndexes(bounds, zoom);

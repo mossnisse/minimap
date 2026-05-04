@@ -172,22 +172,23 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		return label;
 	}
 
-	private boolean createLocality() {
+	private void createLocality() {
 		// Immediate UI Validation (No DB needed)
 		// todo validate continent
 		String localityName = localityT.getText().trim();
 		if (localityName.isEmpty()) {
 			JOptionPane.showMessageDialog(this, "Locality name is required.");
-			return false;
+			return;
 		}
 
-		int size;
+		final String sizeText = locSizeT.getText().trim();
+		final int size;
 		try {
 			size = Integer.parseInt(locSizeT.getText());
 			if (size < 0) throw new NumberFormatException();
 		} catch (NumberFormatException nfe) {
 			JOptionPane.showMessageDialog(this, "Size must be a positive integer.");
-			return false;
+			return;
 		}
 
 		// Use the coordinate system to transform
@@ -195,19 +196,39 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		Coordinate swerefc = CoordSystem.SWEREF99TM.toProjected(wgs84c);
 		Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
 
-		final String dist = districtT.getText().trim();
+		// Capture all other fields so doInBackground doesn't touch the UI
+		final String distr = districtT.getText().trim();
 		final String prov = provinceT.getText().trim();
 		final String coun = countryT.getText().trim();
-		final String zlRaw = zoomLevelT.getText().trim();
+		final String cont = continentT.getText().trim();
+		final String alt = alternativeT.getText().trim();
+		final String src = coordsourceT.getText().trim();
+		final String comm = commentsT.getText().trim();
+		final String cat = categoryT.getText().trim();
+		final String zlStr = zoomLevelT.getText().trim();
+		final boolean isPlace = isPlaceT.isSelected();
 
 		// Start Background Worker
 		new SwingWorker<Boolean, Void>() {
 			@Override
 			protected Boolean doInBackground() throws Exception {
 				gui.setCursorWait();
+
 				Connection conn = DBConnection.getConn();
-				if (localityExists(conn, localityName, dist, prov, coun)) return false;
-				executeInsert(conn, wgs84c, swerefc, rt90c, size);
+				if (localityExists(conn, localityName, distr, prov, coun)) {
+					return false;
+				}
+
+				// Perform transformations in background
+				Coordinate wgs84c = canvas.getCRS().toWGS84(c);
+				Coordinate swerefc = CoordSystem.SWEREF99TM.toProjected(wgs84c);
+				Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
+
+				int zli;
+				try { zli = Integer.parseInt(zlStr); } catch (NumberFormatException e) { zli = -1; }
+
+				executeInsert(conn, localityName, distr, prov, coun, cont, wgs84c, swerefc, rt90c,
+						alt, src, comm, size, cat, zli, isPlace);
 				return true;
 			}
 
@@ -227,27 +248,13 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 				}
 			}
 		}.execute();
-		return true;
 	}
 
-	private void executeInsert(Connection conn, Coordinate wgs84c, Coordinate swerefc, Coordinate rt90c, int size) throws SQLException {
-		String localityName = localityT.getText().trim();
-		String districtName = districtT.getText().trim();
-		String provinceName = provinceT.getText().trim();
-		String countryVal = countryT.getText().trim();
-		String continentVal = continentT.getText().trim();
-		String alternativeVal = alternativeT.getText().trim();
-		String coordsourceVal = coordsourceT.getText().trim();
-		String commentsVal = commentsT.getText().trim();
-		String categoryVal = categoryT.getText().trim();
-		String zl = zoomLevelT.getText().trim();
-		int zli;
-		try {
-			zli = Integer.parseInt(zl);
-		} catch (NumberFormatException nfe) {
-			zli = -1;
-		}
-		boolean isPlace = isPlaceT.isSelected();
+	private void executeInsert(Connection conn, String localityName, String districtName, String provinceName,
+							   String countryVal, String continentVal,
+							   Coordinate wgs84c, Coordinate swerefc, Coordinate rt90c,
+							   String alternativeVal, String coordsourceVal, String commentsVal, int size,
+							   String categoryVal, int zli, boolean isPlace) throws SQLException {
 
 		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision, category, zoomLevel, isPlace) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
@@ -309,9 +316,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	@Override
 	public void actionPerformed(ActionEvent ev) {
 		if ("ok".equals(ev.getActionCommand())) {
-			if (createLocality()) {
-				this.dispose();
-			}
+			createLocality();
 		} else if ("cancel".equals(ev.getActionCommand())) {
 			this.dispose();
 		}

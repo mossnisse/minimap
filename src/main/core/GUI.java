@@ -511,6 +511,7 @@ public class GUI  {
 	}
 
 	public void leaveMoveMode(MouseEvent me) {
+		if (moveTarget == null) return;
 		Coordinate mapP = canvas.translatePoint(me.getPoint());
 		moveTarget.updateCoordinates(mapP);
 

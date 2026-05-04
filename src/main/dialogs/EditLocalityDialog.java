@@ -351,15 +351,16 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 		final String sizeText = localitySize.getText().trim();
 		final int size;
-		if (!sizeText.isEmpty()) {
-			try {
-				size = Integer.parseInt(sizeText);
-				if (size < 0) throw new NumberFormatException();
-			} catch (NumberFormatException nfe) {
-				JOptionPane.showMessageDialog(this, "Size must be a positive integer.", "Error", JOptionPane.ERROR_MESSAGE);
-				return;
+		try {
+			size = Integer.parseInt(sizeText);
+			if (size < 0) {
+				throw new NumberFormatException();
 			}
+		} catch (NumberFormatException nfe) {
+			JOptionPane.showMessageDialog(this, "Size must be a positive integer.", "Error", JOptionPane.ERROR_MESSAGE);
+			return;
 		}
+
 
 		// Start Background Worker
 		new SwingWorker<Boolean, Void>() {
@@ -390,10 +391,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					stmt.setString(paramIdx++, coordinateSource.getText().trim());
 					stmt.setString(paramIdx++, comments.getText().trim());
 					stmt.setString(paramIdx++, Settings.getValue("user")); // modifiedBy
-
-					String sz = localitySize.getText().trim();
-					if (sz.isEmpty()) stmt.setNull(paramIdx++, java.sql.Types.INTEGER);
-					else stmt.setInt(paramIdx++, Integer.parseInt(sz));
+					stmt.setInt(paramIdx++, size);
 
 					stmt.setString(paramIdx++, category.getText().trim());
 					int zl;
@@ -461,7 +459,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	public String getOldName() {
-		return "Edit Locality";
+		return oldName;
 	}
 
 	@Override

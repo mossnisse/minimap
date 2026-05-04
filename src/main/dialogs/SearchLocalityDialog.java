@@ -190,10 +190,10 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 						allNames.add(label);
 
 						Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
-						Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
-						allPoints.add(sweref);
+						Coordinate c = canvas.getCRS().toProjected(wgs84);
+						allPoints.add(c);
 
-						addResultButton(sweref, label, id);
+						addResultButton(c, label, id);
 					}
 				}
 			}
