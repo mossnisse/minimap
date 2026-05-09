@@ -4,7 +4,6 @@ import main.core.Canvas;
 import main.core.DBConnection;
 import main.coords.*;
 import main.core.GUI;
-import main.layers.H2TableLayer;
 import main.layers.TNGPointFileLayer;
 
 import java.awt.*;
@@ -30,6 +29,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 			"Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
 			"Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
 	private final int[] provnr = {-1, 27, 25,26,28,24,29,22,23,19,20,21,18,17,16,13,12,14,10,9,11,15,6,8,5,3,2,1,4,7};
+
+	private record SearchResult(Coordinate coord, String label, int id) {}
 
 	private JButton searchb, closeb, zoomb;
 	private JTextField lokal, country, district, source, precision, category;
@@ -175,7 +176,6 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 		sql.append(" LIMIT 500");
 
-		//System.out.println("locality search: "+sql.toString());
 		try {
 			Connection conn = DBConnection.getConn();
 			// Main Search
@@ -197,15 +197,17 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 					}
 				}
 			}
-		} catch (SQLException ex) { ex.printStackTrace(); }
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 
 		// H2 Search (Simplified to just name/province) only when name is used.
 		// should also search on district
 		String sCountry = country.getText().trim();
 		if (!lokal.getText().isEmpty() && ("Sweden".equals(sCountry) || "*".equals(sCountry))) {
-			H2TableLayer od = (H2TableLayer) canvas.layerManager.getLayer("Ortnamnsdb");
-			if (od != null && !lokal.getText().isEmpty()) {
-				TNGPointFileLayer h2Res = od.find(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
+			if (!lokal.getText().isEmpty()) {
+				TNGPointFileLayer h2Res =  findInH2(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
+						//od.find(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
 				for (TNGPointFileLayer.Locality locus : h2Res.getLocalities()) {
 					Coordinate sweref = new Coordinate(locus.getPoint());
 					allPoints.add(sweref);
@@ -226,6 +228,60 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		}
 		resultPanel.revalidate();
 		resultPanel.repaint();
+	}
+
+	public TNGPointFileLayer findInH2(int provinsNr, String value, String district) {
+		value = value.trim().replace("*", "%");
+		district = district.trim().replace("*", "%");
+
+		try {
+			Connection conn = DBConnection.getH2Conn();
+			ArrayList<Coordinate> ans = new ArrayList<>();
+			ArrayList<String> names = new ArrayList<>();
+
+			// Build the Dynamic SQL
+			StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM ortnamnSWTM WHERE Ortnamn ILIKE ?");
+
+			if (provinsNr != -1) {
+				sql.append(" AND FPNUMMER = ?");
+			}
+
+			// Only add district filter if it's not a global wildcard
+			boolean useDistrict = !district.equals("%") && !district.isEmpty();
+			if (useDistrict) {
+				sql.append(" AND SOCKEN ILIKE ?");
+			}
+
+			sql.append(" ORDER BY SOCKEN LIMIT 500");
+
+			try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+				int idx = 1;
+				pstmt.setString(idx++, value);
+
+				if (provinsNr != -1) {
+					pstmt.setInt(idx++, provinsNr);
+				}
+
+				if (useDistrict) {
+					pstmt.setString(idx, district);
+				}
+
+				try (ResultSet result = pstmt.executeQuery()) {
+					while (result.next()) {
+						int north = result.getInt(1);
+						int east = result.getInt(2);
+						ans.add(CoordSystem.SWEREF99TM.convertTo(new Coordinate(north, east), canvas.getCRS()) );
+						names.add(result.getString(3) + ", " + result.getString(4));
+					}
+				}
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+			return new TNGPointFileLayer(ans, names, "Search Results");
+		} catch(Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	private void addNullableLikeFilter(StringBuilder sql, ArrayList<Object> params, String columnName, String input) {

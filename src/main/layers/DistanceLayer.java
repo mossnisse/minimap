@@ -8,16 +8,31 @@ import main.geometry.Extent;
 import java.awt.*;
 
 public class DistanceLayer extends Layer {
-	Canvas canvas;
-	private final Coordinate c1, c2;
+	private final Canvas canvas;
+	private final Coordinate originalC1;
+	private final CoordSystem originalCRS;
+	private final double distance;
+	private final double bearing;
+
+	private Coordinate c1, c2;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 
 	public DistanceLayer(Canvas canvas, String name, Coordinate c, int distance, String direction) {
 		super(name, false, canvas.getCRS());
+		this.originalC1 = c;
+		this.distance = distance;
+		this.bearing = Coordinate.getBearingFromDirection(direction);
+		this.originalCRS = canvas.getCRS();
 		this.canvas = canvas;
-		this.c1 = c;
-		double bearing = Coordinate.getBearingFromDirection(direction);
-	 	c2 = c.move(distance, bearing, getCRS());
+
+		// Initial calculation
+		recalculatePoints(originalCRS);
+	}
+
+	private void recalculatePoints(CoordSystem targetCRS) {
+		// Convert original point to new CRS
+		this.c1 = originalCRS.convertTo(originalC1, targetCRS);
+		this.c2 = c1.move(distance, bearing, targetCRS);
 	}
 
 	@Override
@@ -32,7 +47,7 @@ public class DistanceLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-
+		recalculatePoints(canvas.getCRS());
 	}
 
 	@Override

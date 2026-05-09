@@ -131,6 +131,7 @@ public class Canvas extends JPanel {
 	public void setCRS(CoordSystem cs) {
 		this.cs = cs;
 		layerManager.invalidateCache();
+		repaint();
 	}
 
 	@Override
@@ -179,6 +180,7 @@ public class Canvas extends JPanel {
 					l.draw(g2d, xShift, scale, yShift, -scale, drawBounds);
 				} catch (Exception e) {
 					System.err.println("Error drawing layer: " + l.getName());
+					e.printStackTrace();
 				}
 			}
 		}

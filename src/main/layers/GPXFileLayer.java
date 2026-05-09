@@ -112,7 +112,7 @@ public class GPXFileLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-
+		readFile();
 	}
 
 	@Override

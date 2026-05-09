@@ -13,10 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
-/*
-It's wierd that find TNGPointFileLayer. Try to come up with some better structure
- */
-
 public class H2TableLayer extends Layer {
 	private final String tableName;
 	private final Canvas canvas;
@@ -55,60 +51,6 @@ public class H2TableLayer extends Layer {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public TNGPointFileLayer find(int provinsNr, String value, String district) {
-		value = value.trim().replace("*", "%");
-		district = district.trim().replace("*", "%");
-
-		try {
-			Connection conn = DBConnection.getH2Conn();
-			ArrayList<Coordinate> ans = new ArrayList<>();
-			ArrayList<String> names = new ArrayList<>();
-
-			// Build the Dynamic SQL
-			StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM " + tableName + " WHERE Ortnamn ILIKE ?");
-
-			if (provinsNr != -1) {
-				sql.append(" AND FPNUMMER = ?");
-			}
-
-			// Only add district filter if it's not a global wildcard
-			boolean useDistrict = !district.equals("%") && !district.isEmpty();
-			if (useDistrict) {
-				sql.append(" AND SOCKEN ILIKE ?");
-			}
-
-			sql.append(" ORDER BY SOCKEN LIMIT 500");
-
-			try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-				int idx = 1;
-				pstmt.setString(idx++, value);
-
-				if (provinsNr != -1) {
-					pstmt.setInt(idx++, provinsNr);
-				}
-
-				if (useDistrict) {
-					pstmt.setString(idx++, district);
-				}
-
-				try (ResultSet result = pstmt.executeQuery()) {
-					while (result.next()) {
-						int north = result.getInt(1);
-						int east = result.getInt(2);
-						ans.add(new Coordinate(north, east));
-						names.add(result.getString(3) + ", " + result.getString(4));
-					}
-				}
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-			return new TNGPointFileLayer(ans, names, "Search Results");
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-		return null;
 	}
 
 	public String findNearest(Coordinate c, int limit) {
@@ -167,7 +109,7 @@ public class H2TableLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-
+		lastQueryBounds = null;
 	}
 
 	@Override

@@ -61,11 +61,7 @@ public class LayerPropertiesDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = 2;
         panel.add(new JLabel("Coordinate System:"), gbc);
         gbc.gridx = 1;
-        crsBox = new JComboBox<>(new CoordSystem[]{
-                CoordSystem.WGS84,
-                CoordSystem.SWEREF99TM,
-                CoordSystem.WEB_MERCATOR
-        });
+        crsBox = new JComboBox<>(CoordSystem.values());
         crsBox.setSelectedItem(layer.getCRS());
         panel.add(crsBox, gbc);
 

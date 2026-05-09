@@ -128,6 +128,10 @@ public class GUI  {
 		menuItem2.addActionListener(e->saveCSV());
 		menu.add(menuItem2);
 
+		menuItem2 = new JMenuItem("Set Canvas CRS");
+		menuItem2.addActionListener(e->setCanvasCRS());
+		menu.add(menuItem2);
+
 		menuItem2 = new JMenuItem("Set user", KeyEvent.VK_I);
 		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK));
 		menuItem2.getAccessibleContext().setAccessibleDescription(
@@ -245,6 +249,10 @@ public class GUI  {
 		menuItem1.addActionListener(e->openGPXFile());
 		menu3.add(menuItem1);
 
+		menuItem1 = new JMenuItem("Add raster layer", KeyEvent.VK_G);
+		menuItem1.addActionListener(e->openFile());
+		menu3.add(menuItem1);
+
 		menuBar.add(Box.createHorizontalGlue());
 
 		menu4 = new JMenu("Help");
@@ -278,6 +286,10 @@ public class GUI  {
                 window.setCursor(Cursor.getDefaultCursor());
             }
         }
+	}
+
+	private void setCanvasCRS() {
+		new CRSDialog(this.frame, this.canvas).showDialog();
 	}
 	
 	private void openFile() {

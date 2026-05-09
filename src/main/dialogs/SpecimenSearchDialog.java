@@ -22,6 +22,8 @@ public class SpecimenSearchDialog extends JDialog {
 
     private final String[] CSources = {"District(*)", "LocalityVH", "None", "UPS Database", "RT90-coordinates", "RUBIN", "Latitude / Longitude", "Locality", "OHN Database"};
 
+    private final String[] Continents = {"Africa", "Antarctica", "Asia", "Europe", "North America", "Oceania", "South & Central America", "Unknown / Empty"};
+
     public SpecimenSearchDialog(Dialog owner, SpecimenService service) {
         super(owner, "Search Specimens", false);
         this.service = service;
