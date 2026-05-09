@@ -16,7 +16,7 @@ import main.coords.*;
 
 public class GUI  {
 	private JFrame frame;
-	private Canvas canvas;
+	private MapCanvas mapCanvas;
 	private Coordinate coord;
 	private SpecimenBridgeDialog bridgeDialog;
 	private EditLocalityDialog moveTarget = null;
@@ -28,28 +28,28 @@ public class GUI  {
 		// Set up the frame and canvas
 		frame = new JFrame("Minimap");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		canvas = new Canvas();
+		mapCanvas = new MapCanvas();
 
 		// Setup Menus and Content
 		frame.setJMenuBar(createMenuBar());
 		frame.setContentPane(createContentPane());
-		frame.add(canvas);
+		frame.add(mapCanvas);
 
 		// Mouse Interaction Logic
 		final java.awt.Point pressPt = new java.awt.Point();
-		canvas.addMouseListener(new MouseAdapter() {
+		mapCanvas.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
 				pressPt.setLocation(e.getPoint());
-				canvas.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+				mapCanvas.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 			}
 
 			@Override
 			public void mouseReleased(MouseEvent e) {
 				int dx = e.getX() - pressPt.x;
 				int dy = e.getY() - pressPt.y;
-				canvas.panPixel(dx, dy);
-				canvas.setCursor(Cursor.getDefaultCursor());
+				mapCanvas.panPixel(dx, dy);
+				mapCanvas.setCursor(Cursor.getDefaultCursor());
 			}
 
 			@Override
@@ -71,16 +71,16 @@ public class GUI  {
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_D)) {
 					distance(e);
 				} else {
-					Coordinate c = canvas.translatePoint(new Point(e.getX(), e.getY()));
-					canvas.setCoordinate(c);
+					Coordinate c = mapCanvas.translatePoint(new Point(e.getX(), e.getY()));
+					mapCanvas.setCoordinate(c);
 				}
 			}
 		});
 
-		canvas.addMouseWheelListener(e -> {
+		mapCanvas.addMouseWheelListener(e -> {
 			int rot = e.getWheelRotation();
 			double step = (rot > 0) ? 1.2 : 0.8;
-			canvas.zoom(step);
+			mapCanvas.zoom(step);
 		});
 
 		// Final Display Setup
@@ -151,13 +151,13 @@ public class GUI  {
 		menuItem4 = new JMenuItem("Zoom in", KeyEvent.VK_P);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
-		menuItem4.addActionListener(e->canvas.zoom(0.5));
+		menuItem4.addActionListener(e-> mapCanvas.zoom(0.5));
 		menu2.add(menuItem4);
 
 		menuItem5 = new JMenuItem("Zoom out", KeyEvent.VK_M);
 		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
 		menuItem5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK));
-		menuItem5.addActionListener(e->canvas.zoom(2));
+		menuItem5.addActionListener(e-> mapCanvas.zoom(2));
 		menu2.add(menuItem5);
 
 		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_T);
@@ -289,7 +289,7 @@ public class GUI  {
 	}
 
 	private void setCanvasCRS() {
-		new CRSDialog(this.frame, this.canvas).showDialog();
+		new CRSDialog(this.frame, this.mapCanvas).showDialog();
 	}
 	
 	private void openFile() {
@@ -299,15 +299,15 @@ public class GUI  {
 				"Map Files", ".shp", ".SHP", "tif", "TIF", "tng", "TNG", "png", "PNG", "jpg", "JPG",
 				"gpx", "tools.GPX");
 		fc.setFileFilter(filter);
-		int returnVal = fc.showOpenDialog(canvas);
+		int returnVal = fc.showOpenDialog(mapCanvas);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			setCursorWait();
 			File file = fc.getSelectedFile();
 			//System.out.println("Open: " + file.getName());
 			try {
-				RasterFileLayer rFile = new RasterFileLayer(file.getPath(), canvas);
-				canvas.layerManager.addLayerTop(rFile);
+				RasterFileLayer rFile = new RasterFileLayer(file.getPath(), mapCanvas);
+				mapCanvas.layerManager.addLayerTop(rFile);
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -327,18 +327,18 @@ public class GUI  {
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(
 				"Waypoint Files", "gpx", "tools.GPX");
 		fc.setFileFilter(filter);
-		int returnVal = fc.showOpenDialog(canvas);
+		int returnVal = fc.showOpenDialog(mapCanvas);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
 			System.out.println("Open: " + file.getName());
 
 			try {
-				GPXFileLayer l = new GPXFileLayer(file.getCanonicalPath(), canvas);
+				GPXFileLayer l = new GPXFileLayer(file.getCanonicalPath(), mapCanvas);
 				l.setColor(Color.BLUE);
 				l.setName(file.getName());
-				canvas.layerManager.addLayerTop(l);
-				canvas.repaint();
+				mapCanvas.layerManager.addLayerTop(l);
+				mapCanvas.repaint();
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -347,58 +347,58 @@ public class GUI  {
 	}
 
 	public void addTopowebkartan() {
-		TopowebLayer tb = new TopowebLayer(canvas);
+		TopowebLayer tb = new TopowebLayer(mapCanvas);
 		tb.setName("TopoWeb");
-		canvas.setCRS(tb.getCRS());
-		canvas.layerManager.addLayerBottom(tb);
+		mapCanvas.setCRS(tb.getCRS());
+		mapCanvas.layerManager.addLayerBottom(tb);
 	}
 
 	public void addOSM() {
-		OSMLayer osm = new OSMLayer(canvas);
+		OSMLayer osm = new OSMLayer(mapCanvas);
 		osm.setName("Open Street Map");
-		canvas.setCRS(osm.getCRS());
-		canvas.layerManager.addLayerBottom(osm);
+		mapCanvas.setCRS(osm.getCRS());
+		mapCanvas.layerManager.addLayerBottom(osm);
 	}
 
 	public void addLandskap() {
-		TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", canvas);
+		TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", mapCanvas);
 		prFile.setColor(Color.BLACK);
 		prFile.setName("provinser");
-		canvas.layerManager.addLayerTop(prFile);
+		mapCanvas.layerManager.addLayerTop(prFile);
 	}
 
 	public void addSocknar() {
-		TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", canvas);
+		TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", mapCanvas);
 		socFile.setColor(Color.RED);
 		socFile.setName("socknar");
-		canvas.layerManager.addLayerTop(socFile);
+		mapCanvas.layerManager.addLayerTop(socFile);
 	}
 
 	public void addOrtnamn() {
-		H2TableLayer od = new H2TableLayer("ortnamnSWTM", canvas);
+		H2TableLayer od = new H2TableLayer("ortnamnSWTM", mapCanvas);
 		od.setColor(Color.BLACK);
 		od.setName("Ortnamnsdb");
 		od.setMaxZoomL(5);
-		canvas.layerManager.addLayerTop(od);
+		mapCanvas.layerManager.addLayerTop(od);
 	}
 
 	public void addLocalityLayer() {
-		MYSQLTableLayer md = new MYSQLTableLayer(canvas);
+		MYSQLTableLayer md = new MYSQLTableLayer(mapCanvas);
 		md.setColor(Color.BLACK);
 		md.setName("LokalDB");
 		md.setHidden(false);
 		md.setMaxZoomL(40);
 		md.setRepaintCallback(() ->
 				// Force the map to redraw on the Swing thread when data arrives
-				SwingUtilities.invokeLater(() -> canvas.repaint())
+				SwingUtilities.invokeLater(() -> mapCanvas.repaint())
 		);
-		canvas.layerManager.addLayerTop(md);
+		mapCanvas.layerManager.addLayerTop(md);
 	}
 
 	public void saveCSV() {
 		System.out.println("Save");
 		final JFileChooser fc = new JFileChooser();
-		int returnVal = fc.showSaveDialog(canvas);
+		int returnVal = fc.showSaveDialog(mapCanvas);
 
 		if (returnVal == JFileChooser.APPROVE_OPTION) {
 			File file = fc.getSelectedFile();
@@ -411,21 +411,21 @@ public class GUI  {
 	}
 
 	public void searchLocality() {
-		new SearchLocalityDialog(frame, this, canvas, "", "").setVisible(true);
+		new SearchLocalityDialog(frame, this, mapCanvas, "", "").setVisible(true);
 	}
 
 	public void showLayerDialog() {
-		new LayerDialog(frame, canvas);
+		new LayerDialog(frame, mapCanvas);
 	}
 
 	public void showCoordinateInfoAtCoord() {
-		Coordinate c = canvas.getCoordinate();
-		new CoordinateDialog(frame, canvas, c).setVisible(true);
+		Coordinate c = mapCanvas.getCoordinate();
+		new CoordinateDialog(frame, mapCanvas, c).setVisible(true);
 	}
 
 	public void showCoordinateInfo(MouseEvent me) {
-		Coordinate c = canvas.translatePoint(me.getPoint());
-		new CoordinateDialog(frame, canvas, c).setVisible(true);
+		Coordinate c = mapCanvas.translatePoint(me.getPoint());
+		new CoordinateDialog(frame, mapCanvas, c).setVisible(true);
 	}
 
 	public void viewRubin() {
@@ -433,13 +433,13 @@ public class GUI  {
 				"Search Grid Square", JOptionPane.PLAIN_MESSAGE, null, null, "");
 
 		if (s != null && !s.trim().isEmpty()) {
-			RubinLayer r = new RubinLayer(s.trim(), canvas, "Rubin", Color.green);
+			RubinLayer r = new RubinLayer(s.trim(), mapCanvas, "Rubin", Color.green);
 			Coordinate c = r.getMiddle();
 			if (c != null) {
-				canvas.layerManager.delLayer("Rubin");
-				canvas.layerManager.addLayerTop(r);
-				canvas.focus(c);
-				canvas.repaint();
+				mapCanvas.layerManager.delLayer("Rubin");
+				mapCanvas.layerManager.addLayerTop(r);
+				mapCanvas.focus(c);
+				mapCanvas.repaint();
 			} else {
 				JOptionPane.showMessageDialog(frame,
 						"'" + s + "' is not a valid RUBIN coordinate.\nExample format: 12H5j",
@@ -449,25 +449,25 @@ public class GUI  {
 	}
 
 	public void showRubin(MouseEvent e) {
-		Coordinate c = canvas.translatePoint(e.getPoint());
+		Coordinate c = mapCanvas.translatePoint(e.getPoint());
 		String rubin = RUBIN.fromSweref99TM(c);
-		RubinLayer r = new RubinLayer(rubin, canvas, "Rubin", Color.green);
-		canvas.layerManager.delLayer("Rubin");
-		canvas.layerManager.addLayerTop(r);
+		RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.green);
+		mapCanvas.layerManager.delLayer("Rubin");
+		mapCanvas.layerManager.addLayerTop(r);
 	}
 
 	public void distanceAtCoord() {
-		Coordinate c = canvas.getCoordinate();
+		Coordinate c = mapCanvas.getCoordinate();
 		if (c == null) {
-			JOptionPane.showMessageDialog(canvas, "Please select a point on the map first.");
+			JOptionPane.showMessageDialog(mapCanvas, "Please select a point on the map first.");
 			return;
 		}
-		new DistanceDialog(frame, canvas, c).setVisible(true);
+		new DistanceDialog(frame, mapCanvas, c).setVisible(true);
 	}
 
 	public void distance(MouseEvent me) {
-		Coordinate c = canvas.translatePoint(new Point(me.getX(), me.getY()));
-		new DistanceDialog(frame, canvas, c).setVisible(true);
+		Coordinate c = mapCanvas.translatePoint(new Point(me.getX(), me.getY()));
+		new DistanceDialog(frame, mapCanvas, c).setVisible(true);
 	}
 
 	public void userDialog() {
@@ -491,23 +491,23 @@ public class GUI  {
 	}
 
 	public void showLocality(MouseEvent e) {
-		Coordinate c = canvas.translatePoint(new Point(e.getX(), e.getY()));
-		MYSQLTableLayer ldb = (MYSQLTableLayer) canvas.layerManager.getLayer("LokalDB");
+		Coordinate c = mapCanvas.translatePoint(new Point(e.getX(), e.getY()));
+		MYSQLTableLayer ldb = (MYSQLTableLayer) mapCanvas.layerManager.getLayer("LokalDB");
 		int localityID = ldb.findNearest(c, 1000);
 
 		if (localityID != -1) {
-			new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
+			new EditLocalityDialog(this, frame, localityID, bridgeDialog, mapCanvas).setVisible(true);
 		}
 	}
 	
 	public void showLocalityAtCoord() {
-		Coordinate c = canvas.getCoordinate();
+		Coordinate c = mapCanvas.getCoordinate();
 		if (c == null) return;
-		Layer layer = canvas.layerManager.getLayer("LokalDB");
+		Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
 		if (layer instanceof MYSQLTableLayer ldb) {
 			int localityID = ldb.findNearest(c, 1000);
 			if (localityID != -1) {
-				new EditLocalityDialog(this, frame, localityID, bridgeDialog, canvas).setVisible(true);
+				new EditLocalityDialog(this, frame, localityID, bridgeDialog, mapCanvas).setVisible(true);
 			}
 		}
 	}
@@ -516,7 +516,7 @@ public class GUI  {
 		this.moveTarget = dialog;
 		Cursor crosshair = Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
 		frame.setCursor(crosshair);
-		canvas.setCursor(crosshair);
+		mapCanvas.setCursor(crosshair);
 		if (dialog != null) {
 			dialog.setCursor(crosshair);
 		}
@@ -524,13 +524,13 @@ public class GUI  {
 
 	public void leaveMoveMode(MouseEvent me) {
 		if (moveTarget == null) return;
-		Coordinate mapP = canvas.translatePoint(me.getPoint());
+		Coordinate mapP = mapCanvas.translatePoint(me.getPoint());
 		moveTarget.updateCoordinates(mapP);
 
 		// Reset everything back to default
 		Cursor defaultCursor = Cursor.getDefaultCursor();
 		frame.setCursor(defaultCursor);
-		canvas.setCursor(defaultCursor);
+		mapCanvas.setCursor(defaultCursor);
 		moveTarget.setCursor(defaultCursor);
 
 		moveTarget = null;
@@ -540,7 +540,7 @@ public class GUI  {
 		if (moveTarget != null) {
 			Cursor defaultCursor = Cursor.getDefaultCursor();
 			frame.setCursor(defaultCursor);
-			canvas.setCursor(defaultCursor);
+			mapCanvas.setCursor(defaultCursor);
 			moveTarget.setCursor(defaultCursor);
 			moveTarget.setTitle("Edit Locality: " + moveTarget.getOldName());
 			moveTarget = null;
@@ -548,13 +548,13 @@ public class GUI  {
 	}
 
 	private void createLocalityAtCoord() {
-		coord = canvas.getCoordinate();
-		new CreateLocalityDialog(frame, this, canvas, bridgeDialog, coord).setVisible(true);
+		coord = mapCanvas.getCoordinate();
+		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord).setVisible(true);
 	}
 
 	private void createLocalityDialog(MouseEvent me) {
-		coord = canvas.translatePoint(me.getPoint());
-		new CreateLocalityDialog(frame, this, canvas, bridgeDialog, coord).setVisible(true);
+		coord = mapCanvas.translatePoint(me.getPoint());
+		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord).setVisible(true);
 	}
 
 	public void searchSpecimens() {
@@ -566,7 +566,7 @@ public class GUI  {
 		}
 
 		SpecimenService service = new SpecimenService();
-		bridgeDialog = new SpecimenBridgeDialog(frame, service, canvas);
+		bridgeDialog = new SpecimenBridgeDialog(frame, service, mapCanvas);
 
 		bridgeDialog.addWindowListener(new WindowAdapter() {
 			@Override
@@ -599,7 +599,7 @@ public class GUI  {
 			int mapType = 20; // Specific layer ID for Kartbild  = generalkarta1
 			int zoomLevel = 12;
 
-			Coordinate c = canvas.translatePoint(me.getPoint());
+			Coordinate c = mapCanvas.translatePoint(me.getPoint());
 			Coordinate wgs84  = CoordSystem.SWEREF99TM.toWGS84(c);
 
 			// Format the URI string. Format: #zoom/lat/lon/type  //https://kartbild.com/?marker=58.88545,11.02363#14/58.88545/11.02363+/0x20"
@@ -619,7 +619,7 @@ public class GUI  {
 	}
 
 	public void MarkCoordDialog() {
-		MarkCoordinateDialog d = new MarkCoordinateDialog(frame, canvas);
+		MarkCoordinateDialog d = new MarkCoordinateDialog(frame, mapCanvas);
 		d.setLocationRelativeTo(frame);
 		d.setVisible(true);
 	}

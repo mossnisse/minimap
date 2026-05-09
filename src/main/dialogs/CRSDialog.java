@@ -1,26 +1,26 @@
 package main.dialogs;
 
 import main.coords.CoordSystem;
-import main.core.Canvas;
+import main.core.MapCanvas;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class CRSDialog extends JDialog {
-    private final Canvas canvas;
+    private final MapCanvas mapCanvas;
     private final JComboBox<CoordSystem> crsBox;
     private final JButton okButton, cancelButton;
     private boolean approved = false;
 
-    public CRSDialog(Frame owner, Canvas canvas) {
+    public CRSDialog(Frame owner, MapCanvas mapCanvas) {
         super(owner, "Set Canvas Projection (CRS)", true); // True for modal
-        this.canvas = canvas;
+        this.mapCanvas = mapCanvas;
 
         // Initialize Components
         crsBox = new JComboBox<>(CoordSystem.values());
 
         // Set current selection based on canvas state
-        crsBox.setSelectedItem(canvas.getCRS());
+        crsBox.setSelectedItem(mapCanvas.getCRS());
 
         okButton = new JButton("Apply Changes");
         cancelButton = new JButton("Cancel");
@@ -59,7 +59,7 @@ public class CRSDialog extends JDialog {
 
         if (approved) {
             CoordSystem selected = (CoordSystem) crsBox.getSelectedItem();
-            if (selected != null && selected != canvas.getCRS()) {
+            if (selected != null && selected != mapCanvas.getCRS()) {
                 applyCRSChange(selected);
             }
         }
@@ -68,6 +68,6 @@ public class CRSDialog extends JDialog {
 
     private void applyCRSChange(CoordSystem newCS) {
         // Logically set the CRS
-        canvas.setCRS(newCS);
+        mapCanvas.setCRS(newCS);
     }
 }

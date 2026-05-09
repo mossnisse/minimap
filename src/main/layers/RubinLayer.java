@@ -1,7 +1,7 @@
 package main.layers;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Layer;
 import main.geometry.Extent;
 
@@ -11,15 +11,15 @@ import java.util.List;
 
 public class RubinLayer extends Layer {
 	private String rubin;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 
 	// Store corners in projected (Sweref) coordinates
 	private final List<Coordinate> corners = new ArrayList<>();
 
-	public RubinLayer(String rubin, Canvas canvas, String name, Color c) {
+	public RubinLayer(String rubin, MapCanvas mapCanvas, String name, Color c) {
 		super(name, false, CoordSystem.RT90);
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		setColor(c);
 		setRubin(rubin);
 	}
@@ -34,14 +34,14 @@ public class RubinLayer extends Layer {
 				// Set current corner in RT90
 				Coordinate c = new Coordinate(corner[0], corner[1]);
 				// Store the Sweref coordinates
-				corners.add(getCRS().convertTo(c, canvas.getCRS()));
+				corners.add(getCRS().convertTo(c, mapCanvas.getCRS()));
 			}
 		}
 	}
 
 	public Coordinate getMiddle() {
 		Coordinate m = RUBIN.toRT90(rubin);
-		return getCRS().convertTo(m, canvas.getCRS());
+		return getCRS().convertTo(m, mapCanvas.getCRS());
 	}
 
 	@Override

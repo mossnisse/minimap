@@ -2,13 +2,13 @@ package main.layers;
 
 import main.coords.*;
 import main.core.Layer;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.geometry.Extent;
 
 import java.awt.*;
 
 public class DistanceLayer extends Layer {
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final Coordinate originalC1;
 	private final CoordSystem originalCRS;
 	private final double distance;
@@ -17,13 +17,13 @@ public class DistanceLayer extends Layer {
 	private Coordinate c1, c2;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 
-	public DistanceLayer(Canvas canvas, String name, Coordinate c, int distance, String direction) {
-		super(name, false, canvas.getCRS());
+	public DistanceLayer(MapCanvas mapCanvas, String name, Coordinate c, int distance, String direction) {
+		super(name, false, mapCanvas.getCRS());
 		this.originalC1 = c;
 		this.distance = distance;
 		this.bearing = Coordinate.getBearingFromDirection(direction);
-		this.originalCRS = canvas.getCRS();
-		this.canvas = canvas;
+		this.originalCRS = mapCanvas.getCRS();
+		this.mapCanvas = mapCanvas;
 
 		// Initial calculation
 		recalculatePoints(originalCRS);
@@ -47,7 +47,7 @@ public class DistanceLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-		recalculatePoints(canvas.getCRS());
+		recalculatePoints(mapCanvas.getCRS());
 	}
 
 	@Override
@@ -58,8 +58,8 @@ public class DistanceLayer extends Layer {
 		Stroke originalStroke = g2d.getStroke();
 		g2d.setStroke(LINE_STROKE);
 
-		Point p1 = canvas.toScreenSpace(c1);
-		Point p2 = canvas.toScreenSpace(c2);
+		Point p1 = mapCanvas.toScreenSpace(c1);
+		Point p2 = mapCanvas.toScreenSpace(c2);
 
 		g2d.drawLine(p1.x, p1.y, p2.x, p2.y);
 		//g2d.drawOval(p1.x - 2, p1.y - 2, 4, 4);

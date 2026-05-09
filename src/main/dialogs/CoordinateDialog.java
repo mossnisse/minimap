@@ -5,18 +5,18 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.layers.TNGPolygonFileLayer;
 
 public class CoordinateDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = 1L;
 
-	public CoordinateDialog(Frame owner, Canvas canvas, Coordinate c) {
+	public CoordinateDialog(Frame owner, MapCanvas mapCanvas, Coordinate c) {
 		super(owner, "Coordinate Details", false);
 
 
-		Coordinate wgs84 = canvas.getCRS().toWGS84(c);
+		Coordinate wgs84 = mapCanvas.getCRS().toWGS84(c);
 		Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
 		Coordinate rt90 = CoordSystem.RT90.toProjected(wgs84);
 		String rubin = RUBIN.fromRT90(rt90);
@@ -26,8 +26,8 @@ public class CoordinateDialog extends JDialog {
 		// Get Layers
 		String prov = "outside layer";
 		String dist = "outside layer";
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) canvas.layerManager.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) canvas.layerManager.getLayer("socknar");
+		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) mapCanvas.layerManager.getLayer("provinser");
+		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) mapCanvas.layerManager.getLayer("socknar");
 
 		if (provinces != null) {
 			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);

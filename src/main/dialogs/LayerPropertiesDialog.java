@@ -1,7 +1,7 @@
 package main.dialogs;
 
 import main.coords.CoordSystem;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Layer;
 
 import javax.swing.*;
@@ -9,7 +9,7 @@ import java.awt.*;
 
 public class LayerPropertiesDialog extends JDialog {
     private final Layer layer;
-    private final Canvas canvas;
+    private final MapCanvas mapCanvas;
 
     private JTextField nameField;
     private JButton colorButton;
@@ -17,10 +17,10 @@ public class LayerPropertiesDialog extends JDialog {
     private JSpinner minZoomSpin, maxZoomSpin;
     private Color selectedColor;
 
-    public LayerPropertiesDialog(Window owner, Layer layer, Canvas canvas) {
+    public LayerPropertiesDialog(Window owner, Layer layer, MapCanvas mapCanvas) {
         super(owner, "Properties: " + layer.getName(), ModalityType.APPLICATION_MODAL);
         this.layer = layer;
-        this.canvas = canvas;
+        this.mapCanvas = mapCanvas;
         this.selectedColor = layer.getColor();
 
         initComponents();
@@ -114,7 +114,7 @@ public class LayerPropertiesDialog extends JDialog {
         layer.setMinZoomL(min);
         layer.setMaxZoomL(max);
 
-        canvas.layerManager.notifyListeners();
+        mapCanvas.layerManager.notifyListeners();
         dispose();
     }
 }

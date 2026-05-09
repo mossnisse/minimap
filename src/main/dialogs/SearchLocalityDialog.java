@@ -1,6 +1,6 @@
 package main.dialogs;
 
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.DBConnection;
 import main.coords.*;
 import main.core.GUI;
@@ -22,7 +22,7 @@ import javax.swing.*;
 public class SearchLocalityDialog extends JDialog implements ActionListener, ItemListener {
 	@Serial
 	private static final long serialVersionUID = 5830869660497471486L;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final GUI gui;
 	private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
 			"Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
@@ -39,9 +39,9 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	private JPanel resultPanel;
 	private TNGPointFileLayer lastResults;
 
-	public SearchLocalityDialog(Frame aFrame, GUI gui, Canvas canvas, String text, String province) {
+	public SearchLocalityDialog(Frame aFrame, GUI gui, MapCanvas mapCanvas, String text, String province) {
 		super(aFrame, "Search Localities", false);
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		this.gui = gui;
 		initComponents(text, province);
 		pack();
@@ -140,7 +140,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		final Object provSelected = provinceBox.getSelectedItem();
 		final boolean isPlaceSelected = isPlace.isSelected();
 		final int provNr = getProvinsNr();
-		final CoordSystem currentCRS = canvas.getCRS();
+		final CoordSystem currentCRS = mapCanvas.getCRS();
 
 		// Run Database logic in background
 		new SwingWorker<ArrayList<SearchResult>, Void>() {
@@ -251,7 +251,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 							String label = String.format("%s (%s)", rs.getString("locality"), rs.getString("district"));
 							Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
 
-							Coordinate c = canvas.getCRS().toProjected(wgs84);
+							Coordinate c = mapCanvas.getCRS().toProjected(wgs84);
 							results.add(new SearchResult(c, label, id));
 						}
 					}
@@ -287,12 +287,12 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 						// Update Layer
 						lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
 						lastResults.setColor(Color.blue);
-						canvas.layerManager.delLayer("Search Results");
-						canvas.layerManager.addLayerTop(lastResults);
+						mapCanvas.layerManager.delLayer("Search Results");
+						mapCanvas.layerManager.addLayerTop(lastResults);
 
 						resultPanel.add(Box.createVerticalGlue());
 						zoomb.setEnabled(true);
-						canvas.repaint();
+						mapCanvas.repaint();
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -329,8 +329,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 		// Left click: Pan to map
 		btn.addActionListener(e -> {
-			canvas.focus(new TNGPointFileLayer.Locality(coord, label));
-			canvas.repaint();
+			mapCanvas.focus(new TNGPointFileLayer.Locality(coord, label));
+			mapCanvas.repaint();
 		});
 
 		// Right click: Open Edit Dialog
@@ -358,7 +358,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 					Frame owner = (Frame) SwingUtilities.getWindowAncestor(SearchLocalityDialog.this);
 
 					// Open EditLocalityDialog using the ID from the search results
-					EditLocalityDialog editDlg = new EditLocalityDialog(gui, owner, id, null , canvas); // null should be the bridge dialog
+					EditLocalityDialog editDlg = new EditLocalityDialog(gui, owner, id, null , mapCanvas); // null should be the bridge dialog
 					editDlg.setVisible(true);
 				});
 
@@ -372,7 +372,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 	@Override public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == searchb) performSearch();
-		else if (e.getSource() == zoomb && lastResults != null) canvas.setBounds(lastResults.getBoundaries().expand(2000));
+		else if (e.getSource() == zoomb && lastResults != null) mapCanvas.setBounds(lastResults.getBoundaries().expand(2000));
 		else if (e.getSource() == closeb) dispose();
 	}
 

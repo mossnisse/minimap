@@ -11,44 +11,44 @@ import java.awt.*;
 
 public class LayerManager {
     private volatile CopyOnWriteArrayList<Layer> layers = new CopyOnWriteArrayList<>();
-    private final Canvas canvas;
+    private final MapCanvas mapCanvas;
     private Runnable onLayersChanged;
 
-    LayerManager(Canvas canvas) {
-        this.canvas = canvas;
+    LayerManager(MapCanvas mapCanvas) {
+        this.mapCanvas = mapCanvas;
         initialize();
     }
 
     private void initialize() {
         try {
-            MYSQLTableLayer md = new MYSQLTableLayer(canvas);
+            MYSQLTableLayer md = new MYSQLTableLayer(mapCanvas);
             md.setColor(Color.BLACK);
             md.setName("LokalDB");
             md.setHidden(false);
             md.setMaxZoomL(40);
             md.setRepaintCallback(() ->
                     // Force the map to redraw on the Swing thread when data arrives
-                    SwingUtilities.invokeLater(canvas::repaint)
+                    SwingUtilities.invokeLater(mapCanvas::repaint)
             );
             addLayerBottom(md);
 
-            H2TableLayer od = new H2TableLayer("ortnamnSWTM", canvas);
+            H2TableLayer od = new H2TableLayer("ortnamnSWTM", mapCanvas);
             od.setColor(Color.BLACK);
             od.setName("Ortnamnsdb");
             od.setMaxZoomL(5);
             addLayerBottom(od);
 
-            TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", canvas);
+            TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", mapCanvas);
             prFile.setColor(Color.BLACK);
             prFile.setName("provinser");
             addLayerBottom(prFile);
 
-            TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", canvas);
+            TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", mapCanvas);
             socFile.setColor(Color.RED);
             socFile.setName("socknar");
             addLayerBottom(socFile);
 
-            TopowebLayer tb = new TopowebLayer(canvas);
+            TopowebLayer tb = new TopowebLayer(mapCanvas);
             tb.setName("TopoWeb");
             addLayerBottom(tb);
 
@@ -66,7 +66,7 @@ public class LayerManager {
             // Ensure UI updates happen on the Event Dispatch Thread
             SwingUtilities.invokeLater(onLayersChanged);
         }
-        canvas.repaint();
+        mapCanvas.repaint();
     }
 
     public void addLayerTop(Layer l) {

@@ -9,12 +9,12 @@ import java.util.LinkedHashMap;
 import javax.imageio.ImageIO;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Layer;
 import main.geometry.Extent;
 
 public class TopowebLayer extends Layer {
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final TileBuffer tileBuffer;
 
 	private static final String WMTS_URL = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";
@@ -130,7 +130,7 @@ public class TopowebLayer extends Layer {
 								localFile.getParentFile().mkdirs();
 								Files.write(localFile.toPath(), data);
 								tiles.put(index, ImageIO.read(new java.io.ByteArrayInputStream(data)));
-								canvas.repaint();
+								mapCanvas.repaint();
 							} catch (IOException e) { e.printStackTrace(); }
 						}
 						loading.remove(index);
@@ -138,9 +138,9 @@ public class TopowebLayer extends Layer {
 		}
 	}
 
-	public TopowebLayer(Canvas canvas) {
+	public TopowebLayer(MapCanvas mapCanvas) {
 		super("Topowebkartan", false, CoordSystem.SWEREF99TM);
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		tileBuffer = new TileBuffer();
 	}
 

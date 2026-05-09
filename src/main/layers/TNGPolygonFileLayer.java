@@ -1,7 +1,7 @@
 package main.layers;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Layer;
 import main.geometry.CPolygon;
 import main.geometry.Extent;
@@ -14,7 +14,7 @@ import main.shapeFile.DataInputStreamSE;
 
 public class TNGPolygonFileLayer extends Layer {
 	private final String fileName;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private int nameLength;
 	private Province[] provinces;
 	static final Stroke LINE_STROKE = new BasicStroke(1.5f);
@@ -48,10 +48,10 @@ public class TNGPolygonFileLayer extends Layer {
 		}
 	}
 	
-	public TNGPolygonFileLayer(String fileName, Canvas canvas) {
+	public TNGPolygonFileLayer(String fileName, MapCanvas mapCanvas) {
 		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		readFile();
 	}
 	
@@ -73,9 +73,9 @@ public class TNGPolygonFileLayer extends Layer {
 				int x2 = in.readInt();
 				int y2 = in.readInt();
 				Coordinate c1 = new Coordinate(y1, x1);
-				Coordinate cc1 = getCRS().convertTo(c1, canvas.getCRS());
+				Coordinate cc1 = getCRS().convertTo(c1, mapCanvas.getCRS());
 				Coordinate c2 = new Coordinate(y2, x2);
-				Coordinate cc2 = getCRS().convertTo(c2, canvas.getCRS());
+				Coordinate cc2 = getCRS().convertTo(c2, mapCanvas.getCRS());
 
 				Extent box = new Extent(cc1, cc2);
 				int numParts = in.readInt();
@@ -89,7 +89,7 @@ public class TNGPolygonFileLayer extends Layer {
 					int px = in.readInt();
 					int py = in.readInt();
 					Coordinate swer = new Coordinate(py, px);
-					points[j] = getCRS().convertTo(swer, canvas.getCRS());
+					points[j] = getCRS().convertTo(swer, mapCanvas.getCRS());
 				}
 				provinces[i] = new Province(name, box, parts, points);
 			}

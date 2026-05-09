@@ -1,7 +1,7 @@
 package main.layers;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.DBConnection;
 import main.core.Layer;
 import main.geometry.Extent;
@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MYSQLTableLayer extends Layer {
-    private final Canvas canvas;
+    private final MapCanvas mapCanvas;
 	private Integer selectedLocalityID = null;
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
 
@@ -34,9 +34,9 @@ public class MYSQLTableLayer extends Layer {
 
 	private record LocalityRec(Coordinate c, String name, int precision, int id) {}
 
-	public MYSQLTableLayer(Canvas canvas) {
+	public MYSQLTableLayer(MapCanvas mapCanvas) {
         super("MySQL Layer", false, CoordSystem.WGS84);
-        this.canvas = canvas;
+        this.mapCanvas = mapCanvas;
 	}
 
 	/**
@@ -59,8 +59,8 @@ public class MYSQLTableLayer extends Layer {
 
 		Extent bufferedArea = bounds.grow(0.5);
 		// convert to wgs84 for the sql query
-		Extent querryAarea = bufferedArea.convertCRS(canvas.getCRS(), getCRS());
-		CoordSystem canvasCRS = canvas.getCRS();
+		Extent querryAarea = bufferedArea.convertCRS(mapCanvas.getCRS(), getCRS());
+		CoordSystem canvasCRS = mapCanvas.getCRS();
 
 		CompletableFuture.runAsync(() -> {
 			try {
@@ -119,7 +119,7 @@ public class MYSQLTableLayer extends Layer {
 
 	public int findNearest(Coordinate c, int limitInMeters) {
 		// Ensure we are working with WGS84 for DB comparison
-		Coordinate clickWgs84 = canvas.getCRS().toWGS84(c);
+		Coordinate clickWgs84 = mapCanvas.getCRS().toWGS84(c);
 
 		// Approximate degree offset (very rough: 1 degree ? 111km)
 		// For better accuracy at high latitudes, longitude needs a cos(lat) adjustment
@@ -200,7 +200,7 @@ public class MYSQLTableLayer extends Layer {
 			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
 
 			// Calculate metric radius once for both branches
-			double k = canvas.getCRS().getScaleFactor(rec.c);
+			double k = mapCanvas.getCRS().getScaleFactor(rec.c);
 			int r = (int) Math.round(rec.precision * k * xScale);
 
 			if (selectedLocalityID != null && rec.id == selectedLocalityID) {

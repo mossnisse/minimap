@@ -1,8 +1,8 @@
 package main.dialogs;
 
 import main.coords.Coordinate;
+import main.core.MapCanvas;
 import main.layers.DistanceLayer;
-import main.core.Canvas;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -14,16 +14,16 @@ import javax.swing.*;
 public class DistanceDialog extends JDialog implements PropertyChangeListener {
 	@Serial
 	private static final long serialVersionUID = 2464657686998213912L;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final Coordinate origin;
 	private final JTextField distance;
 	private final JComboBox<String> direction;
 	private final JOptionPane optionPane;
 
-	public DistanceDialog(Frame aFrame, Canvas canvas, Coordinate c) {
+	public DistanceDialog(Frame aFrame, MapCanvas mapCanvas, Coordinate c) {
 		super(aFrame, true); // Modal
 		setTitle("Distance and Direction");
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		this.origin = c;
 
 		direction = new JComboBox<>(Coordinate.directions);
@@ -93,12 +93,12 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 			int distVal = Integer.parseInt(getDistance());
 			String dir = getDirection();
 
-			DistanceLayer distLayer = new DistanceLayer( canvas,"dist", origin, distVal, dir);
+			DistanceLayer distLayer = new DistanceLayer(mapCanvas,"dist", origin, distVal, dir);
 			distLayer.setColor(Color.RED);
 
-			canvas.layerManager.delLayer("dist");
-			canvas.layerManager.addLayerTop(distLayer);
-			canvas.repaint();
+			mapCanvas.layerManager.delLayer("dist");
+			mapCanvas.layerManager.addLayerTop(distLayer);
+			mapCanvas.repaint();
 			return true;
 		} catch (NumberFormatException ex) {
 			JOptionPane.showMessageDialog(this, "Please enter a valid numeric distance (e.g., 500).");

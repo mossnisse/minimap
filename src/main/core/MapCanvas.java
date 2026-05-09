@@ -8,7 +8,7 @@ import java.awt.*;
 import java.io.Serial;
 import javax.swing.*;
 
-public class Canvas extends JPanel {
+public class MapCanvas extends JPanel {
 	@Serial
 	private static final long serialVersionUID = 1L;
 	private CoordSystem cs;
@@ -17,7 +17,7 @@ public class Canvas extends JPanel {
 	public final LayerManager layerManager;
 
 	
-	public Canvas() {
+	public MapCanvas() {
 		cs = CoordSystem.SWEREF99TM;
 		bounds = cs.getBoundaries();
 		coord = null;

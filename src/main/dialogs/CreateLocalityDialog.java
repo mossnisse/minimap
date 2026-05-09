@@ -14,7 +14,7 @@ import javax.swing.*;
 
 import main.coords.*;
 import main.core.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.layers.H2TableLayer;
 import main.layers.MYSQLTableLayer;
 import main.layers.TNGPolygonFileLayer;
@@ -23,7 +23,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	@Serial
 	private static final long serialVersionUID = 5999128550024317489L;
 	private final GUI gui;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final SpecimenBridgeDialog bridgeDialog;
 	Coordinate c;
 	private JTextField localityT, districtT, provinceT, countryT, continentT, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
@@ -31,10 +31,10 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private JCheckBox isPlaceT;
 	private JButton cancel, ok;
 
-	public CreateLocalityDialog(Frame owner, GUI gui, main.core.Canvas canvas, SpecimenBridgeDialog bridge, Coordinate c) {
+	public CreateLocalityDialog(Frame owner, GUI gui, MapCanvas mapCanvas, SpecimenBridgeDialog bridge, Coordinate c) {
 		super(owner, "Create New Locality", false);
 		this.gui = gui;
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		this.bridgeDialog = bridge;
 		this.c = c;
 
@@ -65,13 +65,13 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		String province = "";
 		String district = "";
 
-		Layer provLayer = canvas.layerManager.getLayer("provinser");
+		Layer provLayer = mapCanvas.layerManager.getLayer("provinser");
 		if (provLayer instanceof TNGPolygonFileLayer provinces) {
 			TNGPolygonFileLayer.Province pr = provinces.inPolygon(c);
 			if (pr != null) province = pr.getName();
 		}
 
-		Layer distrLayer = canvas.layerManager.getLayer("socknar");
+		Layer distrLayer = mapCanvas.layerManager.getLayer("socknar");
 		if (distrLayer instanceof TNGPolygonFileLayer districts) {
 			TNGPolygonFileLayer.Province pr = districts.inPolygon(c);
 			if (pr != null) district = pr.getName();
@@ -79,9 +79,9 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 
 		// Logic for Suggesting Name
 		String suggestName = "";
-		H2TableLayer odb = (H2TableLayer) canvas.layerManager.getLayer("Ortnamnsdb");
+		H2TableLayer odb = (H2TableLayer) mapCanvas.layerManager.getLayer("Ortnamnsdb");
 		if (odb != null) {
-			suggestName = odb.findNearest(canvas.getCRS().convertTo(c, CoordSystem.SWEREF99TM), 1000);
+			suggestName = odb.findNearest(mapCanvas.getCRS().convertTo(c, CoordSystem.SWEREF99TM), 1000);
 		}
 
 		if (!"".equals(province)) {
@@ -192,7 +192,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		}
 
 		// Use the coordinate system to transform
-		Coordinate wgs84c = canvas.getCRS().toWGS84(c);
+		Coordinate wgs84c = mapCanvas.getCRS().toWGS84(c);
 		Coordinate swerefc = CoordSystem.SWEREF99TM.toProjected(wgs84c);
 		Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
 
@@ -220,7 +220,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 				}
 
 				// Perform transformations in background
-				Coordinate wgs84c = canvas.getCRS().toWGS84(c);
+				Coordinate wgs84c = mapCanvas.getCRS().toWGS84(c);
 				Coordinate swerefc = CoordSystem.SWEREF99TM.toProjected(wgs84c);
 				Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
 
@@ -306,11 +306,11 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 			bridgeDialog.invalidateLocalityList();
 		}
 
-		Layer layer = canvas.layerManager.getLayer("LokalDB");
+		Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
 		if (layer instanceof MYSQLTableLayer mysqlLayer) {
 			mysqlLayer.invalidateCache();
 		}
-		canvas.repaint();
+		mapCanvas.repaint();
 	}
 
 	@Override

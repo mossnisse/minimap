@@ -8,27 +8,27 @@ import java.io.Serial;
 import java.util.List;
 import javax.swing.*;
 
+import main.core.MapCanvas;
 import main.geometry.Extent;
-import main.core.Canvas;
 import main.core.Layer;
 
 public class LayerDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = -5204215066837865198L;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final JList<Layer> layerList;
 	private final DefaultListModel<Layer> listModel;
 
-	public LayerDialog(Frame aFrame, Canvas canvas) {
+	public LayerDialog(Frame aFrame, MapCanvas mapCanvas) {
 		super(aFrame, "Layer Manager (Drag to Reorder)", false);
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 
 		setLayout(new BorderLayout());
 
 		// Use a ListModel to handle the data
 		listModel = new DefaultListModel<>();
 
-		List<Layer> layers = canvas.layerManager.getLayers();
+		List<Layer> layers = mapCanvas.layerManager.getLayers();
 		for (int i = layers.size() - 1; i >= 0; i--) {
 			listModel.addElement(layers.get(i));
 		}
@@ -63,13 +63,13 @@ public class LayerDialog extends JDialog {
 		add(bottomPanel, BorderLayout.SOUTH);
 
 		// Register the listener to refresh the UI
-		canvas.layerManager.setOnLayersChanged(this::refreshListModel);
+		mapCanvas.layerManager.setOnLayersChanged(this::refreshListModel);
 
 		// Crucial: Clear the listener when dialog is closed to avoid memory leaks
 		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosed(java.awt.event.WindowEvent e) {
-				canvas.layerManager.setOnLayersChanged(null);
+				mapCanvas.layerManager.setOnLayersChanged(null);
 			}
 		});
 
@@ -87,12 +87,12 @@ public class LayerDialog extends JDialog {
 				LayerCellRenderer renderer = (LayerCellRenderer) layerList.getCellRenderer();
 				if (e.getX() <= renderer.visibleBox.getPreferredSize().width + 10) {
 					l.setHidden(!l.isHidden());
-					canvas.repaint();
+					mapCanvas.repaint();
 					layerList.repaint();
 				}
 				// Double click logic
 				else if (e.getClickCount() == 2) {
-					new LayerPropertiesDialog(LayerDialog.this, l, canvas).setVisible(true);
+					new LayerPropertiesDialog(LayerDialog.this, l, mapCanvas).setVisible(true);
 					layerList.repaint(); // In case name changed
 				}
 			}
@@ -107,7 +107,7 @@ public class LayerDialog extends JDialog {
 		Layer selected = layerList.getSelectedValue(); // Save current selection
 		listModel.clear();
 
-		java.util.List<Layer> currentLayers = new java.util.ArrayList<>(canvas.layerManager.getLayers());
+		java.util.List<Layer> currentLayers = new java.util.ArrayList<>(mapCanvas.layerManager.getLayers());
 
 		for (int i = currentLayers.size() - 1; i >= 0; i--) {
 			listModel.addElement(currentLayers.get(i));
@@ -123,9 +123,9 @@ public class LayerDialog extends JDialog {
 		if (l != null) {
 			Extent extent = l.getBoundaries();
 			if (extent != null) {
-				canvas.setBounds(extent);
+				mapCanvas.setBounds(extent);
 				//canvas.focus(extent.getMidlePoint());
-				canvas.repaint();
+				mapCanvas.repaint();
 			}
 		}
 	}
@@ -135,9 +135,9 @@ public class LayerDialog extends JDialog {
 		if (l != null) {
 			int confirm = JOptionPane.showConfirmDialog(this, "Delete layer: " + l.getName() + "?");
 			if (confirm == JOptionPane.YES_OPTION) {
-				canvas.layerManager.delLayer(l);
+				mapCanvas.layerManager.delLayer(l);
 				listModel.removeElement(l);
-				canvas.repaint();
+				mapCanvas.repaint();
 			}
 		}
 	}
@@ -213,7 +213,7 @@ public class LayerDialog extends JDialog {
 				}
 
 				// Push to Manager
-				canvas.layerManager.setLayerOrder(newDataOrder);
+				mapCanvas.layerManager.setLayerOrder(newDataOrder);
 
 				return true;
 			} catch (Exception e) {

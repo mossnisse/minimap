@@ -1,6 +1,6 @@
 package main.layers;
 
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Layer;
 import main.coords.*;
 import java.awt.*;
@@ -17,7 +17,7 @@ public class GPXFileLayer extends Layer {
 	private final String fileName;
 	private GPXCoordinate[] coordinates = new GPXCoordinate[0];
 	private static final Stroke LINE_STROKE = new BasicStroke(2);
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private Extent cachedExtent = null;
 
 	public static class GPXCoordinate {
@@ -26,10 +26,10 @@ public class GPXFileLayer extends Layer {
 		Coordinate projectedPoint; // Store the result here!
 	}
 
-	public GPXFileLayer(String fileName, Canvas canvas) {
+	public GPXFileLayer(String fileName, MapCanvas mapCanvas) {
 		super(fileName, false, CoordSystem.WGS84);
 		this.fileName = fileName;
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		readFile();
 	}
 
@@ -57,7 +57,7 @@ public class GPXFileLayer extends Layer {
 
 				// PRE-PROJECT the point so draw() is fast
 				Coordinate wgs = new Coordinate(k.latitude, k.longitude);
-				k.projectedPoint = getCRS().convertTo(wgs, canvas.getCRS());
+				k.projectedPoint = getCRS().convertTo(wgs, mapCanvas.getCRS());
 
 				coordinates[s] = k;
 			}

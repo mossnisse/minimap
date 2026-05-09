@@ -2,7 +2,7 @@ package main.dialogs;
 
 import main.coords.CoordSystem;
 import main.coords.Coordinate;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Settings;
 import main.layers.DistanceLayer;
 import main.layers.RubinLayer;
@@ -19,7 +19,7 @@ import java.util.Map;
 
 public class SpecimenBridgeDialog extends JDialog {
     private final SpecimenService service;
-    private final main.core.Canvas canvas;
+    private final MapCanvas mapCanvas;
     private int totalCount;
     private int currentIndex;
     private Specimen targetSpecimen;
@@ -89,10 +89,10 @@ public class SpecimenBridgeDialog extends JDialog {
     private JButton btnRubin, btnRT90, btnSweref, btnLatLong;
     JPanel coordBar;
 
-    public SpecimenBridgeDialog(Frame owner, SpecimenService service, Canvas canvas) {
+    public SpecimenBridgeDialog(Frame owner, SpecimenService service, MapCanvas mapCanvas) {
         super(owner, "Link Specimen to Locality", false);
         this.service = service;
-        this.canvas = canvas;
+        this.mapCanvas = mapCanvas;
         this.totalCount = service.getCacheCount(); // Only get the number, not the data
 
         String cnr = Settings.getValue("cnr");
@@ -576,9 +576,9 @@ public class SpecimenBridgeDialog extends JDialog {
                 isNavigating = false; // Release if index is invalid
             }
 
-            canvas.layerManager.delLayer("Rubin");
-            canvas.layerManager.delLayer("distance");
-            canvas.repaint();
+            mapCanvas.layerManager.delLayer("Rubin");
+            mapCanvas.layerManager.delLayer("distance");
+            mapCanvas.repaint();
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -838,22 +838,22 @@ public class SpecimenBridgeDialog extends JDialog {
         if (c == null) return;
 
         // Center the map canvas
-        canvas.focus(c);
-        canvas.setCoordinate(c);
+        mapCanvas.focus(c);
+        mapCanvas.setCoordinate(c);
 
         // Handle Distance/Direction Visualization
         String distText = distanceField.getText().trim();
         String directionS = (String) directionCombo.getSelectedItem();
 
         // Clear old distance layer regardless
-        canvas.layerManager.delLayer("distance");
+        mapCanvas.layerManager.delLayer("distance");
 
         if (!distText.isEmpty() && directionS != null && !directionS.isEmpty()) {
             try {
                 int distanceI = Integer.parseInt(distText);
                 if (distanceI > 0) {
                     // Add the visual vector layer
-                    canvas.layerManager.addLayerTop(new DistanceLayer(canvas, "distance", c, distanceI, directionS));
+                    mapCanvas.layerManager.addLayerTop(new DistanceLayer(mapCanvas, "distance", c, distanceI, directionS));
                 }
             } catch (NumberFormatException e) {
                 // Silent fail for visualization if number is garbled
@@ -861,16 +861,16 @@ public class SpecimenBridgeDialog extends JDialog {
         }
 
         // Repaint to show changes
-        canvas.repaint();
+        mapCanvas.repaint();
     }
 
     public void focusRubin() {
         String rubin = targetSpecimen.getRubin();
         if (rubin != null && !rubin.isEmpty()) {
-            RubinLayer r = new RubinLayer(rubin, canvas, "Rubin", Color.GREEN);
-            canvas.layerManager.delLayer("Rubin");
-            canvas.layerManager.addLayerTop(r);
-            canvas.focus(r.getMiddle());
+            RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.GREEN);
+            mapCanvas.layerManager.delLayer("Rubin");
+            mapCanvas.layerManager.addLayerTop(r);
+            mapCanvas.focus(r.getMiddle());
         }
     }
 
@@ -890,8 +890,8 @@ public class SpecimenBridgeDialog extends JDialog {
                 Coordinate wgs84 = CoordSystem.RT90.toWGS84(n, o);
                 Coordinate swtm = CoordSystem.SWEREF99TM.toProjected(wgs84);
 
-                canvas.focus(swtm);
-                canvas.setCoordinate(swtm);
+                mapCanvas.focus(swtm);
+                mapCanvas.setCoordinate(swtm);
             } catch (NumberFormatException e) {
                 System.err.println("Invalid RT90 format");
             }
@@ -904,8 +904,8 @@ public class SpecimenBridgeDialog extends JDialog {
         // Basic validation for SWEREF99 TM range (approximate Sweden bounds)
         if (n > 6000000 && e > 200000) {
             Coordinate c = new Coordinate(n, e);
-            canvas.focus(c);
-            canvas.setCoordinate(c);
+            mapCanvas.focus(c);
+            mapCanvas.setCoordinate(c);
         }
     }
 
@@ -926,8 +926,8 @@ public class SpecimenBridgeDialog extends JDialog {
 
             Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(c);
 
-            canvas.focus(sweref);
-            canvas.setCoordinate(sweref);
+            mapCanvas.focus(sweref);
+            mapCanvas.setCoordinate(sweref);
         } catch (Exception e) {
             System.err.println("Lat/Long conversion failed");
         }
@@ -1004,7 +1004,7 @@ public class SpecimenBridgeDialog extends JDialog {
         Frame parentFrame = (Frame) javax.swing.SwingUtilities.getWindowAncestor(this);
 
         // Open and Position the Dialog
-        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, null, canvas, selectedText, province);
+        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, null, mapCanvas, selectedText, province);
 
         d.pack();
         d.setLocationRelativeTo(this);

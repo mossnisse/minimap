@@ -6,24 +6,24 @@ import java.io.IOException;
 import java.util.Scanner;
 import javax.imageio.ImageIO;
 
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Layer;
 import main.coords.*;
 import main.geometry.Extent;
 
 public class RasterFileLayer extends Layer {
 	private final String fileName;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private Image img;
 	private Extent box;
 	private Extent projectedBox;
 	private double x0, y0, x1, y1, x2, y2; // Cached projected world coords
 	private boolean needsProjection = true;
 
-	public RasterFileLayer(String fileName, Canvas canvas) throws IOException {
+	public RasterFileLayer(String fileName, MapCanvas mapCanvas) throws IOException {
 		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		readFile();
 	}
 
@@ -70,7 +70,7 @@ public class RasterFileLayer extends Layer {
 	}
 
 	private void projectCorners() {
-		if (getCRS() == canvas.getCRS()) {
+		if (getCRS() == mapCanvas.getCRS()) {
 			projectedBox = box;
 			// Map world coordinates directly
 			x0 = box.c1.getEast();  y0 = box.c1.getNorth(); // TL
@@ -78,9 +78,9 @@ public class RasterFileLayer extends Layer {
 			x2 = box.c1.getEast();  y2 = box.c2.getNorth(); // BL
 		} else {
 			// Project the three corners needed for AffineTransform
-			Coordinate tl = getCRS().convertTo(new Coordinate(box.c1.getNorth(), box.c1.getEast()), canvas.getCRS());
-			Coordinate tr = getCRS().convertTo(new Coordinate(box.c1.getNorth(), box.c2.getEast()), canvas.getCRS());
-			Coordinate bl = getCRS().convertTo(new Coordinate(box.c2.getNorth(), box.c1.getEast()), canvas.getCRS());
+			Coordinate tl = getCRS().convertTo(new Coordinate(box.c1.getNorth(), box.c1.getEast()), mapCanvas.getCRS());
+			Coordinate tr = getCRS().convertTo(new Coordinate(box.c1.getNorth(), box.c2.getEast()), mapCanvas.getCRS());
+			Coordinate bl = getCRS().convertTo(new Coordinate(box.c2.getNorth(), box.c1.getEast()), mapCanvas.getCRS());
 
 			x0 = tl.getEast();  y0 = tl.getNorth();
 			x1 = tr.getEast();  y1 = tr.getNorth();
@@ -109,7 +109,7 @@ public class RasterFileLayer extends Layer {
 		// Use the cached projectedBox for the intersection check
 		if (!bounds.intersects(projectedBox)) return;
 
-		if (getCRS() == canvas.getCRS()) {
+		if (getCRS() == mapCanvas.getCRS()) {
 			// OPTIMIZED: Standard drawImage for matching CRS
 			int sx1 = (int) (x0 * xScale + xShift);
 			int sy1 = (int) (y0 * yScale + yShift);

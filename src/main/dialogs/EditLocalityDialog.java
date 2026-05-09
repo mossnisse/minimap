@@ -2,7 +2,7 @@ package main.dialogs;
 
 import main.coords.*;
 import main.core.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.layers.MYSQLTableLayer;
 
 import java.awt.*;
@@ -19,7 +19,7 @@ import javax.swing.*;
 /* Dialog for viewing and editing already existing Localities in the db */
 
 public class EditLocalityDialog extends JDialog implements ActionListener {
-	private final main.core.Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final GUI gui;
 	private final int localityID;
 	private final SpecimenBridgeDialog bridgeDialog;
@@ -33,11 +33,11 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private JLabel labelCreated, labelModified;
 	private JButton cancel, delete, ok, move;
 
-	public EditLocalityDialog(GUI gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, Canvas canvas) {
+	public EditLocalityDialog(GUI gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, MapCanvas mapCanvas) {
 		// 'false' makes it non-modal, 'true' would stop interaction with map
 		super(owner, "Edit Locality", false);
 
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 		this.gui = gui;
 		this.localityID = localityID;
 		this.bridgeDialog = bridge;
@@ -278,7 +278,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 						bridgeDialog.invalidateLocalityList();
 					}
 
-					Layer layer = canvas.layerManager.getLayer("LokalDB");
+					Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
 					if (layer instanceof MYSQLTableLayer mysqlLayer) {
 						mysqlLayer.invalidateCache();
 					}
@@ -403,7 +403,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					if (pendingCoords != null) {
 						// todo only set sweref and rt90 if in Sweden
 						// todo check if moved outside district and province
-						Coordinate wgs84 = canvas.getCRS().toWGS84(pendingCoords);
+						Coordinate wgs84 = mapCanvas.getCRS().toWGS84(pendingCoords);
 						Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
 						Coordinate rt90 = CoordSystem.RT90.toProjected(wgs84);
 
@@ -430,11 +430,11 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 							bridgeDialog.invalidateLocalityList();
 						}
 
-						Layer layer = canvas.layerManager.getLayer("LokalDB");
+						Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
 						if (layer instanceof MYSQLTableLayer mysqlLayer) {
 							mysqlLayer.invalidateCache();
 						}
-						canvas.repaint();
+						mapCanvas.repaint();
 						dispose();
 					}
 				} catch (Exception e) {
@@ -472,7 +472,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			this.dispose();
 		} else if ("delete".equals(cmd)) {
 			deleteLocality();
-			canvas.repaint();
+			mapCanvas.repaint();
 		} else if ("move".equals(cmd)) {
 			// Minimize dialog or just tell the user to click
 			//this.setState(Frame.ICONIFIED); // Optional: hide dialog so they can see the map

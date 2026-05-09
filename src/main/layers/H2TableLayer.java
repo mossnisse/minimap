@@ -1,7 +1,7 @@
 package main.layers;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.DBConnection;
 import main.core.Layer;
 import main.geometry.Extent;
@@ -15,16 +15,16 @@ import java.util.ArrayList;
 
 public class H2TableLayer extends Layer {
 	private final String tableName;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 	private final ArrayList<Locality> cache = new ArrayList<>();
 	private Extent lastQueryBounds;
 
 	private static record Locality(Coordinate c, String name) {}
 	
-	public H2TableLayer(String tableName, Canvas canvas) {
+	public H2TableLayer(String tableName, MapCanvas mapCanvas) {
 		super(tableName, false, CoordSystem.SWEREF99TM);
 		this.tableName = tableName;
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 	}
 
 	private void updateCache(Extent bounds) {
@@ -44,7 +44,7 @@ public class H2TableLayer extends Layer {
 					while (rs.next()) {
 						// Cache the raw coordinates and name
 						Coordinate c =  new Coordinate (rs.getInt(1), rs.getInt(2));
-						cache.add(new Locality(getCRS().convertTo(c, canvas.getCRS()), rs.getString(3)));
+						cache.add(new Locality(getCRS().convertTo(c, mapCanvas.getCRS()), rs.getString(3)));
 					}
 				}
 			}
@@ -118,7 +118,7 @@ public class H2TableLayer extends Layer {
 
 		Coordinate c1 = bounds.c1;
 		Coordinate c2 = bounds.c2;
-		Extent queryBounds = new Extent( canvas.getCRS().convertTo(c1, getCRS()), canvas.getCRS().convertTo(c2, getCRS()));
+		Extent queryBounds = new Extent( mapCanvas.getCRS().convertTo(c1, getCRS()), mapCanvas.getCRS().convertTo(c2, getCRS()));
 
 		// Refresh if we don't have a cache, or if the new view is not fully contained in the old one
 		if (lastQueryBounds == null || !lastQueryBounds.isInside(queryBounds)) {

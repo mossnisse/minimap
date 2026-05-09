@@ -1,7 +1,7 @@
 package main.dialogs;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.layers.RubinLayer;
 import main.layers.TNGPolygonFileLayer;
 
@@ -20,16 +20,16 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 	private final JTextField north, east, coordinateSys, swerefF, rt90F, wgs84F, provinceF, districtF, rubinF;
 	private final JOptionPane optionPane;
 	private final TNGPolygonFileLayer provinces, districts;
-	private final Canvas canvas;
+	private final MapCanvas mapCanvas;
 
-	public MarkCoordinateDialog(Frame aFrame, main.core.Canvas canvas) {
+	public MarkCoordinateDialog(Frame aFrame, MapCanvas mapCanvas) {
 		super(aFrame, false);
 		setTitle("Mark Coordinate");
-		this.canvas = canvas;
+		this.mapCanvas = mapCanvas;
 
 		// Safely fetch layers
-		provinces = (canvas.layerManager.getLayer("provinser") instanceof TNGPolygonFileLayer l) ? l : null;
-		districts = (canvas.layerManager.getLayer("socknar") instanceof TNGPolygonFileLayer l) ? l : null;
+		provinces = (mapCanvas.layerManager.getLayer("provinser") instanceof TNGPolygonFileLayer l) ? l : null;
+		districts = (mapCanvas.layerManager.getLayer("socknar") instanceof TNGPolygonFileLayer l) ? l : null;
 
 		// Input fields
 		north = new JTextField(15);
@@ -149,9 +149,9 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 				Coordinate rt90r = RUBIN.toRT90(rubin);
 				wgs84 = CoordSystem.RT90.toWGS84(rt90r);
 
-				RubinLayer r = new RubinLayer(rubin, canvas, "Rubin", Color.green);
-				canvas.layerManager.delLayer("Rubin");
-				canvas.layerManager.addLayerTop(r);
+				RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.green);
+				mapCanvas.layerManager.delLayer("Rubin");
+				mapCanvas.layerManager.addLayerTop(r);
 			} else {
 				coordinateSys.setText("Invalid Input");
 				return;
@@ -168,9 +168,9 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		wgs84F.setText(wgs84.toString());
 		rubinF.setText(rubin);
 
-		Coordinate cavasCoord = canvas.getCRS().toProjected(wgs84);
-		canvas.focus(cavasCoord);
-		canvas.setCoordinate(cavasCoord);
+		Coordinate cavasCoord = mapCanvas.getCRS().toProjected(wgs84);
+		mapCanvas.focus(cavasCoord);
+		mapCanvas.setCoordinate(cavasCoord);
 		if (provinces!= null) {
 			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
 			if (pr != null) {

@@ -9,12 +9,12 @@ import java.util.LinkedHashMap;
 import javax.imageio.ImageIO;
 
 import main.coords.*;
-import main.core.Canvas;
+import main.core.MapCanvas;
 import main.core.Layer;
 import main.geometry.Extent;
 
 public class OSMLayer extends Layer {
-    private final Canvas canvas;
+    private final MapCanvas mapCanvas;
     private final TileBuffer tileBuffer;
 
     // Web Mercator half-world size
@@ -119,7 +119,7 @@ public class OSMLayer extends Layer {
                                 localFile.getParentFile().mkdirs();
                                 Files.write(localFile.toPath(), data);
                                 tiles.put(index, ImageIO.read(new java.io.ByteArrayInputStream(data)));
-                                canvas.repaint();
+                                mapCanvas.repaint();
                             } catch (IOException e) { e.printStackTrace(); }
                         }
                         loading.remove(index);
@@ -127,9 +127,9 @@ public class OSMLayer extends Layer {
         }
     }
 
-    public OSMLayer(Canvas canvas) {
+    public OSMLayer(MapCanvas mapCanvas) {
         super("OpenStreetMap", false, CoordSystem.WEB_MERCATOR);
-        this.canvas = canvas;
+        this.mapCanvas = mapCanvas;
         tileBuffer = new TileBuffer();
     }
 
