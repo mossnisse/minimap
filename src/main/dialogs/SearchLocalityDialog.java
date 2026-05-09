@@ -123,165 +123,189 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	}
 
 	private void performSearch() {
+		// Clear UI and show a loading state
 		resultPanel.removeAll();
-		ArrayList<Coordinate> allPoints = new ArrayList<>();
-		ArrayList<String> allNames = new ArrayList<>();
-
-		StringBuilder sql = new StringBuilder("SELECT ID, lat, `long`, locality, district FROM Locality WHERE 1=1 ");
-		ArrayList<Object> params = new ArrayList<>();
-
-		// Dynamic filters
-		if (!lokal.getText().isEmpty()) {
-			String p = lokal.getText().trim().replace("*", "%");
-			// Matches exact, starts with, ends with, or is in the middle of a comma-separated list
-			sql.append(" AND (locality LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ?)");
-			params.add(p); // locality: exact if user don't write *
-			params.add(p);             // alt: is first and last in list
-			params.add(p + ",%");      // alt: first in list
-			params.add("%, " + p);     // alt: last in list
-			params.add("%, " + p + ",%");// alt: middle of list
-		}
-		// Helper for metadata fields (Handles NULL or Empty vs LIKE)
-		addNullableLikeFilter(sql, params, "country", country.getText());
-		addNullableLikeFilter(sql, params, "district", district.getText());
-		addNullableLikeFilter(sql, params, "coordinate_source", source.getText());
-		// Specialized Precision Logic
-		String precInput = precision.getText().trim();
-		if (!"*".equals(precInput)) {
-			if (precInput.isEmpty()) {
-				// Search for "empty/invalid" records
-				sql.append(" AND (Coordinateprecision IS NULL OR Coordinateprecision = 0)");
-			} else {
-				try {
-					// Remove any * if user accidentally typed one, treat as "greater than or equal"
-					int val = Integer.parseInt(precInput.replace("*", ""));
-					sql.append(" AND (Coordinateprecision >= ? OR Coordinateprecision IS NULL OR Coordinateprecision = 0)");
-					params.add(val);
-				} catch (NumberFormatException e) {
-					// If user types gibberish, we can either ignore it or fall back to LIKE
-					// Let's ignore it to prevent SQL errors
-				}
-			}
-		}
-		addNullableLikeFilter(sql, params, "category", category.getText());
-
-		if (!"*".equals(provinceBox.getSelectedItem())) {
-			sql.append(" AND province = ?");
-			params.add(provinceBox.getSelectedItem());
-		}
-
-		if (isPlace.isSelected()) {
-			sql.append(" AND isPlace = 1");
-		}
-
-		sql.append(" LIMIT 500");
-
-		try {
-			Connection conn = DBConnection.getConn();
-			// Main Search
-			try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-				for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
-				try (ResultSet rs = stmt.executeQuery()) {
-					while (rs.next()) {
-						int id = rs.getInt("ID");
-						String name = rs.getString("locality");
-						String distr = rs.getString("district");
-						String label = String.format("%s (%s)", name, distr);
-						allNames.add(label);
-
-						Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
-						Coordinate c = canvas.getCRS().toProjected(wgs84);
-						allPoints.add(c);
-
-						addResultButton(c, label, id);
-					}
-				}
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-
-		// H2 Search (Simplified to just name/province) only when name is used.
-		// should also search on district
-		String sCountry = country.getText().trim();
-		if (!lokal.getText().isEmpty() && ("Sweden".equals(sCountry) || "*".equals(sCountry))) {
-			if (!lokal.getText().isEmpty()) {
-				TNGPointFileLayer h2Res =  findInH2(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
-						//od.find(getProvinsNr(), lokal.getText().replace("*", "%"), district.getText());
-				for (TNGPointFileLayer.Locality locus : h2Res.getLocalities()) {
-					Coordinate sweref = new Coordinate(locus.getPoint());
-					allPoints.add(sweref);
-					allNames.add(locus.getName() + " (Lantmäteriet)");
-					addResultButton(sweref, locus.getName() + " (Lantmäteriet)", -1);
-				}
-			}
-		}
-
-		if (!allPoints.isEmpty()) {
-			lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
-			lastResults.setColor(Color.blue);
-			canvas.layerManager.delLayer("Search Results");
-			canvas.layerManager.addLayerTop(lastResults);
-			//for (TNGPointFileLayer.Locality l : lastResults.getLocalities()) addResultButton(l,0,-1);
-			resultPanel.add(Box.createVerticalGlue());
-			zoomb.setEnabled(true);
-		}
+		resultPanel.add(new JLabel("Searching... Please wait."));
 		resultPanel.revalidate();
 		resultPanel.repaint();
-	}
+		searchb.setEnabled(false); // Prevent multiple concurrent searches
 
-	public TNGPointFileLayer findInH2(int provinsNr, String value, String district) {
-		value = value.trim().replace("*", "%");
-		district = district.trim().replace("*", "%");
+		// Capture UI input on the EDT
+		final String lokalText = lokal.getText().trim();
+		final String countryText = country.getText().trim();
+		final String districtText = district.getText().trim();
+		final String sourceText = source.getText().trim();
+		final String precInput = precision.getText().trim();
+		final String catText = category.getText().trim();
+		final Object provSelected = provinceBox.getSelectedItem();
+		final boolean isPlaceSelected = isPlace.isSelected();
+		final int provNr = getProvinsNr();
+		final CoordSystem currentCRS = canvas.getCRS();
 
-		try {
-			Connection conn = DBConnection.getH2Conn();
-			ArrayList<Coordinate> ans = new ArrayList<>();
-			ArrayList<String> names = new ArrayList<>();
+		// Run Database logic in background
+		new SwingWorker<ArrayList<SearchResult>, Void>() {
+			@Override
+			protected ArrayList<SearchResult> doInBackground() {
+				gui.setCursorWait(); // Set hourglass cursor
 
-			// Build the Dynamic SQL
-			StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM ortnamnSWTM WHERE Ortnamn ILIKE ?");
+				ArrayList<SearchResult> results = fetchFromMysql();
 
-			if (provinsNr != -1) {
-				sql.append(" AND FPNUMMER = ?");
-			}
-
-			// Only add district filter if it's not a global wildcard
-			boolean useDistrict = !district.equals("%") && !district.isEmpty();
-			if (useDistrict) {
-				sql.append(" AND SOCKEN ILIKE ?");
-			}
-
-			sql.append(" ORDER BY SOCKEN LIMIT 500");
-
-			try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-				int idx = 1;
-				pstmt.setString(idx++, value);
-
-				if (provinsNr != -1) {
-					pstmt.setInt(idx++, provinsNr);
+				if (!lokalText.isEmpty() && ("Sweden".equals(countryText) || "*".equals(countryText))) {
+					ArrayList<SearchResult> h2Results = fetchFromH2(provNr, lokalText, districtText, currentCRS);
+					results.addAll(h2Results);
 				}
 
-				if (useDistrict) {
-					pstmt.setString(idx, district);
+				return results;
+			}
+
+			public ArrayList<SearchResult> fetchFromH2(int provNr, String value, String district, CoordSystem targetCRS) {
+				value = value.trim().replace("*", "%");
+				district = district.trim().replace("*", "%");
+				ArrayList<SearchResult> results = new ArrayList<>();
+
+				try (Connection conn = DBConnection.getH2Conn()) {
+					StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM ortnamnSWTM WHERE Ortnamn ILIKE ?");
+
+					if (provNr != -1) {
+						sql.append(" AND FPNUMMER = ?");
+					}
+
+					boolean useDistrict = !district.equals("%") && !district.isEmpty();
+					if (useDistrict) {
+						sql.append(" AND SOCKEN ILIKE ?");
+					}
+
+					sql.append(" ORDER BY SOCKEN LIMIT 500");
+
+					try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+						int idx = 1;
+						pstmt.setString(idx++, value);
+						if (provNr != -1) pstmt.setInt(idx++, provNr);
+						if (useDistrict) pstmt.setString(idx, district);
+
+						try (ResultSet result = pstmt.executeQuery()) {
+							while (result.next()) {
+								int north = result.getInt(1);
+								int east = result.getInt(2);
+
+								// Convert from H2's SWEREF99TM to whatever the canvas currently uses
+								Coordinate c = CoordSystem.SWEREF99TM.convertTo(new Coordinate(north, east), targetCRS);
+								String label = result.getString(3) + ", " + result.getString(4) + " (Lantmäteriet)";
+
+								// ID is -1 because these are from the H2 file, not the editable MySQL DB
+								results.add(new SearchResult(c, label, -1));
+							}
+						}
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					// Return the empty list rather than null to avoid NullPointerExceptions later
+				}
+				return results;
+			}
+
+			private ArrayList<SearchResult> fetchFromMysql() {
+				StringBuilder sql = new StringBuilder("SELECT ID, lat, `long`, locality, district FROM Locality WHERE 1=1 ");
+				ArrayList<Object> params = new ArrayList<>();
+				ArrayList<SearchResult> results = new ArrayList<>();
+
+				if (!lokalText.isEmpty()) {
+					String p = lokalText.replace("*", "%");
+					sql.append(" AND (locality LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ?)");
+					params.add(p); params.add(p); params.add(p + ",%"); params.add("%, " + p); params.add("%, " + p + ",%");
 				}
 
-				try (ResultSet result = pstmt.executeQuery()) {
-					while (result.next()) {
-						int north = result.getInt(1);
-						int east = result.getInt(2);
-						ans.add(CoordSystem.SWEREF99TM.convertTo(new Coordinate(north, east), canvas.getCRS()) );
-						names.add(result.getString(3) + ", " + result.getString(4));
+				addNullableLikeFilter(sql, params, "country", countryText);
+				addNullableLikeFilter(sql, params, "district", districtText);
+				addNullableLikeFilter(sql, params, "coordinate_source", sourceText);
+
+				if (!"*".equals(precInput)) {
+					if (precInput.isEmpty()) {
+						sql.append(" AND (Coordinateprecision IS NULL OR Coordinateprecision = 0)");
+					} else {
+						try {
+							int val = Integer.parseInt(precInput.replace("*", ""));
+							sql.append(" AND (Coordinateprecision >= ? OR Coordinateprecision IS NULL OR Coordinateprecision = 0)");
+							params.add(val);
+						} catch (NumberFormatException ignored) {}
 					}
 				}
-			} catch (SQLException e) {
-				e.printStackTrace();
+
+				addNullableLikeFilter(sql, params, "category", catText);
+
+				if (!"*".equals(provSelected)) {
+					sql.append(" AND province = ?");
+					params.add(provSelected);
+				}
+
+				if (isPlaceSelected) sql.append(" AND isPlace = 1");
+				sql.append(" LIMIT 500");
+
+				// --- MySQL Query ---
+				try (Connection conn = DBConnection.getConn();
+				     PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+					for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
+					try (ResultSet rs = stmt.executeQuery()) {
+						while (rs.next()) {
+							int id = rs.getInt("ID");
+							String label = String.format("%s (%s)", rs.getString("locality"), rs.getString("district"));
+							Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
+
+							Coordinate c = canvas.getCRS().toProjected(wgs84);
+							results.add(new SearchResult(c, label, id));
+						}
+					}
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				return results;
 			}
-			return new TNGPointFileLayer(ans, names, "Search Results");
-		} catch(Exception e) {
-			e.printStackTrace();
-		}
-		return null;
+
+			@Override
+			protected void done() {
+				if (!isDisplayable()) return;
+				try {
+					ArrayList<SearchResult> results = get();
+
+					// Clear the "Searching..." label
+					resultPanel.removeAll();
+
+					if (results.isEmpty()) {
+						resultPanel.add(new JLabel("No localities found."));
+						zoomb.setEnabled(false);
+					} else {
+						ArrayList<Coordinate> allPoints = new ArrayList<>();
+						ArrayList<String> allNames = new ArrayList<>();
+
+						// Build UI Buttons and Layer Lists
+						for (SearchResult res : results) {
+							addResultButton(res.coord(), res.label(), res.id());
+							allPoints.add(res.coord());
+							allNames.add(res.label());
+						}
+
+						// Update Layer
+						lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
+						lastResults.setColor(Color.blue);
+						canvas.layerManager.delLayer("Search Results");
+						canvas.layerManager.addLayerTop(lastResults);
+
+						resultPanel.add(Box.createVerticalGlue());
+						zoomb.setEnabled(true);
+						canvas.repaint();
+					}
+				} catch (Exception e) {
+					e.printStackTrace();
+					resultPanel.removeAll();
+					resultPanel.add(new JLabel("An error occurred during search."));
+				} finally {
+					searchb.setEnabled(true); // Re-enable button
+					gui.setCursorDefault();
+					resultPanel.revalidate();
+					resultPanel.repaint();
+				}
+			}
+		}.execute();
 	}
 
 	private void addNullableLikeFilter(StringBuilder sql, ArrayList<Object> params, String columnName, String input) {
@@ -334,13 +358,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 					Frame owner = (Frame) SwingUtilities.getWindowAncestor(SearchLocalityDialog.this);
 
 					// Open EditLocalityDialog using the ID from the search results
-					EditLocalityDialog editDlg = new EditLocalityDialog(
-							gui,
-							owner,
-							id,
-							null, // bridgeDialog
-							canvas
-					);
+					EditLocalityDialog editDlg = new EditLocalityDialog(gui, owner, id, null , canvas); // null should be the bridge dialog
 					editDlg.setVisible(true);
 				});
 
