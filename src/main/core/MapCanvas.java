@@ -24,6 +24,11 @@ public class MapCanvas extends JPanel {
 		layerManager = new LayerManager(this);
 		DistanceTool tool = new DistanceTool(this);
 		addMouseListener(tool);
+
+		/*
+		Graphics2D g2d = (Graphics2D) this.getGraphics();
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		*/
 	}
 
 	// todo use the MYSQLTableLayer concurently with the UI thread. check for null?

@@ -118,6 +118,7 @@ public class RasterFileLayer extends Layer {
 
 			g2d.drawImage(img, sx1, sy1, sx2 - sx1, sy2 - sy1, null);
 		} else {
+			g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
 			// ACCURATE: AffineTransform for mismatched CRS
 			double screenX0 = x0 * xScale + xShift;
 			double screenY0 = y0 * yScale + yShift;

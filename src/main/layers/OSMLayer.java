@@ -1,7 +1,7 @@
 package main.layers;
 
-import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -89,7 +89,8 @@ public class OSMLayer extends Layer {
         );
 
         public Image getTileOrFetch(TileIndex index) {
-            if (tiles.containsKey(index)) return tiles.get(index);
+            Image cachedImg = tiles.get(index);
+            if (cachedImg != null) return cachedImg;
 
             File localFile = new File(String.format("%s/%d/%d/%d.png", CACHE_ROOT, index.zoom, index.x, index.y));
             if (localFile.exists()) {
@@ -153,32 +154,90 @@ public class OSMLayer extends Layer {
 
     @Override
     public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
-        int zoom = calculateZoom(xScale);
-        TileIndex[] indexes = TileIndex.getTileIndexes(bounds, zoom);
+        int zoom = calculateZoom(Math.abs(xScale));
+        Extent wmbounds = bounds.convertCRS(mapCanvas.getCRS(), getCRS());
+        TileIndex[] indexes = TileIndex.getTileIndexes(wmbounds, zoom);  // , mapCanvas.getCRS()
 
-        // Pre-calculate constants for this render pass
         int numTiles = 1 << zoom;
-        double worldSize = 20037508.34; // Local copy of constant
-        double tileSize = (2 * worldSize) / numTiles;
+        double tileSize = (2 * WORLD_SIZE) / numTiles;
 
-        // Calculate size based on tile dimensions at this zoom
-        int pixelWidth = (int) Math.round(tileSize * xScale);
-        int pixelHeight = (int) Math.round(tileSize * Math.abs(yScale)); // Use abs to handle Y-flip
+        boolean isWebMercator = (mapCanvas.getCRS() == CoordSystem.WEB_MERCATOR);
+
+        // Save the old interpolation setting to restore later
+        Object oldInterpolation = g2d.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
+
+        if (!isWebMercator) {
+            // High-quality bilinear interpolation is critical for warped affine transforms
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        }
 
         for (TileIndex ind : indexes) {
             Image img = tileBuffer.getTileOrFetch(ind);
             if (img != null) {
-                // Calculate screen coordinates directly as double
-                // Formula: (WorldPos * Scale) + Shift
-                double mapX1 = -worldSize + (ind.x * tileSize);
-                double mapY2 = worldSize - (ind.y * tileSize); // Top Y
+                double webMercXLeft = -WORLD_SIZE + (ind.x * tileSize);
+                double webMercYTop = WORLD_SIZE - (ind.y * tileSize);
 
-                // Apply projection/transformation to get screen pixel coordinates
-                int screenX = (int) Math.round((mapX1 * xScale) + xShift);
-                int screenY = (int) Math.round((mapY2 * yScale) + yShift);
+                if (isWebMercator) {
+                    // -------------------------------------------------------------
+                    // FAST PATH: MapCanvas is native Web Mercator
+                    // -------------------------------------------------------------
+                    int screenX = (int) Math.round((webMercXLeft * xScale) + xShift);
+                    int screenY = (int) Math.round((webMercYTop * yScale) + yShift);
 
-                g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight + 1, null);  // +1 avoids white lines between tiles
+                    double webMercXRight = webMercXLeft + tileSize;
+                    double webMercYBottom = webMercYTop - tileSize;
+                    int screenX2 = (int) Math.round((webMercXRight * xScale) + xShift);
+                    int screenY2 = (int) Math.round((webMercYBottom * yScale) + yShift);
+
+                    int pWidth = screenX2 - screenX;
+                    int pHeight = screenY2 - screenY;
+
+                    // Add +1 to mask integer rounding gaps
+                    g2d.drawImage(img, screenX, screenY, Math.abs(pWidth) + 1, Math.abs(pHeight) + 1, null);
+
+                } else {
+                    // -------------------------------------------------------------
+                    // WARP PATH: Calculate AffineTransform using 3 Projected Corners
+                    // -------------------------------------------------------------
+                    Coordinate topLeftWM = new Coordinate(webMercYTop, webMercXLeft);
+                    Coordinate topRightWM = new Coordinate(webMercYTop, webMercXLeft + tileSize);
+                    Coordinate bottomLeftWM = new Coordinate(webMercYTop - tileSize, webMercXLeft);
+
+                    // Convert to Target CRS
+                    Coordinate tlTarget = CoordSystem.WEB_MERCATOR.convertTo(topLeftWM, mapCanvas.getCRS());
+                    Coordinate trTarget = CoordSystem.WEB_MERCATOR.convertTo(topRightWM, mapCanvas.getCRS());
+                    Coordinate blTarget = CoordSystem.WEB_MERCATOR.convertTo(bottomLeftWM, mapCanvas.getCRS());
+
+                    // Calculate double-precision screen coordinates inline
+                    double tlX = (tlTarget.getEast() * xScale) + xShift;
+                    double tlY = (tlTarget.getNorth() * yScale) + yShift;
+
+                    double trX = (trTarget.getEast() * xScale) + xShift;
+                    double trY = (trTarget.getNorth() * yScale) + yShift;
+
+                    double blX = (blTarget.getEast() * xScale) + xShift;
+                    double blY = (blTarget.getNorth() * yScale) + yShift;
+
+                    // Derive the AffineTransform Matrix
+                    // Tile images are strictly 256x256 pixels
+                    // We divide by 255.5 instead of 256.0 to force a 0.5px overlap and kill white seams
+                    double tilePx = 255.5;
+
+                    double m00 = (trX - tlX) / tilePx; // Scale X & Skew X
+                    double m10 = (trY - tlY) / tilePx; // Shear Y
+                    double m01 = (blX - tlX) / tilePx; // Shear X
+                    double m11 = (blY - tlY) / tilePx; // Scale Y & Skew Y
+
+                    AffineTransform transform = new AffineTransform(m00, m10, m01, m11, tlX, tlY);
+
+                    g2d.drawImage(img, transform, null);
+                }
             }
+        }
+
+        // Cleanup: Restore original graphics state
+        if (!isWebMercator && oldInterpolation != null) {
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, oldInterpolation);
         }
     }
 }

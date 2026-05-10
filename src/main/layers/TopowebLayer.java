@@ -1,7 +1,7 @@
 package main.layers;
 
-import java.awt.Graphics2D;
-import java.awt.Image;
+import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -168,7 +168,9 @@ public class TopowebLayer extends Layer {
 	@Override
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		int zoom = calculateZoom(xScale);
-		TileIndex[] indexes = TileIndex.getTileIndexes(bounds, zoom);
+		boolean isNative = (mapCanvas.getCRS() == getCRS());
+		Extent srbounds = bounds.convertCRS(mapCanvas.getCRS(), getCRS());
+		TileIndex[] indexes = TileIndex.getTileIndexes(srbounds, zoom);
 
 		// Pre-calculate constants for this render pass
 		int tileWidth = BASE_TILE_WIDTH / (1 << zoom);
@@ -177,6 +179,8 @@ public class TopowebLayer extends Layer {
 		int pixelWidth = (int) Math.round(tileWidth * xScale);
 		int pixelHeight = (int) Math.round(tileWidth * Math.abs(yScale));
 
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
 		for (TileIndex ind : indexes) {
 			Image img = tileBuffer.getTileOrFetch(ind);
 			if (img != null) {
@@ -184,12 +188,46 @@ public class TopowebLayer extends Layer {
 				double mapX1 = ORIGIN_X + (ind.x * tileWidth);
 				double mapY2 = ORIGIN_Y - (ind.y * tileWidth); // Top Y
 
-				// Apply projection/transformation to get screen pixel coordinates
-				int screenX = (int) Math.round((mapX1 * xScale) + xShift);
-				int screenY = (int) Math.round((mapY2 * yScale) + yShift);
+				if (isNative) {
+					// Apply projection/transformation to get screen pixel coordinates
+					int screenX = (int) Math.round((mapX1 * xScale) + xShift);
+					int screenY = (int) Math.round((mapY2 * yScale) + yShift);
 
-				// +1 overlap trick to avoid white gridlines between map tiles
-				g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight + 1, null);
+					// +1 overlap trick to avoid white gridlines between map tiles
+					g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight + 1, null);
+				} else {
+					Coordinate topLeftWM = new Coordinate(mapY2, mapX1);
+					Coordinate topRightWM = new Coordinate(mapY2, mapX1 + tileWidth);
+					Coordinate bottomLeftWM = new Coordinate(mapY2 - tileWidth, mapX1);
+
+					Coordinate tlTarget = getCRS().convertTo(topLeftWM, mapCanvas.getCRS());
+					Coordinate trTarget = getCRS().convertTo(topRightWM, mapCanvas.getCRS());
+					Coordinate blTarget = getCRS().convertTo(bottomLeftWM, mapCanvas.getCRS());
+
+					// Calculate double-precision screen coordinates inline
+					double tlX = (tlTarget.getEast() * xScale) + xShift;
+					double tlY = (tlTarget.getNorth() * yScale) + yShift;
+
+					double trX = (trTarget.getEast() * xScale) + xShift;
+					double trY = (trTarget.getNorth() * yScale) + yShift;
+
+					double blX = (blTarget.getEast() * xScale) + xShift;
+					double blY = (blTarget.getNorth() * yScale) + yShift;
+
+					// Derive the AffineTransform Matrix
+					// Tile images are strictly 256x256 pixels
+					// We divide by 255.5 instead of 256.0 to force a 0.5px overlap and kill white seams
+					double tilePx = 255.5;
+
+					double m00 = (trX - tlX) / tilePx; // Scale X & Skew X
+					double m10 = (trY - tlY) / tilePx; // Shear Y
+					double m01 = (blX - tlX) / tilePx; // Shear X
+					double m11 = (blY - tlY) / tilePx; // Scale Y & Skew Y
+
+					AffineTransform transform = new AffineTransform(m00, m10, m01, m11, tlX, tlY);
+
+					g2d.drawImage(img, transform, null);
+				}
 			}
 		}
 	}

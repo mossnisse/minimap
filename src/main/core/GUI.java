@@ -54,7 +54,6 @@ public class GUI  {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				// Use 'core.GUI.this' to call instance methods from inside the anonymous listener
 				if (moveTarget != null) {
 					leaveMoveMode(e);
 				}

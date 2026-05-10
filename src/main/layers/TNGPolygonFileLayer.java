@@ -33,15 +33,12 @@ public class TNGPolygonFileLayer extends Layer {
 			return name;
 		}
 
-		//public Extent getBoundingBox() {return box;}
-
 		public Extent getBoundingBox() {
 			return box;
 		}
 		
 		public boolean isInside(Coordinate c) {
 			if (box.isInside(c)) {
-				//System.out.println("inside Box: "+name);
 				return super.isInside(c);
 			} 
 			return false;
@@ -119,7 +116,7 @@ public class TNGPolygonFileLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-
+		readFile();
 	}
 
 	@Override

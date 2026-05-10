@@ -13,8 +13,7 @@ public class RubinLayer extends Layer {
 	private String rubin;
 	private final MapCanvas mapCanvas;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
-
-	// Store corners in projected (Sweref) coordinates
+	private int[][] rt90Corners = null;
 	private final List<Coordinate> corners = new ArrayList<>();
 
 	public RubinLayer(String rubin, MapCanvas mapCanvas, String name, Color c) {
@@ -26,14 +25,17 @@ public class RubinLayer extends Layer {
 
 	public void setRubin(String rubin) {
 		this.rubin = rubin;
-		this.corners.clear();
-		int[][] rt90Corners = RUBIN.getCorners(rubin);
+		rt90Corners = RUBIN.getCorners(rubin);
+		convCorners();
+	}
 
+	private void convCorners() {
 		if (rt90Corners != null) {
+			corners.clear();
 			for (int[] corner : rt90Corners) {
 				// Set current corner in RT90
 				Coordinate c = new Coordinate(corner[0], corner[1]);
-				// Store the Sweref coordinates
+				// Store the converted coordinates
 				corners.add(getCRS().convertTo(c, mapCanvas.getCRS()));
 			}
 		}
@@ -61,7 +63,7 @@ public class RubinLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-
+		convCorners();
 	}
 
 	@Override
@@ -73,17 +75,18 @@ public class RubinLayer extends Layer {
 		g2d.setStroke(LINE_STROKE);
 
 		// Convert the 4 Sweref corners to screen pixel paths
-		int[] xPoints = new int[4];
-		int[] yPoints = new int[4];
+		int n = corners.size();
+		int[] xPoints = new int[n];
+		int[] yPoints = new int[n];
 
-		for (int i = 0; i < 4; i++) {
+		for (int i = 0; i < n; i++) {
 			Coordinate pt = corners.get(i);
 			xPoints[i] = (int) ((pt.getEast() * xScale) + xShift);
 			yPoints[i] = (int) ((pt.getNorth() * yScale) + yShift);
 		}
 
 		// This handles cases where the grid might be slightly rotated/skewed after conversion
-		g2d.drawPolygon(xPoints, yPoints, 4);
+		g2d.drawPolygon(xPoints, yPoints, n);
 
 		g2d.setStroke(originalStroke);
 	}
