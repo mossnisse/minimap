@@ -2,6 +2,7 @@ package main.dialogs;
 
 import main.coords.CoordSystem;
 import main.coords.Coordinate;
+import main.core.GUI;
 import main.core.MapCanvas;
 import main.core.Settings;
 import main.layers.DistanceLayer;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class SpecimenBridgeDialog extends JDialog {
     private final SpecimenService service;
     private final MapCanvas mapCanvas;
+    private final GUI gui;
     private int totalCount;
     private int currentIndex;
     private Specimen targetSpecimen;
@@ -89,9 +91,10 @@ public class SpecimenBridgeDialog extends JDialog {
     private JButton btnRubin, btnRT90, btnSweref, btnLatLong;
     JPanel coordBar;
 
-    public SpecimenBridgeDialog(Frame owner, SpecimenService service, MapCanvas mapCanvas) {
+    public SpecimenBridgeDialog(Frame owner, GUI gui, SpecimenService service, MapCanvas mapCanvas) {
         super(owner, "Link Specimen to Locality", false);
         this.service = service;
+        this.gui = gui;
         this.mapCanvas = mapCanvas;
         this.totalCount = service.getCacheCount(); // Only get the number, not the data
 
@@ -1004,7 +1007,7 @@ public class SpecimenBridgeDialog extends JDialog {
         Frame parentFrame = (Frame) javax.swing.SwingUtilities.getWindowAncestor(this);
 
         // Open and Position the Dialog
-        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, null, mapCanvas, selectedText, province);
+        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, gui, mapCanvas, selectedText, province);
 
         d.pack();
         d.setLocationRelativeTo(this);

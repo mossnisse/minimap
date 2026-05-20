@@ -109,7 +109,12 @@ public class TopowebLayer extends Layer {
 				} catch (IOException e) { localFile.delete(); }
 			}
 
-			if (loading.add(index)) downloadTileAsync(index, localFile);
+			synchronized (loading) {
+				if (!loading.contains(index) && !tiles.containsKey(index)) {
+					loading.add(index);
+					downloadTileAsync(index, localFile);
+				}
+			}
 			return null;
 		}
 
@@ -127,11 +132,29 @@ public class TopowebLayer extends Layer {
 						if (response.statusCode() == 200) {
 							try {
 								byte[] data = response.body();
-								localFile.getParentFile().mkdirs();
-								Files.write(localFile.toPath(), data);
-								tiles.put(index, ImageIO.read(new java.io.ByteArrayInputStream(data)));
-								mapCanvas.repaint();
-							} catch (IOException e) { e.printStackTrace(); }
+								Image img = ImageIO.read(new java.io.ByteArrayInputStream(data));
+
+								if (img != null) {
+									// Success path
+									localFile.getParentFile().mkdirs();
+									Files.write(localFile.toPath(), data);
+									tiles.put(index, img);
+									mapCanvas.repaint();
+								} else {
+									// The data wasn't a valid image
+									System.err.println("Downloaded data was not a valid image: " + index);
+								}
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						} else {
+							System.err.println("Hades Server returned: " + response.statusCode());
+						}
+					})
+					.whenComplete((result, throwable) -> {
+						if (throwable != null) {
+							// Log the network error (timeout, etc.)
+							throwable.printStackTrace();
 						}
 						loading.remove(index);
 					});
@@ -194,7 +217,7 @@ public class TopowebLayer extends Layer {
 					int screenY = (int) Math.round((mapY2 * yScale) + yShift);
 
 					// +1 overlap trick to avoid white gridlines between map tiles
-					g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight + 1, null);
+					g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight +  1, null);
 				} else {
 					Coordinate topLeftWM = new Coordinate(mapY2, mapX1);
 					Coordinate topRightWM = new Coordinate(mapY2, mapX1 + tileWidth);

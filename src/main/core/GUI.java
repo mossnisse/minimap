@@ -565,7 +565,7 @@ public class GUI  {
 		}
 
 		SpecimenService service = new SpecimenService();
-		bridgeDialog = new SpecimenBridgeDialog(frame, service, mapCanvas);
+		bridgeDialog = new SpecimenBridgeDialog(frame, this, service, mapCanvas);
 
 		bridgeDialog.addWindowListener(new WindowAdapter() {
 			@Override

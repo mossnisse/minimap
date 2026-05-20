@@ -20,6 +20,7 @@ public class OSMLayer extends Layer {
     // Web Mercator half-world size
     private static final double WORLD_SIZE = 20037508.34;
     private static final java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+    private static final double LOG2 = Math.log(2);
 
     public static class TileIndex {
         public int zoom;
@@ -100,7 +101,12 @@ public class OSMLayer extends Layer {
                 } catch (IOException e) { localFile.delete(); }
             }
 
-            if (loading.add(index)) downloadTileAsync(index, localFile);
+            synchronized (loading) {
+                if (!loading.contains(index) && !tiles.containsKey(index)) {
+                    loading.add(index);
+                    downloadTileAsync(index, localFile);
+                }
+            }
             return null;
         }
 
@@ -109,7 +115,7 @@ public class OSMLayer extends Layer {
 
             java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
                     .uri(java.net.URI.create(tileUrl))
-                    .header("User-Agent", "MinMap/0.1 (https://github.com/mossnisse/minimap)") // MANDATORY FOR OSM
+                    .header("User-Agent", "MinMap/0.1") // MANDATORY FOR OSM
                     .build();
 
             client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofByteArray())
@@ -117,11 +123,29 @@ public class OSMLayer extends Layer {
                         if (response.statusCode() == 200) {
                             try {
                                 byte[] data = response.body();
-                                localFile.getParentFile().mkdirs();
-                                Files.write(localFile.toPath(), data);
-                                tiles.put(index, ImageIO.read(new java.io.ByteArrayInputStream(data)));
-                                mapCanvas.repaint();
-                            } catch (IOException e) { e.printStackTrace(); }
+                                Image img = ImageIO.read(new java.io.ByteArrayInputStream(data));
+
+                                if (img != null) {
+                                    // Success path
+                                    localFile.getParentFile().mkdirs();
+                                    Files.write(localFile.toPath(), data);
+                                    tiles.put(index, img);
+                                    mapCanvas.repaint();
+                                } else {
+                                    // The data wasn't a valid image
+                                    System.err.println("Downloaded data was not a valid image: " + index);
+                                }
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        } else {
+                            System.err.println("OSM Server returned: " + response.statusCode());
+                        }
+                    })
+                    .whenComplete((result, throwable) -> {
+                        if (throwable != null) {
+                            // Log the network error (timeout, etc.)
+                            throwable.printStackTrace();
                         }
                         loading.remove(index);
                     });
@@ -143,7 +167,7 @@ public class OSMLayer extends Layer {
         // Screen pixels per meter.
         // A tile is 256px. World width is 2 * WORLD_SIZE.
         double resolution = 1.0 / xScale;
-        int zoom = (int) Math.round(Math.log( (2 * WORLD_SIZE) / (256 * resolution)) / Math.log(2));
+        int zoom = (int) Math.round(Math.log( (2 * WORLD_SIZE) / (256 * resolution)) / LOG2 );
         return Math.clamp(zoom, 0, 18); // Clamp zoom 0-18
     }
 
@@ -167,8 +191,12 @@ public class OSMLayer extends Layer {
         Object oldInterpolation = g2d.getRenderingHint(RenderingHints.KEY_INTERPOLATION);
 
         if (!isWebMercator) {
-            // High-quality bilinear interpolation is critical for warped affine transforms
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            if (oldInterpolation != null) {
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            } else {
+                g2d.getRenderingHints().remove(RenderingHints.KEY_INTERPOLATION);
+                g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            }
         }
 
         for (TileIndex ind : indexes) {
@@ -193,7 +221,7 @@ public class OSMLayer extends Layer {
                     int pHeight = screenY2 - screenY;
 
                     // Add +1 to mask integer rounding gaps
-                    g2d.drawImage(img, screenX, screenY, Math.abs(pWidth) + 1, Math.abs(pHeight) + 1, null);
+                    g2d.drawImage(img, screenX, screenY, Math.abs(pWidth) , Math.abs(pHeight) , null);
 
                 } else {
                     // -------------------------------------------------------------
