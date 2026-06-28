@@ -13,16 +13,10 @@ public class SpecimenSearchDialog extends JDialog {
     private JLabel statusLabel;
     private JButton searchButton;
 
-    private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
-            "Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
-            "Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
-            "Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
-
-    private final String[] InstCodes = {"*", "GB", "LD", "OHN", "S", "UME", "UPS"};
-
-    private final String[] CSources = {"District(*)", "LocalityVH", "None", "UPS Database", "RT90-coordinates", "RUBIN", "Latitude / Longitude", "Locality", "OHN Database"};
-
-    private final String[] Continents = {"Africa", "Antarctica", "Asia", "Europe", "North America", "Oceania", "South & Central America", "Unknown / Empty"};
+    private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "ï¿½sele lappmark",
+            "ï¿½ngermanland", "Vï¿½sterbotten", "Hï¿½rjedalen", "Medelpad", "Jï¿½mtland", "Hï¿½lsingland", "Dalarna", "Gï¿½strikland",
+            "Uppland", "Vï¿½rmland", "Vï¿½stmanland", "Nï¿½rke", "Sï¿½dermanland", "Dalsland", "Gotland", "ï¿½stergï¿½tland", "Bohuslï¿½n",
+            "Halland", "ï¿½land", "Blekinge", "Skï¿½ne", "Smï¿½land", "Vï¿½stergï¿½tland"};
 
     public SpecimenSearchDialog(Dialog owner, SpecimenService service) {
         super(owner, "Search Specimens", false);

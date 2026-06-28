@@ -29,26 +29,7 @@ public class TNGPointFileLayer extends Layer {
 			super(c);
 			this.name = name;
 		}
-		
-		public double dist(int x, int y) {
-			Coordinate c = new Coordinate(y, x);
-			return  Math.round(distanceTM(c)/100)/10.0; //Math.round(
-		}
-		
-		public String direction(double x, double y) {
-			double v = Math.atan2(getNorth()-y, getEast()-x);
-			String rikt = "";
-			if 	    (v>7*Math.PI/8) rikt = "V";
-			else if (v>5*Math.PI/8) rikt = "NV";
-			else if (v>3*Math.PI/8) rikt = "N";
-			else if (v>1*Math.PI/8) rikt = "NE";
-			else if (v>-1*Math.PI/8) rikt = "E";
-			else if (v>-3*Math.PI/8) rikt = "SE";
-			else if (v>-5*Math.PI/8) rikt = "S";
-			else if (v>-7*Math.PI/8) rikt = "SV";
-	 		return rikt;
-		}
-		
+
 		public String getName() {
 			return name;
 		}
@@ -119,8 +100,8 @@ public class TNGPointFileLayer extends Layer {
 	public Extent getBoundaries() {
 		if (localities.length == 0) return null;
 
-		double minX = Double.MAX_VALUE, maxX = Double.MIN_VALUE;
-		double minY = Double.MAX_VALUE, maxY = Double.MIN_VALUE;
+		double minX = Double.MAX_VALUE, maxX = -Double.MAX_VALUE;
+		double minY = Double.MAX_VALUE, maxY = -Double.MAX_VALUE;
 
 		for (Locality coord : localities) {
 			if (coord.getEast() < minX) minX = coord.getEast();

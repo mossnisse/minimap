@@ -65,17 +65,10 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		String province = "";
 		String district = "";
 
-		Layer provLayer = mapCanvas.layerManager.getLayer("provinser");
-		if (provLayer instanceof TNGPolygonFileLayer provinces) {
-			TNGPolygonFileLayer.Province pr = provinces.inPolygon(c);
-			if (pr != null) province = pr.getName();
-		}
-
-		Layer distrLayer = mapCanvas.layerManager.getLayer("socknar");
-		if (distrLayer instanceof TNGPolygonFileLayer districts) {
-			TNGPolygonFileLayer.Province pr = districts.inPolygon(c);
-			if (pr != null) district = pr.getName();
-		}
+		String provName = TNGPolygonFileLayer.nameAt(mapCanvas, "provinser", c);
+		if (provName != null) province = provName;
+		String distName = TNGPolygonFileLayer.nameAt(mapCanvas, "socknar", c);
+		if (distName != null) district = distName;
 
 		// Logic for Suggesting Name
 		String suggestName = "";
@@ -155,21 +148,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private JLabel addField(String labelText, JComponent field, Container container, SpringLayout layout, int margin, Component topAnchor) {
-		JLabel label = new JLabel(labelText);
-		container.add(label);
-		container.add(field);
-
-		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, container);
-		if (topAnchor == container) {
-			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.NORTH, container);
-		} else {
-			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.SOUTH, topAnchor);
-		}
-
-		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, container);
-		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
-
-		return label;
+		return SpringForm.addRow(labelText, field, container, layout, margin, topAnchor);
 	}
 
 	private void createLocality() {
@@ -184,17 +163,12 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		final String sizeText = locSizeT.getText().trim();
 		final int size;
 		try {
-			size = Integer.parseInt(locSizeT.getText());
+			size = Integer.parseInt(sizeText);
 			if (size < 0) throw new NumberFormatException();
 		} catch (NumberFormatException nfe) {
 			JOptionPane.showMessageDialog(this, "Size must be a positive integer.");
 			return;
 		}
-
-		// Use the coordinate system to transform
-		Coordinate wgs84c = mapCanvas.getCRS().toWGS84(c);
-		Coordinate swerefc = CoordSystem.SWEREF99TM.toProjected(wgs84c);
-		Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
 
 		// Capture all other fields so doInBackground doesn't touch the UI
 		final String distr = districtT.getText().trim();

@@ -1,178 +1,24 @@
 package main.layers;
 
-import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.LinkedHashMap;
-import javax.imageio.ImageIO;
-
-import main.coords.*;
+import main.coords.CoordSystem;
 import main.core.MapCanvas;
-import main.core.Layer;
 import main.geometry.Extent;
 
-public class TopowebLayer extends Layer {
-	private final MapCanvas mapCanvas;
-	private final TileBuffer tileBuffer;
-
+public class TopowebLayer extends TiledLayer {
 	private static final String WMTS_URL = "http://hades.slu.se/lm/topowebb/v1.1/wmts/";
-	private static final java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
 
-	// SWEREF99TM Constants
+	// SWEREF99TM constants
 	private static final int ORIGIN_X = -1200000;
 	private static final int ORIGIN_Y = 8500000;
 	private static final int BASE_TILE_WIDTH = 1048576; // Width at zoom 0 (2^20)
 	private static final int TILEMATRIX_LIMIT = 12;
 
-	public static class TileIndex {
-		public int zoom;
-		public int x; // col
-		public int y; // row
-
-		TileIndex(int zoom, int x, int y) {
-			this.zoom = zoom;
-			this.x = x;
-			this.y = y;
-		}
-
-		public static TileIndex[] getTileIndexes(Extent box, int zoom) {
-			int tileWidth = BASE_TILE_WIDTH / (1 << zoom);
-
-			// Convert SWEREF99TM meters to Tile XY
-			int colMin = (int) Math.floor((box.c1.getEast() - ORIGIN_X) / tileWidth);
-			int colMax = (int) Math.floor((box.c2.getEast() - ORIGIN_X) / tileWidth);
-
-			// Y is inverted (Rows increase South)
-			int rowMin = (int) Math.floor((ORIGIN_Y - box.c2.getNorth()) / tileWidth);
-			int rowMax = (int) Math.floor((ORIGIN_Y - box.c1.getNorth()) / tileWidth);
-
-			// Clamp to valid positive indices
-			colMin = Math.max(colMin, 0);
-			colMax = Math.max(colMax, 0);
-			rowMin = Math.max(rowMin, 0);
-			rowMax = Math.max(rowMax, 0);
-
-			int num = (rowMax - rowMin + 1) * (colMax - colMin + 1);
-			TileIndex[] indexes = new TileIndex[num];
-			int i = 0;
-			for (int r = rowMin; r <= rowMax; r++) {
-				for (int c = colMin; c <= colMax; c++) {
-					indexes[i++] = new TileIndex(zoom, c, r);
-				}
-			}
-			return indexes;
-		}
-
-		@Override
-		public boolean equals(Object o) {
-			if (o == this) return true;
-			if (!(o instanceof TileIndex)) return false;
-			TileIndex tile = (TileIndex) o;
-			return tile.x == this.x && tile.y == this.y && tile.zoom == this.zoom;
-		}
-
-		@Override
-		public int hashCode() {
-			return java.util.Objects.hash(x, y, zoom);
-		}
-
-		@Override
-		public String toString() {
-			return "zoom: " + zoom + " col: " + x + " row: " + y;
-		}
-	}
-
-	private class TileBuffer {
-		private final int MAX_TILES = 1000;
-		private final String CACHE_ROOT = "tile_cache/topowebb";
-		private final java.util.Set<TileIndex> loading = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
-
-		private final java.util.Map<TileIndex, Image> tiles = java.util.Collections.synchronizedMap(
-				new LinkedHashMap<TileIndex, Image>(MAX_TILES, 0.75f, true) {
-					@Override
-					protected boolean removeEldestEntry(java.util.Map.Entry<TileIndex, Image> eldest) {
-						return size() > MAX_TILES;
-					}
-				}
-		);
-
-		public Image getTileOrFetch(TileIndex index) {
-			if (tiles.containsKey(index)) return tiles.get(index);
-
-			File localFile = new File(String.format("%s/%d/%d/%d.png", CACHE_ROOT, index.zoom, index.x, index.y));
-			if (localFile.exists()) {
-				try {
-					Image img = ImageIO.read(localFile);
-					if (img != null) { tiles.put(index, img); return img; }
-				} catch (IOException e) { localFile.delete(); }
-			}
-
-			synchronized (loading) {
-				if (!loading.contains(index) && !tiles.containsKey(index)) {
-					loading.add(index);
-					downloadTileAsync(index, localFile);
-				}
-			}
-			return null;
-		}
-
-		private void downloadTileAsync(TileIndex index, File localFile) {
-			String tileUrl = WMTS_URL + "?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb"
-					+ "&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX=" + index.zoom
-					+ "&TILEROW=" + index.y + "&TILECOL=" + index.x + "&FORMAT=image/png";
-
-			java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-					.uri(java.net.URI.create(tileUrl))
-					.build();
-
-			client.sendAsync(request, java.net.http.HttpResponse.BodyHandlers.ofByteArray())
-					.thenAccept(response -> {
-						if (response.statusCode() == 200) {
-							try {
-								byte[] data = response.body();
-								Image img = ImageIO.read(new java.io.ByteArrayInputStream(data));
-
-								if (img != null) {
-									// Success path
-									localFile.getParentFile().mkdirs();
-									Files.write(localFile.toPath(), data);
-									tiles.put(index, img);
-									mapCanvas.repaint();
-								} else {
-									// The data wasn't a valid image
-									System.err.println("Downloaded data was not a valid image: " + index);
-								}
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-						} else {
-							System.err.println("Hades Server returned: " + response.statusCode());
-						}
-					})
-					.whenComplete((result, throwable) -> {
-						if (throwable != null) {
-							// Log the network error (timeout, etc.)
-							throwable.printStackTrace();
-						}
-						loading.remove(index);
-					});
-		}
-	}
-
 	public TopowebLayer(MapCanvas mapCanvas) {
-		super("Topowebkartan", false, CoordSystem.SWEREF99TM);
-		this.mapCanvas = mapCanvas;
-		tileBuffer = new TileBuffer();
+		super("Topowebkartan", CoordSystem.SWEREF99TM, mapCanvas, "tile_cache/topowebb");
 	}
 
 	@Override
-	public Extent getBoundaries() {
-		return getCRS().getBoundaries();
-	}
-
-	private static int calculateZoom(double xScale) {
+	protected int calculateZoom(double xScale) {
 		double resolution = 1.0 / xScale;
 		int tileWidthMeters = (int) Math.round(resolution * 256);
 
@@ -184,74 +30,40 @@ public class TopowebLayer extends Layer {
 	}
 
 	@Override
-	public void invalidateCache() {
+	protected int[] tileRange(Extent box, int zoom) {
+		int tileWidth = BASE_TILE_WIDTH / (1 << zoom);
 
+		// Convert SWEREF99TM meters to Tile XY (Y is inverted, rows increase South)
+		int colMin = (int) Math.floor((box.c1.getEast() - ORIGIN_X) / tileWidth);
+		int colMax = (int) Math.floor((box.c2.getEast() - ORIGIN_X) / tileWidth);
+		int rowMin = (int) Math.floor((ORIGIN_Y - box.c2.getNorth()) / tileWidth);
+		int rowMax = (int) Math.floor((ORIGIN_Y - box.c1.getNorth()) / tileWidth);
+
+		return new int[]{
+				Math.max(colMin, 0), Math.max(colMax, 0),
+				Math.max(rowMin, 0), Math.max(rowMax, 0)
+		};
 	}
 
 	@Override
-	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
-		int zoom = calculateZoom(xScale);
-		boolean isNative = (mapCanvas.getCRS() == getCRS());
-		Extent srbounds = bounds.convertCRS(mapCanvas.getCRS(), getCRS());
-		TileIndex[] indexes = TileIndex.getTileIndexes(srbounds, zoom);
+	protected double tileSizeMeters(int zoom) {
+		return BASE_TILE_WIDTH / (1 << zoom);
+	}
 
-		// Pre-calculate constants for this render pass
-		int tileWidth = BASE_TILE_WIDTH / (1 << zoom);
+	@Override
+	protected double tileLeftX(int col, int zoom) {
+		return ORIGIN_X + (col * tileSizeMeters(zoom));
+	}
 
-		// Calculate size based on tile dimensions at this zoom
-		int pixelWidth = (int) Math.round(tileWidth * xScale);
-		int pixelHeight = (int) Math.round(tileWidth * Math.abs(yScale));
+	@Override
+	protected double tileTopY(int row, int zoom) {
+		return ORIGIN_Y - (row * tileSizeMeters(zoom));
+	}
 
-		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-
-		for (TileIndex ind : indexes) {
-			Image img = tileBuffer.getTileOrFetch(ind);
-			if (img != null) {
-				// Calculate map coordinates
-				double mapX1 = ORIGIN_X + (ind.x * tileWidth);
-				double mapY2 = ORIGIN_Y - (ind.y * tileWidth); // Top Y
-
-				if (isNative) {
-					// Apply projection/transformation to get screen pixel coordinates
-					int screenX = (int) Math.round((mapX1 * xScale) + xShift);
-					int screenY = (int) Math.round((mapY2 * yScale) + yShift);
-
-					// +1 overlap trick to avoid white gridlines between map tiles
-					g2d.drawImage(img, screenX, screenY, pixelWidth + 1, pixelHeight +  1, null);
-				} else {
-					Coordinate topLeftWM = new Coordinate(mapY2, mapX1);
-					Coordinate topRightWM = new Coordinate(mapY2, mapX1 + tileWidth);
-					Coordinate bottomLeftWM = new Coordinate(mapY2 - tileWidth, mapX1);
-
-					Coordinate tlTarget = getCRS().convertTo(topLeftWM, mapCanvas.getCRS());
-					Coordinate trTarget = getCRS().convertTo(topRightWM, mapCanvas.getCRS());
-					Coordinate blTarget = getCRS().convertTo(bottomLeftWM, mapCanvas.getCRS());
-
-					// Calculate double-precision screen coordinates inline
-					double tlX = (tlTarget.getEast() * xScale) + xShift;
-					double tlY = (tlTarget.getNorth() * yScale) + yShift;
-
-					double trX = (trTarget.getEast() * xScale) + xShift;
-					double trY = (trTarget.getNorth() * yScale) + yShift;
-
-					double blX = (blTarget.getEast() * xScale) + xShift;
-					double blY = (blTarget.getNorth() * yScale) + yShift;
-
-					// Derive the AffineTransform Matrix
-					// Tile images are strictly 256x256 pixels
-					// We divide by 255.5 instead of 256.0 to force a 0.5px overlap and kill white seams
-					double tilePx = 255.5;
-
-					double m00 = (trX - tlX) / tilePx; // Scale X & Skew X
-					double m10 = (trY - tlY) / tilePx; // Shear Y
-					double m01 = (blX - tlX) / tilePx; // Shear X
-					double m11 = (blY - tlY) / tilePx; // Scale Y & Skew Y
-
-					AffineTransform transform = new AffineTransform(m00, m10, m01, m11, tlX, tlY);
-
-					g2d.drawImage(img, transform, null);
-				}
-			}
-		}
+	@Override
+	protected String tileUrl(int zoom, int col, int row) {
+		return WMTS_URL + "?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=topowebb"
+				+ "&STYLE=default&TILEMATRIXSET=3006&TILEMATRIX=" + zoom
+				+ "&TILEROW=" + row + "&TILECOL=" + col + "&FORMAT=image/png";
 	}
 }

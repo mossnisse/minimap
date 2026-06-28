@@ -1,13 +1,9 @@
 package main.core;
 
-import main.layers.H2TableLayer;
-import main.layers.MYSQLTableLayer;
-import main.layers.TNGPolygonFileLayer;
-import main.layers.TopowebLayer;
+import main.layers.LayerFactory;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import javax.swing.*;
-import java.awt.*;
 
 public class LayerManager {
     private volatile CopyOnWriteArrayList<Layer> layers = new CopyOnWriteArrayList<>();
@@ -21,37 +17,11 @@ public class LayerManager {
 
     private void initialize() {
         try {
-            MYSQLTableLayer md = new MYSQLTableLayer(mapCanvas);
-            md.setColor(Color.BLACK);
-            md.setName("LokalDB");
-            md.setHidden(false);
-            md.setMaxZoomL(40);
-            md.setRepaintCallback(() ->
-                    // Force the map to redraw on the Swing thread when data arrives
-                    SwingUtilities.invokeLater(mapCanvas::repaint)
-            );
-            addLayerBottom(md);
-
-            H2TableLayer od = new H2TableLayer("ortnamnSWTM", mapCanvas);
-            od.setColor(Color.BLACK);
-            od.setName("Ortnamnsdb");
-            od.setMaxZoomL(5);
-            addLayerBottom(od);
-
-            TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", mapCanvas);
-            prFile.setColor(Color.BLACK);
-            prFile.setName("provinser");
-            addLayerBottom(prFile);
-
-            TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", mapCanvas);
-            socFile.setColor(Color.RED);
-            socFile.setName("socknar");
-            addLayerBottom(socFile);
-
-            TopowebLayer tb = new TopowebLayer(mapCanvas);
-            tb.setName("TopoWeb");
-            addLayerBottom(tb);
-
+            addLayerBottom(LayerFactory.lokalDB(mapCanvas));
+            addLayerBottom(LayerFactory.ortnamn(mapCanvas));
+            addLayerBottom(LayerFactory.provinser(mapCanvas));
+            addLayerBottom(LayerFactory.socknar(mapCanvas));
+            addLayerBottom(LayerFactory.topoweb(mapCanvas));
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -19,7 +19,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MYSQLTableLayer extends Layer {
     private final MapCanvas mapCanvas;
-	private Integer selectedLocalityID = null;
 	private static final Font LABEL_FONT = new Font("SansSerif", Font.PLAIN, 20);
 
 	// Volatile ensures the new list is immediately visible to the drawing thread
@@ -108,15 +107,6 @@ public class MYSQLTableLayer extends Layer {
 		});
 	}
 
-	// point should be in world coordinate
-	public void selectNearest(Coordinate c) {
-		// We search within a "tolerance" (e.g., 10 pixels converted to world units)
-		int tolerance = 1000 ;
-		this.selectedLocalityID = findNearest(c, tolerance);
-
-		// The canvas should repaint after calling this
-	}
-
 	public int findNearest(Coordinate c, int limitInMeters) {
 		// Ensure we are working with WGS84 for DB comparison
 		Coordinate clickWgs84 = mapCanvas.getCRS().toWGS84(c);
@@ -199,24 +189,13 @@ public class MYSQLTableLayer extends Layer {
 
 			if (clipBounds != null && !clipBounds.contains(x, y)) continue;
 
-			// Calculate metric radius once for both branches
+			// Metric radius of the locality's coordinate precision
 			double k = mapCanvas.getCRS().getScaleFactor(rec.c);
 			int r = (int) Math.round(rec.precision * k * xScale);
 
-			if (selectedLocalityID != null && rec.id == selectedLocalityID) {
-				g2d.setColor(getColor());
-				g2d.setStroke(new BasicStroke(2));
-				g2d.drawOval(x - 8, y - 8, 16, 16);
-
-				if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
-
-				g2d.drawString(rec.name, x + 10, y);
-				g2d.setStroke(new BasicStroke(1));
-			} else {
-				g2d.drawOval(x - 3, y - 3, 6, 6);
-				if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
-				if (xScale > 0.02) g2d.drawString(rec.name, x + 5, y);
-			}
+			g2d.drawOval(x - 3, y - 3, 6, 6);
+			if (r > 1) g2d.drawOval(x - r, y - r, r * 2, r * 2);
+			if (xScale > 0.02) g2d.drawString(rec.name, x + 5, y);
 		}
 		g2d.setFont(old);
 	}

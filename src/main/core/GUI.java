@@ -201,9 +201,9 @@ public class GUI  {
 		menuItem9.addActionListener(e->searchSpecimens());
 		menu2.add(menuItem9);
 
-		menuItem10 = new JMenuItem("Edit locality at marker", KeyEvent.VK_T);
+		menuItem10 = new JMenuItem("Edit locality at marker", KeyEvent.VK_J);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
+		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_J, InputEvent.CTRL_DOWN_MASK));
 		menuItem10.addActionListener(e->showLocalityAtCoord());
 		menu2.add(menuItem10);
 		
@@ -232,7 +232,7 @@ public class GUI  {
 		menuItem1.addActionListener(e->addSocknar());
 		menu3.add(menuItem1);
 
-		menuItem1 = new JMenuItem("Add Lantmäteriet ortnamn Layer");
+		menuItem1 = new JMenuItem("Add Lantmï¿½teriet ortnamn Layer");
 		menuItem1.addActionListener(e->addOrtnamn());
 		menu3.add(menuItem1);
 
@@ -307,7 +307,7 @@ public class GUI  {
 			try {
 				RasterFileLayer rFile = new RasterFileLayer(file.getPath(), mapCanvas);
 				mapCanvas.layerManager.addLayerTop(rFile);
-				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
+				//JOptionPane.showMessageDialog(null, "ï¿½ppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(null, "Can't open the file: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
@@ -346,52 +346,31 @@ public class GUI  {
 	}
 
 	public void addTopowebkartan() {
-		TopowebLayer tb = new TopowebLayer(mapCanvas);
-		tb.setName("TopoWeb");
+		TopowebLayer tb = LayerFactory.topoweb(mapCanvas);
 		mapCanvas.setCRS(tb.getCRS());
 		mapCanvas.layerManager.addLayerBottom(tb);
 	}
 
 	public void addOSM() {
-		OSMLayer osm = new OSMLayer(mapCanvas);
-		osm.setName("Open Street Map");
+		OSMLayer osm = LayerFactory.osm(mapCanvas);
 		mapCanvas.setCRS(osm.getCRS());
 		mapCanvas.layerManager.addLayerBottom(osm);
 	}
 
 	public void addLandskap() {
-		TNGPolygonFileLayer prFile = new TNGPolygonFileLayer("provinserSWEREF99TM.tng", mapCanvas);
-		prFile.setColor(Color.BLACK);
-		prFile.setName("provinser");
-		mapCanvas.layerManager.addLayerTop(prFile);
+		mapCanvas.layerManager.addLayerTop(LayerFactory.provinser(mapCanvas));
 	}
 
 	public void addSocknar() {
-		TNGPolygonFileLayer socFile = new TNGPolygonFileLayer("socknarSWEREF99TM.tng", mapCanvas);
-		socFile.setColor(Color.RED);
-		socFile.setName("socknar");
-		mapCanvas.layerManager.addLayerTop(socFile);
+		mapCanvas.layerManager.addLayerTop(LayerFactory.socknar(mapCanvas));
 	}
 
 	public void addOrtnamn() {
-		H2TableLayer od = new H2TableLayer("ortnamnSWTM", mapCanvas);
-		od.setColor(Color.BLACK);
-		od.setName("Ortnamnsdb");
-		od.setMaxZoomL(5);
-		mapCanvas.layerManager.addLayerTop(od);
+		mapCanvas.layerManager.addLayerTop(LayerFactory.ortnamn(mapCanvas));
 	}
 
 	public void addLocalityLayer() {
-		MYSQLTableLayer md = new MYSQLTableLayer(mapCanvas);
-		md.setColor(Color.BLACK);
-		md.setName("LokalDB");
-		md.setHidden(false);
-		md.setMaxZoomL(40);
-		md.setRepaintCallback(() ->
-				// Force the map to redraw on the Swing thread when data arrives
-				SwingUtilities.invokeLater(() -> mapCanvas.repaint())
-		);
-		mapCanvas.layerManager.addLayerTop(md);
+		mapCanvas.layerManager.addLayerTop(LayerFactory.lokalDB(mapCanvas));
 	}
 
 	public void saveCSV() {
@@ -482,7 +461,7 @@ public class GUI  {
 						"Press d and click on the map to show distance and direction\n" +
 						"Press g and click on the map for the distance tool\n" +
 						"in Link specimen mark text and\n" +
-						"Ctr+F for search locality in the locality db and a Lantmäteriets ortnamn db\n" +
+						"Ctr+F for search locality in the locality db and a Lantmï¿½teriets ortnamn db\n" +
 						"Ctr+B for search in Ortnamnsregistret\n" +
 						"Ctr+L copy data from last saved link";
 

@@ -166,25 +166,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private JLabel addField(String labelText, Component field, Container container, SpringLayout layout, int margin, Component topAnchor) {
-		JLabel label = new JLabel(labelText);
-		container.add(label);
-		container.add(field);
-
-		// Label Constraints: Use 'container' as the anchor, not 'this'
-		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, container);
-
-		// Logic to handle the very first field vs subsequent fields
-		if (topAnchor == container) {
-			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.NORTH, container);
-		} else {
-			layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.SOUTH, topAnchor);
-		}
-
-		// Field Constraints (Align to a fixed column at x=120)
-		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, container);
-		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
-
-		return label;
+		return SpringForm.addRow(labelText, field, container, layout, margin, topAnchor);
 	}
 
 	private void loadData() {

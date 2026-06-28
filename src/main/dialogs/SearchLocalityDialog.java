@@ -9,8 +9,6 @@ import main.layers.TNGPointFileLayer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.io.Serial;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,15 +17,15 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import javax.swing.*;
 
-public class SearchLocalityDialog extends JDialog implements ActionListener, ItemListener {
+public class SearchLocalityDialog extends JDialog implements ActionListener {
 	@Serial
 	private static final long serialVersionUID = 5830869660497471486L;
 	private final MapCanvas mapCanvas;
 	private final GUI gui;
-	private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
-			"Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
-			"Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
-			"Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
+	private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "ï¿½sele lappmark",
+			"ï¿½ngermanland", "Vï¿½sterbotten", "Hï¿½rjedalen", "Medelpad", "Jï¿½mtland", "Hï¿½lsingland", "Dalarna", "Gï¿½strikland",
+			"Uppland", "Vï¿½rmland", "Vï¿½stmanland", "Nï¿½rke", "Sï¿½dermanland", "Dalsland", "Gotland", "ï¿½stergï¿½tland", "Bohuslï¿½n",
+			"Halland", "ï¿½land", "Blekinge", "Skï¿½ne", "Smï¿½land", "Vï¿½stergï¿½tland"};
 	private final int[] provnr = {-1, 27, 25,26,28,24,29,22,23,19,20,21,18,17,16,13,12,14,10,9,11,15,6,8,5,3,2,1,4,7};
 
 	private record SearchResult(Coordinate coord, String label, int id) {}
@@ -111,15 +109,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 	}
 
 	private JLabel addField(String labelText, Component field, Container container, SpringLayout layout, int margin, Component topAnchor) {
-		JLabel label = new JLabel(labelText);
-		container.add(label);
-		container.add(field);
-		layout.putConstraint(SpringLayout.WEST, label, 10, SpringLayout.WEST, container);
-		if (topAnchor == container) layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.NORTH, container);
-		else layout.putConstraint(SpringLayout.NORTH, label, margin, SpringLayout.SOUTH, topAnchor);
-		layout.putConstraint(SpringLayout.WEST, field, 120, SpringLayout.WEST, container);
-		layout.putConstraint(SpringLayout.NORTH, field, 0, SpringLayout.NORTH, label);
-		return label;
+		return SpringForm.addRow(labelText, field, container, layout, margin, topAnchor);
 	}
 
 	private void performSearch() {
@@ -190,7 +180,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 
 								// Convert from H2's SWEREF99TM to whatever the canvas currently uses
 								Coordinate c = CoordSystem.SWEREF99TM.convertTo(new Coordinate(north, east), targetCRS);
-								String label = result.getString(3) + ", " + result.getString(4) + " (Lantmäteriet)";
+								String label = result.getString(3) + ", " + result.getString(4) + " (Lantmï¿½teriet)";
 
 								// ID is -1 because these are from the H2 file, not the editable MySQL DB
 								results.add(new SearchResult(c, label, -1));
@@ -375,8 +365,6 @@ public class SearchLocalityDialog extends JDialog implements ActionListener, Ite
 		else if (e.getSource() == zoomb && lastResults != null) mapCanvas.setBounds(lastResults.getBoundaries().expand(2000));
 		else if (e.getSource() == closeb) dispose();
 	}
-
-	@Override public void itemStateChanged(ItemEvent e) {}
 
 	public int getProvinsNr() {
 		String provstr = (String) provinceBox.getSelectedItem();

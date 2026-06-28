@@ -70,15 +70,12 @@ public class LayerPropertiesDialog extends JDialog {
         panel.add(new JLabel("Min Zoom Level:"), gbc);
         gbc.gridx = 1;
         minZoomSpin = new JSpinner(new SpinnerNumberModel(layer.getMinZoom(), 0, 100, 1));
-        // Note: You need to add getMinZoom to your Layer class
-        // minZoomSpin.setValue(layer.getMinZoom());
         panel.add(minZoomSpin, gbc);
 
         gbc.gridx = 0; gbc.gridy = 4;
         panel.add(new JLabel("Max Zoom Level:"), gbc);
         gbc.gridx = 1;
         maxZoomSpin = new JSpinner(new SpinnerNumberModel(layer.getMaxZoom(), 0, 100, 1));
-        // maxZoomSpin.setValue(layer.getMaxZoom());
         panel.add(maxZoomSpin, gbc);
 
         // Row 5: Buttons

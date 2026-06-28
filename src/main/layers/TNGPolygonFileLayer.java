@@ -15,7 +15,6 @@ import main.shapeFile.DataInputStreamSE;
 public class TNGPolygonFileLayer extends Layer {
 	private final String fileName;
 	private final MapCanvas mapCanvas;
-	private int nameLength;
 	private Province[] provinces;
 	static final Stroke LINE_STROKE = new BasicStroke(1.5f);
 
@@ -61,7 +60,7 @@ public class TNGPolygonFileLayer extends Layer {
 			int shapeType = in.readInt();
 			if (shapeType != 5) throw new IOException("wrong shape type");
 			int nrRecords = in.readInt();
-			nameLength = in.readInt();
+			int nameLength = in.readInt();
 			provinces = new Province[nrRecords];
 			for (int i = 0; i < nrRecords; i++) {
 				String name = in.readStringUTF8(nameLength).trim();  // length +2 stupid java adds a couple of bytes
@@ -96,11 +95,6 @@ public class TNGPolygonFileLayer extends Layer {
 		}
 	}
 	
-	public Province[] getProvinces()
-	{
-		return provinces;
-	}
-
 	public Province inPolygon(Coordinate c) {
 		for (Province pr: provinces) {
 			if(pr.isInside(c)) return pr;
@@ -108,10 +102,30 @@ public class TNGPolygonFileLayer extends Layer {
 		return null;
 	}
 
+	/** Name of the polygon in the named layer that contains {@code c}, or null. */
+	public static String nameAt(MapCanvas mapCanvas, String layerName, Coordinate c) {
+		if (mapCanvas.layerManager.getLayer(layerName) instanceof TNGPolygonFileLayer layer) {
+			Province p = layer.inPolygon(c);
+			if (p != null) return p.getName();
+		}
+		return null;
+	}
+
 	@Override
 	public Extent getBoundaries() {
-		//Todo: implement the method
-		return null;
+		if (provinces == null || provinces.length == 0) return null;
+
+		double minE = Double.MAX_VALUE, maxE = -Double.MAX_VALUE;
+		double minN = Double.MAX_VALUE, maxN = -Double.MAX_VALUE;
+
+		for (Province pr : provinces) {
+			Extent box = pr.getBoundingBox();
+			minE = Math.min(minE, Math.min(box.c1.getEast(), box.c2.getEast()));
+			maxE = Math.max(maxE, Math.max(box.c1.getEast(), box.c2.getEast()));
+			minN = Math.min(minN, Math.min(box.c1.getNorth(), box.c2.getNorth()));
+			maxN = Math.max(maxN, Math.max(box.c1.getNorth(), box.c2.getNorth()));
+		}
+		return new Extent(minN, minE, maxN, maxE);
 	}
 
 	@Override

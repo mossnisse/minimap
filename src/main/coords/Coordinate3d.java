@@ -70,7 +70,7 @@ public class Coordinate3d {
                 (p - e2 * a * Math.pow(Math.cos(th), 3))
         );
 
-        double n = a / Math.sqrt(1 - e2 * Math.pow(Math.sin(latRad), 1));
+        double n = a / Math.sqrt(1 - e2 * Math.sin(latRad) * Math.sin(latRad));
         double height = (p / Math.cos(latRad)) - n;
 
         return new Coordinate3d(

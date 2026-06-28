@@ -87,7 +87,7 @@ public enum CoordSystem {
     }
 
     public Extent getBoundaries() {
-        return new Extent(nMax, eMax, nMin, eMax);
+        return new Extent(nMax, eMax, nMin, eMin);
     }
 
     public double getScaleFactor(Coordinate c) {

@@ -19,17 +19,12 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 	private static final long serialVersionUID = 1L;
 	private final JTextField north, east, coordinateSys, swerefF, rt90F, wgs84F, provinceF, districtF, rubinF;
 	private final JOptionPane optionPane;
-	private final TNGPolygonFileLayer provinces, districts;
 	private final MapCanvas mapCanvas;
 
 	public MarkCoordinateDialog(Frame aFrame, MapCanvas mapCanvas) {
 		super(aFrame, false);
 		setTitle("Mark Coordinate");
 		this.mapCanvas = mapCanvas;
-
-		// Safely fetch layers
-		provinces = (mapCanvas.layerManager.getLayer("provinser") instanceof TNGPolygonFileLayer l) ? l : null;
-		districts = (mapCanvas.layerManager.getLayer("socknar") instanceof TNGPolygonFileLayer l) ? l : null;
 
 		// Input fields
 		north = new JTextField(15);
@@ -171,22 +166,10 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		Coordinate cavasCoord = mapCanvas.getCRS().toProjected(wgs84);
 		mapCanvas.focus(cavasCoord);
 		mapCanvas.setCoordinate(cavasCoord);
-		if (provinces!= null) {
-			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
-			if (pr != null) {
-				provinceF.setText(pr.getName());
-			} else {
-				provinceF.setText("outside the layer");
-			}
-		}
-		if (districts != null) {
-			TNGPolygonFileLayer.Province so = districts.inPolygon(sweref);
-			if (so != null) {
-				districtF.setText(so.getName());
-			} else {
-				districtF.setText("outside the layer");
-			}
-		}
+		String prov = TNGPolygonFileLayer.nameAt(mapCanvas, "provinser", sweref);
+		provinceF.setText(prov != null ? prov : "outside the layer");
+		String dist = TNGPolygonFileLayer.nameAt(mapCanvas, "socknar", sweref);
+		districtF.setText(dist != null ? dist : "outside the layer");
 	}
 
 	@Override

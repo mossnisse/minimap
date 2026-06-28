@@ -96,9 +96,6 @@ public class Specimen {
     public String getRubin() { return rubin; }
     public String getRiketsN() { return riketsN; }
     public String getRiketsO() { return riketsO; }
-    public String getRT90() {
-        return (riketsN != null && !riketsN.isEmpty()) ? riketsN + ", " + riketsO : "";
-    }
     public String getSweref() {
         return (swerefN > 0) ? swerefN + ", " + swerefE : "";
     }

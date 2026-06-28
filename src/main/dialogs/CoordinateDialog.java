@@ -23,21 +23,11 @@ public class CoordinateDialog extends JDialog {
 		UTM utm = UTM.fromWGS84(wgs84);
 		String mgrs = utm.toMGRS();
 
-		// Get Layers
-		String prov = "outside layer";
-		String dist = "outside layer";
-		TNGPolygonFileLayer provinces = (TNGPolygonFileLayer) mapCanvas.layerManager.getLayer("provinser");
-		TNGPolygonFileLayer districts = (TNGPolygonFileLayer) mapCanvas.layerManager.getLayer("socknar");
-
-		if (provinces != null) {
-			TNGPolygonFileLayer.Province pr = provinces.inPolygon(sweref);
-			if (pr != null) prov = pr.getName();
-		}
-
-		if (districts != null) {
-			TNGPolygonFileLayer.Province di = districts.inPolygon(sweref);
-			if (di != null) dist = di.getName();
-		}
+		// Look up which province/district polygon the point falls in
+		String prov = TNGPolygonFileLayer.nameAt(mapCanvas, "provinser", sweref);
+		String dist = TNGPolygonFileLayer.nameAt(mapCanvas, "socknar", sweref);
+		if (prov == null) prov = "outside layer";
+		if (dist == null) dist = "outside layer";
 
 		// Main container with some padding
 		JPanel panel = new JPanel(new SpringLayout());
