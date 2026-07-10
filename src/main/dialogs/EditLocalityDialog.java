@@ -247,7 +247,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					bridgeDialog.invalidateLocalityList();
 				}
 
-				mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
+				MapLayers.refreshLocalities(mapCanvas);
 				this.dispose();
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -331,8 +331,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 							bridgeDialog.invalidateLocalityList();
 						}
 
-						mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
-						mapCanvas.repaint();
+						MapLayers.refreshLocalities(mapCanvas);
 						dispose();
 					}
 				} catch (Exception e) {

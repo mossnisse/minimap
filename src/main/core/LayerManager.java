@@ -1,8 +1,5 @@
 package main.core;
 
-import main.layers.LayerFactory;
-import main.layers.MapLayers;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,19 +16,6 @@ public class LayerManager {
 
     LayerManager(MapCanvas mapCanvas) {
         this.mapCanvas = mapCanvas;
-        initialize();
-    }
-
-    private void initialize() {
-        try {
-            addLayerBottom(MapLayers.LOKAL_DB, LayerFactory.lokalDB(mapCanvas));
-            addLayerBottom(MapLayers.ORTNAMN, LayerFactory.ortnamn(mapCanvas));
-            addLayerBottom(MapLayers.PROVINSER, LayerFactory.provinser(mapCanvas));
-            addLayerBottom(MapLayers.SOCKNAR, LayerFactory.socknar(mapCanvas));
-            addLayerBottom(LayerFactory.topoweb(mapCanvas));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     public void addLayersChangedListener(Runnable listener) {

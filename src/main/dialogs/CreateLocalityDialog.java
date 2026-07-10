@@ -229,8 +229,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 			bridgeDialog.invalidateLocalityList();
 		}
 
-		mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
-		mapCanvas.repaint();
+		MapLayers.refreshLocalities(mapCanvas);
 	}
 
 	@Override

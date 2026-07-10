@@ -33,6 +33,7 @@ public class GUI  {
 		frame = new JFrame("Minimap");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		mapCanvas = new MapCanvas();
+		MapLayers.installDefaultLayers(mapCanvas, ctx);
 
 		// Setup Menus and Content
 		frame.setJMenuBar(createMenuBar());
@@ -353,31 +354,31 @@ public class GUI  {
 	}
 
 	public void addTopowebkartan() {
-		TopowebLayer tb = LayerFactory.topoweb(mapCanvas);
+		TopowebLayer tb = MapLayers.topoweb(mapCanvas);
 		mapCanvas.setCRS(tb.getCRS());
 		mapCanvas.layerManager.addLayerBottom(tb);
 	}
 
 	public void addOSM() {
-		OSMLayer osm = LayerFactory.osm(mapCanvas);
+		OSMLayer osm = MapLayers.osm(mapCanvas);
 		mapCanvas.setCRS(osm.getCRS());
 		mapCanvas.layerManager.addLayerBottom(osm);
 	}
 
 	public void addLandskap() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.PROVINSER, LayerFactory.provinser(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.PROVINSER, MapLayers.provinser(mapCanvas));
 	}
 
 	public void addSocknar() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.SOCKNAR, LayerFactory.socknar(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.SOCKNAR, MapLayers.socknar(mapCanvas));
 	}
 
 	public void addOrtnamn() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.ORTNAMN, LayerFactory.ortnamn(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.ORTNAMN, MapLayers.ortnamn(mapCanvas, ctx.placeNames));
 	}
 
 	public void addLocalityLayer() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.LOKAL_DB, LayerFactory.lokalDB(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.LOKAL_DB, MapLayers.lokalDb(mapCanvas, ctx.localities));
 	}
 
 	public void saveCSV() {
