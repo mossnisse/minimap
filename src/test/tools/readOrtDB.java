@@ -11,10 +11,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Vector;
 import org.h2.jdbcx.JdbcDataSource;
-import main.shapeFile.DataInputStreamSE;
-import main.shapeFile.FieldDescriptor;
-import main.shapeFile.PointESRI;
-import main.shapeFile.dbfRecord;
+import gis.shapefile.DataInputStreamSE;
+import gis.shapefile.FieldDescriptor;
+import gis.shapefile.PointESRI;
+import gis.shapefile.dbfRecord;
 
 public class readOrtDB {
 		private final String fileName;

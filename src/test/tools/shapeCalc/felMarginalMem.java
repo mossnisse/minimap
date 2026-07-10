@@ -2,11 +2,11 @@ package shapeCalc;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Iterator;
-import main.shapeFile.PointESRI;
-import main.shapeFile.PolygonESRI;
-import main.shapeFile.ReccordESRI;
-import main.shapeFile.dbfRecord;
-import main.shapeFile.shapeReader;
+import gis.shapefile.PointESRI;
+import gis.shapefile.PolygonESRI;
+import gis.shapefile.ReccordESRI;
+import gis.shapefile.dbfRecord;
+import gis.shapefile.shapeReader;
 
 public class felMarginalMem {
 	static void main(String[] args) {

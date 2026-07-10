@@ -1,7 +1,7 @@
 package test.coords;
 
-import main.coords.CoordSystem;
-import main.coords.Coordinate;
+import gis.coords.CoordSystem;
+import gis.coords.Coordinate;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;

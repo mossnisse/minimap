@@ -3,10 +3,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.Vector;
-import main.shapeFile.PointESRI;
-import main.shapeFile.PolygonESRI;
-import main.shapeFile.dbfRecord;
-import main.shapeFile.shapeFile;
+import gis.shapefile.PointESRI;
+import gis.shapefile.PolygonESRI;
+import gis.shapefile.dbfRecord;
+import gis.shapefile.shapeFile;
 
 public class felMarginal {
 	static void main(String[] args) {

@@ -1,8 +1,8 @@
 package test.coords;
 
-import main.coords.Coordinate;
-import main.coords.MGRS;
-import main.coords.UTM;
+import gis.coords.Coordinate;
+import gis.coords.MGRS;
+import gis.coords.UTM;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
