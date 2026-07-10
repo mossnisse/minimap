@@ -1,23 +1,27 @@
 package main.core;
 
 import main.dialogs.PasswDialog;
+import main.dialogs.SpecimenService;
 import main.repo.LocalityRepository;
 import main.repo.PlaceNameRepository;
 
 /**
- * Composition root: wires the databases and repositories the app runs on.
- * Created once at startup by {@link GUI}; dialogs receive the repositories
- * they need from here instead of reaching into layers or static state.
+ * Composition root: wires the databases, repositories and services the app
+ * runs on. Created once at startup by {@link GUI}; dialogs receive the
+ * dependencies they need from here instead of reaching into layers or
+ * static state.
  */
 public final class AppContext {
 	public final Database db;
 	public final LocalityRepository localities;
 	public final PlaceNameRepository placeNames;
+	public final SpecimenService specimens;
 
 	private AppContext(Database db) {
 		this.db = db;
 		this.localities = new LocalityRepository(db);
 		this.placeNames = new PlaceNameRepository(db);
+		this.specimens = new SpecimenService(db);
 	}
 
 	public static AppContext create() {
@@ -25,7 +29,6 @@ public final class AppContext {
 			String input = new PasswDialog().open();
 			return "codeCancel".equals(input) ? null : input;
 		});
-		DBConnection.install(db);
 		return new AppContext(db);
 	}
 }

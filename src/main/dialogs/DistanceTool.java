@@ -51,7 +51,7 @@ public class DistanceTool extends MouseAdapter {
                     direction
             );
 
-            mapCanvas.layerManager.setOverlay(overlayKey, layer);
+            mapCanvas.getLayerManager().setOverlay(overlayKey, layer);
 
             // Show result to user
             JOptionPane.showMessageDialog(mapCanvas,
@@ -59,7 +59,7 @@ public class DistanceTool extends MouseAdapter {
 
             // Reset for next measurement
             startCoord = null;
-            mapCanvas.layerManager.removeOverlay(overlayKey);
+            mapCanvas.getLayerManager().removeOverlay(overlayKey);
             mapCanvas.repaint();
         }
     }

@@ -314,7 +314,7 @@ public class GUI  {
 			//System.out.println("Open: " + file.getName());
 			try {
 				RasterFileLayer rFile = new RasterFileLayer(file.getPath(), mapCanvas);
-				mapCanvas.layerManager.addLayerTop(rFile);
+				mapCanvas.getLayerManager().addLayerTop(rFile);
 				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();
@@ -344,7 +344,7 @@ public class GUI  {
 				GPXFileLayer l = new GPXFileLayer(file.getCanonicalPath(), mapCanvas);
 				l.setColor(Color.BLUE);
 				l.setName(file.getName());
-				mapCanvas.layerManager.addLayerTop(l);
+				mapCanvas.getLayerManager().addLayerTop(l);
 				mapCanvas.repaint();
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -356,29 +356,29 @@ public class GUI  {
 	public void addTopowebkartan() {
 		TopowebLayer tb = MapLayers.topoweb(mapCanvas);
 		mapCanvas.setCRS(tb.getCRS());
-		mapCanvas.layerManager.addLayerBottom(tb);
+		mapCanvas.getLayerManager().addLayerBottom(tb);
 	}
 
 	public void addOSM() {
 		OSMLayer osm = MapLayers.osm(mapCanvas);
 		mapCanvas.setCRS(osm.getCRS());
-		mapCanvas.layerManager.addLayerBottom(osm);
+		mapCanvas.getLayerManager().addLayerBottom(osm);
 	}
 
 	public void addLandskap() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.PROVINSER, MapLayers.provinser(mapCanvas));
+		mapCanvas.getLayerManager().addLayerTop(MapLayers.PROVINSER, MapLayers.provinser(mapCanvas));
 	}
 
 	public void addSocknar() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.SOCKNAR, MapLayers.socknar(mapCanvas));
+		mapCanvas.getLayerManager().addLayerTop(MapLayers.SOCKNAR, MapLayers.socknar(mapCanvas));
 	}
 
 	public void addOrtnamn() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.ORTNAMN, MapLayers.ortnamn(mapCanvas, ctx.placeNames));
+		mapCanvas.getLayerManager().addLayerTop(MapLayers.ORTNAMN, MapLayers.ortnamn(mapCanvas, ctx.placeNames));
 	}
 
 	public void addLocalityLayer() {
-		mapCanvas.layerManager.addLayerTop(MapLayers.LOKAL_DB, MapLayers.lokalDb(mapCanvas, ctx.localities));
+		mapCanvas.getLayerManager().addLayerTop(MapLayers.LOKAL_DB, MapLayers.lokalDb(mapCanvas, ctx.localities));
 	}
 
 	public void saveCSV() {
@@ -422,7 +422,7 @@ public class GUI  {
 			RubinLayer r = new RubinLayer(s.trim(), mapCanvas, "Rubin", Color.green);
 			Coordinate c = r.getMiddle();
 			if (c != null) {
-				mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
+				mapCanvas.getLayerManager().setOverlay(MapLayers.RUBIN_MARKER, r);
 				mapCanvas.focus(c);
 				mapCanvas.repaint();
 			} else {
@@ -437,7 +437,7 @@ public class GUI  {
 		Coordinate c = mapCanvas.translatePoint(e.getPoint());
 		String rubin = RUBIN.fromSweref99TM(c);
 		RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.green);
-		mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
+		mapCanvas.getLayerManager().setOverlay(MapLayers.RUBIN_MARKER, r);
 	}
 
 	public void distanceAtCoord() {
@@ -545,8 +545,7 @@ public class GUI  {
 			return; // Exit the method so we don't create a duplicate
 		}
 
-		SpecimenService service = new SpecimenService();
-		bridgeDialog = new SpecimenBridgeDialog(frame, this, service, mapCanvas, ctx);
+		bridgeDialog = new SpecimenBridgeDialog(frame, this, ctx.specimens, mapCanvas, ctx);
 
 		bridgeDialog.addWindowListener(new WindowAdapter() {
 			@Override

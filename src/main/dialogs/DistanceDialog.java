@@ -99,7 +99,7 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 			DistanceLayer distLayer = new DistanceLayer(mapCanvas, "Distance", origin, distVal, dir);
 			distLayer.setColor(Color.RED);
 
-			mapCanvas.layerManager.setOverlay(overlayKey, distLayer);
+			mapCanvas.getLayerManager().setOverlay(overlayKey, distLayer);
 			mapCanvas.repaint();
 			return true;
 		} catch (NumberFormatException ex) {

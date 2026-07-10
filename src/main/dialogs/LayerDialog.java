@@ -28,7 +28,7 @@ public class LayerDialog extends JDialog {
 		// Use a ListModel to handle the data
 		listModel = new DefaultListModel<>();
 
-		List<Layer> layers = mapCanvas.layerManager.getLayers();
+		List<Layer> layers = mapCanvas.getLayerManager().getLayers();
 		for (int i = layers.size() - 1; i >= 0; i--) {
 			listModel.addElement(layers.get(i));
 		}
@@ -64,13 +64,13 @@ public class LayerDialog extends JDialog {
 
 		// Register the listener to refresh the UI
 		final Runnable layersChangedListener = this::refreshListModel;
-		mapCanvas.layerManager.addLayersChangedListener(layersChangedListener);
+		mapCanvas.getLayerManager().addLayersChangedListener(layersChangedListener);
 
 		// Crucial: Remove the listener when dialog is closed to avoid memory leaks
 		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosed(java.awt.event.WindowEvent e) {
-				mapCanvas.layerManager.removeLayersChangedListener(layersChangedListener);
+				mapCanvas.getLayerManager().removeLayersChangedListener(layersChangedListener);
 			}
 		});
 
@@ -108,7 +108,7 @@ public class LayerDialog extends JDialog {
 		Layer selected = layerList.getSelectedValue(); // Save current selection
 		listModel.clear();
 
-		java.util.List<Layer> currentLayers = new java.util.ArrayList<>(mapCanvas.layerManager.getLayers());
+		java.util.List<Layer> currentLayers = new java.util.ArrayList<>(mapCanvas.getLayerManager().getLayers());
 
 		for (int i = currentLayers.size() - 1; i >= 0; i--) {
 			listModel.addElement(currentLayers.get(i));
@@ -136,7 +136,7 @@ public class LayerDialog extends JDialog {
 		if (l != null) {
 			int confirm = JOptionPane.showConfirmDialog(this, "Delete layer: " + l.getName() + "?");
 			if (confirm == JOptionPane.YES_OPTION) {
-				mapCanvas.layerManager.delLayer(l);
+				mapCanvas.getLayerManager().delLayer(l);
 				listModel.removeElement(l);
 				mapCanvas.repaint();
 			}
@@ -214,7 +214,7 @@ public class LayerDialog extends JDialog {
 				}
 
 				// Push to Manager
-				mapCanvas.layerManager.setLayerOrder(newDataOrder);
+				mapCanvas.getLayerManager().setLayerOrder(newDataOrder);
 
 				return true;
 			} catch (Exception e) {

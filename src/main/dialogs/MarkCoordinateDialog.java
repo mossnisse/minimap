@@ -145,7 +145,7 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 				wgs84 = CoordSystem.RT90.toWGS84(rt90r);
 
 				RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.green);
-				mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
+				mapCanvas.getLayerManager().setOverlay(MapLayers.RUBIN_MARKER, r);
 			} else {
 				coordinateSys.setText("Invalid Input");
 				return;

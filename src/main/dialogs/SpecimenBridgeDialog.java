@@ -583,8 +583,8 @@ public class SpecimenBridgeDialog extends JDialog {
                 isNavigating = false; // Release if index is invalid
             }
 
-            mapCanvas.layerManager.removeOverlay(MapLayers.RUBIN_MARKER);
-            mapCanvas.layerManager.removeOverlay(MapLayers.DISTANCE_OVERLAY);
+            mapCanvas.getLayerManager().removeOverlay(MapLayers.RUBIN_MARKER);
+            mapCanvas.getLayerManager().removeOverlay(MapLayers.DISTANCE_OVERLAY);
             mapCanvas.repaint();
 
         } catch (Exception e) {
@@ -853,14 +853,14 @@ public class SpecimenBridgeDialog extends JDialog {
         String directionS = (String) directionCombo.getSelectedItem();
 
         // Clear old distance layer regardless
-        mapCanvas.layerManager.removeOverlay(MapLayers.DISTANCE_OVERLAY);
+        mapCanvas.getLayerManager().removeOverlay(MapLayers.DISTANCE_OVERLAY);
 
         if (!distText.isEmpty() && directionS != null && !directionS.isEmpty()) {
             try {
                 int distanceI = Integer.parseInt(distText);
                 if (distanceI > 0) {
                     // Add the visual vector layer
-                    mapCanvas.layerManager.setOverlay(MapLayers.DISTANCE_OVERLAY,
+                    mapCanvas.getLayerManager().setOverlay(MapLayers.DISTANCE_OVERLAY,
                             new DistanceLayer(mapCanvas, "Distance", c, distanceI, directionS));
                 }
             } catch (NumberFormatException e) {
@@ -876,7 +876,7 @@ public class SpecimenBridgeDialog extends JDialog {
         String rubin = targetSpecimen.getRubin();
         if (rubin != null && !rubin.isEmpty()) {
             RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.GREEN);
-            mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
+            mapCanvas.getLayerManager().setOverlay(MapLayers.RUBIN_MARKER, r);
             mapCanvas.focus(r.getMiddle());
         }
     }

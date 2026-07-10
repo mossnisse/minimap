@@ -1,7 +1,7 @@
 package main.dialogs;
 
 import main.coords.Coordinate;
-import main.core.DBConnection;
+import main.core.Database;
 import main.core.Settings;
 
 import java.awt.*;
@@ -13,7 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SpecimenService {
+    private final Database db;
     private final java.util.Map<String, List<LocalityRecord>> localityCache = new java.util.HashMap<>();
+
+    public SpecimenService(Database db) {
+        this.db = db;
+    }
 
     // creates the H2 cache and reports found specimens
     public int refreshCache(String province, String district, String collector, String accession, String year, String locality, String genus, String herbarium, String coordSource, int coordPrecision, boolean lackBridgeOnly) {
@@ -89,8 +94,8 @@ public class SpecimenService {
 
 
         try {
-            Connection mysqlConn = DBConnection.getConn();
-            Connection h2Conn = DBConnection.getH2Conn();
+            Connection mysqlConn = db.mysql();
+            Connection h2Conn = db.h2();
 
             try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
                 prepareH2Table(h2Conn);
@@ -185,7 +190,7 @@ public class SpecimenService {
         // index 0 maps to cache_id 1
         String sql = "SELECT * FROM tempspecimens WHERE cache_id = ?;";
         try {
-            Connection conn = DBConnection.getH2Conn();
+            Connection conn = db.h2();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
                 ps.setInt(1, index + 1);
@@ -203,7 +208,7 @@ public class SpecimenService {
 
     public int getCacheCount() {
         try {
-            Connection conn = DBConnection.getH2Conn();
+            Connection conn = db.h2();
             try (
                     java.sql.Statement stmt = conn.createStatement();
                     ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM tempspecimens")) {
@@ -279,7 +284,7 @@ public class SpecimenService {
         List<LocalityRecord> list = new ArrayList<>();
         String sql = "SELECT ID, locality FROM locality WHERE District = ? AND Province = ? ORDER BY locality ASC";
         try {
-            Connection conn = DBConnection.getConn();
+            Connection conn = db.mysql();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, district);
                 ps.setString(2, province);
@@ -324,7 +329,7 @@ public class SpecimenService {
                 + "modified = CURRENT_TIMESTAMP;";
 
         try {
-            Connection conn = DBConnection.getConn();
+            Connection conn = db.mysql();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
                 ps.setInt(1, s.getId());
@@ -368,7 +373,7 @@ public class SpecimenService {
                 + "WHERE InstitutionCode = ? AND CollectionCode = ? AND AccessionNo = ?";
 
         try {
-            Connection conn = DBConnection.getConn();
+            Connection conn = db.mysql();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
                 ps.setString(1, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
@@ -394,7 +399,7 @@ public class SpecimenService {
                 + "locality_ID = ?, distance = ?, direction = ?, oDistrict = ?, oProvince = ? "
                 + "WHERE AccessionNo = ?";
         try {
-            Connection h2Conn = DBConnection.getH2Conn();
+            Connection h2Conn = db.h2();
             try (
                     PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
 
@@ -423,7 +428,7 @@ public class SpecimenService {
     public Coordinate getLocalityPoint(int localityID) {
         try {
             String query = "SELECT SWTMN, SWTME FROM locality WHERE ID = ?";
-            Connection conn = DBConnection.getConn();
+            Connection conn = db.mysql();
             try (PreparedStatement ps = conn.prepareStatement(query)) {
                 ps.setInt(1, localityID);
                 ResultSet rs = ps.executeQuery();

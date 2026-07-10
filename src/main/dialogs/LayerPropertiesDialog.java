@@ -111,7 +111,7 @@ public class LayerPropertiesDialog extends JDialog {
         layer.setMinZoomL(min);
         layer.setMaxZoomL(max);
 
-        mapCanvas.layerManager.notifyListeners();
+        mapCanvas.getLayerManager().notifyListeners();
         dispose();
     }
 }

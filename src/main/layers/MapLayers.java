@@ -35,11 +35,11 @@ public final class MapLayers {
 
 	/** Installs the default layer stack (bottom to top: TopoWeb, socknar, provinser, ortnamn, LokalDB). */
 	public static void installDefaultLayers(MapCanvas canvas, AppContext ctx) {
-		canvas.layerManager.addLayerBottom(LOKAL_DB, lokalDb(canvas, ctx.localities));
-		canvas.layerManager.addLayerBottom(ORTNAMN, ortnamn(canvas, ctx.placeNames));
-		canvas.layerManager.addLayerBottom(PROVINSER, provinser(canvas));
-		canvas.layerManager.addLayerBottom(SOCKNAR, socknar(canvas));
-		canvas.layerManager.addLayerBottom(topoweb(canvas));
+		canvas.getLayerManager().addLayerBottom(LOKAL_DB, lokalDb(canvas, ctx.localities));
+		canvas.getLayerManager().addLayerBottom(ORTNAMN, ortnamn(canvas, ctx.placeNames));
+		canvas.getLayerManager().addLayerBottom(PROVINSER, provinser(canvas));
+		canvas.getLayerManager().addLayerBottom(SOCKNAR, socknar(canvas));
+		canvas.getLayerManager().addLayerBottom(topoweb(canvas));
 	}
 
 	/** The editable locality layer: WGS84 points with precision circles and big labels. */
@@ -102,7 +102,7 @@ public final class MapLayers {
 
 	/** Re-fetches and repaints the locality layer after a locality was created/edited/deleted. */
 	public static void refreshLocalities(MapCanvas canvas) {
-		canvas.layerManager.get(LOKAL_DB).ifPresent(PointTableLayer::invalidateCache);
+		canvas.getLayerManager().get(LOKAL_DB).ifPresent(PointTableLayer::invalidateCache);
 		canvas.repaint();
 	}
 
@@ -117,6 +117,6 @@ public final class MapLayers {
 	}
 
 	private static String polygonNameAt(MapCanvas canvas, LayerKey<TNGPolygonFileLayer> key, Coordinate c) {
-		return canvas.layerManager.get(key).map(l -> l.nameAt(c)).orElse(null);
+		return canvas.getLayerManager().get(key).map(l -> l.nameAt(c)).orElse(null);
 	}
 }

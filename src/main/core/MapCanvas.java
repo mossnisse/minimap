@@ -13,7 +13,7 @@ public class MapCanvas extends JPanel {
 	private CoordSystem cs;
 	private Extent bounds;
 	private volatile Coordinate coord;
-	public final LayerManager layerManager;
+	private final LayerManager layerManager;
 
 	
 	public MapCanvas() {
@@ -33,6 +33,10 @@ public class MapCanvas extends JPanel {
 		repaint();
 	}
 	
+	public LayerManager getLayerManager() {
+		return layerManager;
+	}
+
 	public Coordinate getCoordinate() {
 		return coord;
 	}

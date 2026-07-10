@@ -216,7 +216,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 						// Update Layer
 						lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
 						lastResults.setColor(Color.blue);
-						mapCanvas.layerManager.setOverlay(MapLayers.SEARCH_RESULTS, lastResults);
+						mapCanvas.getLayerManager().setOverlay(MapLayers.SEARCH_RESULTS, lastResults);
 
 						resultPanel.add(Box.createVerticalGlue());
 						zoomb.setEnabled(true);
