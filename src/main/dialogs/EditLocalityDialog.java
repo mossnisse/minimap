@@ -4,15 +4,13 @@ import main.coords.*;
 import main.core.*;
 import main.core.MapCanvas;
 import main.layers.MapLayers;
+import main.repo.LocalityRepository;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.*;
 
@@ -23,6 +21,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private final GUI gui;
 	private final int localityID;
 	private final SpecimenBridgeDialog bridgeDialog;
+	private final LocalityRepository localities;
 	private String oldName;
 	private Coordinate pendingCoords = null;
 
@@ -33,7 +32,8 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private JLabel labelCreated, labelModified;
 	private JButton cancel, delete, ok, move;
 
-	public EditLocalityDialog(GUI gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, MapCanvas mapCanvas) {
+	public EditLocalityDialog(GUI gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, MapCanvas mapCanvas,
+			LocalityRepository localities) {
 		// 'false' makes it non-modal, 'true' would stop interaction with map
 		super(owner, "Edit Locality", false);
 
@@ -41,6 +41,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		this.gui = gui;
 		this.localityID = localityID;
 		this.bridgeDialog = bridge;
+		this.localities = localities;
 
 		// Set up Layout on the Dialog's content pane
 		this.getContentPane().setLayout(new SpringLayout());
@@ -170,39 +171,29 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private void loadData() {
-		String sql = "SELECT locality, alternative_names, district, province, country, continent, " +
-				"coordinate_source, lcomments, created, createdBy, modified, modifiedBy, " +
-				"Coordinateprecision, category, zoomLevel, isPlace FROM locality WHERE ID = ?";
 		try {
-			Connection conn = DBConnection.getConn();
-			try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+			LocalityRepository.StoredLocality loc = localities.load(localityID);
+			if (loc != null) {
+				oldName = loc.locality();
+				name.setText(loc.locality());
+				altNames.setText(loc.alternativeNames());
+				district.setText(loc.district());
+				province.setText(loc.province());
+				country.setText(loc.country());
+				continent.setText(loc.continent());
+				coordinateSource.setText(loc.coordinateSource());
+				comments.setText(loc.comments());
 
-				stmt.setInt(1, localityID);
-				try (ResultSet rs = stmt.executeQuery()) {
-					if (rs.next()) {
-						oldName = rs.getString("locality");
-						name.setText(rs.getString("locality"));
-						altNames.setText(rs.getString("alternative_names"));
-						district.setText(rs.getString("district"));
-						province.setText(rs.getString("province"));
-						country.setText(rs.getString("country"));
-						continent.setText(rs.getString("continent"));
-						coordinateSource.setText(rs.getString("coordinate_source"));
-						comments.setText(rs.getString("lcomments"));
+				labelCreated.setText("Created: " + loc.created() + " by " + loc.createdBy());
+				labelModified.setText("Modified: " + loc.modified() + " by " + loc.modifiedBy());
 
-						// Metadata Labels (Columns 9, 10, 11, 12)
-						labelCreated.setText("Created: " + rs.getString("created") + " by " + rs.getString("createdBy"));
-						labelModified.setText("Modified: " + rs.getString("modified") + " by " + rs.getString("modifiedBy"));
+				localitySize.setText(loc.precision());
+				category.setText(loc.category());
+				zoomLevel.setText(loc.zoomLevel());
 
-						localitySize.setText(rs.getString("Coordinateprecision"));
-						category.setText(rs.getString("category"));
-						zoomLevel.setText(rs.getString("zoomLevel"));
+				isPlace.setSelected(loc.isPlace());
 
-						isPlace.setSelected(rs.getInt("isPlace") == 1);
-
-						setTitle("Edit Locality: " + name.getText());
-					}
-				}
+				setTitle("Edit Locality: " + name.getText());
 			}
 		} catch (SQLException e) {
 			JOptionPane.showMessageDialog(this, "Database Error: " + e.getMessage());
@@ -211,7 +202,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private void deleteLocality() {
-		int bridgeCount = localityBridgeUses(localityID);
+		int bridgeCount = localities.countBridgeUses(localityID);
 		int usesCount = localityUses();
 
 		StringBuilder warning = new StringBuilder();
@@ -250,19 +241,14 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 		if (dialogResult == JOptionPane.YES_OPTION) {
 			try {
-				Connection conn = DBConnection.getConn();
-				String sqlstmt = "DELETE FROM locality WHERE ID = ?";
-				try (PreparedStatement statement = conn.prepareStatement(sqlstmt)) {
-					statement.setInt(1, localityID);
-					statement.execute();
+				localities.delete(localityID);
 
-					if (bridgeDialog != null && bridgeDialog.isVisible()) {
-						bridgeDialog.invalidateLocalityList();
-					}
-
-					mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
-					this.dispose();
+				if (bridgeDialog != null && bridgeDialog.isVisible()) {
+					bridgeDialog.invalidateLocalityList();
 				}
+
+				mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
+				this.dispose();
 			} catch (SQLException e) {
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(this, " Error deleting locality: " + e.getMessage());
@@ -271,41 +257,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	}
 
 	private int localityUses() {
-		try {
-			Connection conn = DBConnection.getConn();
-			String checkSql = "SELECT count(*) FROM specimens where province = ? AND district = ? AND locality = ? ";
-			try (PreparedStatement statem = conn.prepareStatement(checkSql)) {
-				statem.setString(1, province.getText());
-				statem.setString(2, district.getText());
-				statem.setString(3, oldName);
-				try (ResultSet rs = statem.executeQuery()) {
-					if (rs.next()) {
-						return rs.getInt(1);
-					}
-				}
-			}
-		} catch (SQLException e) {
-			System.err.println("Error checking specimen locality usage: " + e.getMessage());
-		}
-		return -1;
-	}
-
-	private int localityBridgeUses(int localityID) {
-		try {
-			Connection conn = DBConnection.getConn();
-			String checkSql = "SELECT count(*) from specimen_locality where specimen_locality.locality_ID = ?";
-			try (PreparedStatement statem = conn.prepareStatement(checkSql)) {
-				statem.setInt(1, localityID);
-				try (ResultSet rs = statem.executeQuery()) {
-					if (rs.next()) {
-						return rs.getInt(1);
-					}
-				}
-			}
-		} catch (SQLException e) {
-			System.err.println("Error checking bridge usage: " + e.getMessage());
-		}
-		return -1;
+		return localities.countSpecimenUses(province.getText(), district.getText(), oldName);
 	}
 
 	private void updateLocality() {
@@ -341,62 +293,32 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		}
 
 
+		// Capture all fields on the EDT so doInBackground doesn't touch the UI
+		int zl;
+		try { zl = Integer.parseInt(zoomLevel.getText().trim()); } catch (Exception e) { zl = -1; }
+		final LocalityRepository.LocalityDetails details = new LocalityRepository.LocalityDetails(
+				newName, altNames.getText().trim(), district.getText().trim(), province.getText().trim(),
+				country.getText().trim(), continent.getText().trim(), coordinateSource.getText().trim(),
+				comments.getText().trim(), size, category.getText().trim(), zl, isPlace.isSelected());
+
+		final LocalityRepository.StoredCoordinates moved;
+		if (pendingCoords != null) {
+			// todo only set sweref and rt90 if in Sweden
+			// todo check if moved outside district and province
+			Coordinate wgs84 = mapCanvas.getCRS().toWGS84(pendingCoords);
+			moved = new LocalityRepository.StoredCoordinates(wgs84,
+					CoordSystem.SWEREF99TM.toProjected(wgs84),
+					CoordSystem.RT90.toProjected(wgs84));
+		} else {
+			moved = null;
+		}
+
 		// Start Background Worker
 		new SwingWorker<Boolean, Void>() {
 			@Override
 			protected Boolean doInBackground() throws Exception {
 				gui.setCursorWait();
-				Connection conn = DBConnection.getConn();
-
-				// Perform Update
-				StringBuilder sql = new StringBuilder("UPDATE locality SET locality=?, district=?, province=?, country=?, continent=?, " +
-						"alternative_names=?, coordinate_source=?, lcomments=?, modified=NOW(), modifiedBy=?, " +
-						"Coordinateprecision=?, category=?, zoomLevel=?, isPlace=?");
-
-				// Append coordinate columns if a move happened
-				if (pendingCoords != null) {
-					sql.append(", lat=?, `long`=?, SWTMN=?, SWTME=?, RT90N=?, RT90E=?");
-				}
-				sql.append(" WHERE ID=?");
-
-				try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-					int paramIdx = 1;
-					stmt.setString(paramIdx++, name.getText().trim());
-					stmt.setString(paramIdx++, district.getText().trim());
-					stmt.setString(paramIdx++, province.getText().trim());
-					stmt.setString(paramIdx++, country.getText().trim());
-					stmt.setString(paramIdx++, continent.getText().trim());
-					stmt.setString(paramIdx++, altNames.getText().trim());
-					stmt.setString(paramIdx++, coordinateSource.getText().trim());
-					stmt.setString(paramIdx++, comments.getText().trim());
-					stmt.setString(paramIdx++, Settings.getValue("user")); // modifiedBy
-					stmt.setInt(paramIdx++, size);
-
-					stmt.setString(paramIdx++, category.getText().trim());
-					int zl;
-					try { zl = Integer.parseInt(zoomLevel.getText().trim()); } catch (Exception e) { zl = -1; }
-					stmt.setInt(paramIdx++, zl);
-
-					stmt.setBoolean(paramIdx++, isPlace.isSelected());
-
-					if (pendingCoords != null) {
-						// todo only set sweref and rt90 if in Sweden
-						// todo check if moved outside district and province
-						Coordinate wgs84 = mapCanvas.getCRS().toWGS84(pendingCoords);
-						Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(wgs84);
-						Coordinate rt90 = CoordSystem.RT90.toProjected(wgs84);
-
-						stmt.setDouble(paramIdx++, wgs84.getNorth());
-						stmt.setDouble(paramIdx++, wgs84.getEast());
-						stmt.setInt(paramIdx++, (int) Math.round(sweref.getNorth()));
-						stmt.setInt(paramIdx++, (int) Math.round(sweref.getEast()));
-						stmt.setInt(paramIdx++, (int) Math.round(rt90.getNorth()));
-						stmt.setInt(paramIdx++, (int) Math.round(rt90.getEast()));
-					}
-
-					stmt.setInt(paramIdx, localityID);
-					stmt.executeUpdate();
-				}
+				localities.update(localityID, details, moved, Settings.getValue("user"));
 				return true;
 			}
 

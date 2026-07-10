@@ -17,6 +17,7 @@ import main.coords.*;
 public class GUI  {
 	private JFrame frame;
 	private MapCanvas mapCanvas;
+	private AppContext ctx;
 	private Coordinate coord;
 	private SpecimenBridgeDialog bridgeDialog;
 	private EditLocalityDialog moveTarget = null;
@@ -25,6 +26,9 @@ public class GUI  {
 	}
 
 	private void createAndShowGUI() {
+		// Wire databases and repositories before anything can touch the DB
+		ctx = AppContext.create();
+
 		// Set up the frame and canvas
 		frame = new JFrame("Minimap");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -392,7 +396,7 @@ public class GUI  {
 	}
 
 	public void searchLocality() {
-		new SearchLocalityDialog(frame, this, mapCanvas, "", "").setVisible(true);
+		new SearchLocalityDialog(frame, this, mapCanvas, "", "", ctx.localities, ctx.placeNames).setVisible(true);
 	}
 
 	public void showLayerDialog() {
@@ -481,12 +485,10 @@ public class GUI  {
 	}
 
 	private void editLocalityNear(Coordinate c) {
-		mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(ldb -> {
-			int localityID = ldb.findNearest(c, 1000);
-			if (localityID != -1) {
-				new EditLocalityDialog(this, frame, localityID, bridgeDialog, mapCanvas).setVisible(true);
-			}
-		});
+		int localityID = ctx.localities.findNearestId(mapCanvas.getCRS().toWGS84(c), 1000);
+		if (localityID != -1) {
+			new EditLocalityDialog(this, frame, localityID, bridgeDialog, mapCanvas, ctx.localities).setVisible(true);
+		}
 	}
 
 	public void enterMoveMode(EditLocalityDialog dialog) {
@@ -526,12 +528,12 @@ public class GUI  {
 
 	private void createLocalityAtCoord() {
 		coord = mapCanvas.getCoordinate();
-		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord).setVisible(true);
+		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord, ctx.localities, ctx.placeNames).setVisible(true);
 	}
 
 	private void createLocalityDialog(MouseEvent me) {
 		coord = mapCanvas.translatePoint(me.getPoint());
-		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord).setVisible(true);
+		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord, ctx.localities, ctx.placeNames).setVisible(true);
 	}
 
 	public void searchSpecimens() {
@@ -543,7 +545,7 @@ public class GUI  {
 		}
 
 		SpecimenService service = new SpecimenService();
-		bridgeDialog = new SpecimenBridgeDialog(frame, this, service, mapCanvas);
+		bridgeDialog = new SpecimenBridgeDialog(frame, this, service, mapCanvas, ctx);
 
 		bridgeDialog.addWindowListener(new WindowAdapter() {
 			@Override

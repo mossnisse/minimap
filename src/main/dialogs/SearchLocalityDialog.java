@@ -1,19 +1,17 @@
 package main.dialogs;
 
 import main.core.MapCanvas;
-import main.core.DBConnection;
 import main.coords.*;
 import main.core.GUI;
 import main.layers.MapLayers;
 import main.layers.TNGPointFileLayer;
+import main.repo.LocalityRepository;
+import main.repo.PlaceNameRepository;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.Serial;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import javax.swing.*;
@@ -37,11 +35,16 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 	private JComboBox<String> provinceBox;
 	private JPanel resultPanel;
 	private TNGPointFileLayer lastResults;
+	private final LocalityRepository localities;
+	private final PlaceNameRepository placeNames;
 
-	public SearchLocalityDialog(Frame aFrame, GUI gui, MapCanvas mapCanvas, String text, String province) {
+	public SearchLocalityDialog(Frame aFrame, GUI gui, MapCanvas mapCanvas, String text, String province,
+			LocalityRepository localities, PlaceNameRepository placeNames) {
 		super(aFrame, "Search Localities", false);
 		this.mapCanvas = mapCanvas;
 		this.gui = gui;
+		this.localities = localities;
+		this.placeNames = placeNames;
 		initComponents(text, province);
 		pack();
 		setLocationRelativeTo(aFrame);
@@ -150,44 +153,18 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 			}
 
 			public ArrayList<SearchResult> fetchFromH2(int provNr, String value, String district, CoordSystem targetCRS) {
-				value = value.trim().replace("*", "%");
-				district = district.trim().replace("*", "%");
 				ArrayList<SearchResult> results = new ArrayList<>();
-
 				try {
-					Connection conn = DBConnection.getH2Conn();
-					StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM ortnamnSWTM WHERE Ortnamn ILIKE ?");
+					String namePattern = value.trim().replace("*", "%");
+					String districtPattern = district.trim().replace("*", "%");
 
-					if (provNr != -1) {
-						sql.append(" AND FPNUMMER = ?");
-					}
+					for (PlaceNameRepository.PlaceHit hit : placeNames.search(namePattern, provNr, districtPattern)) {
+						// Convert from H2's SWEREF99TM to whatever the canvas currently uses
+						Coordinate c = CoordSystem.SWEREF99TM.convertTo(hit.sweref(), targetCRS);
+						String label = hit.type() + ", " + hit.district() + " (Lantmäteriet)";
 
-					boolean useDistrict = !district.equals("%") && !district.isEmpty();
-					if (useDistrict) {
-						sql.append(" AND SOCKEN ILIKE ?");
-					}
-
-					sql.append(" ORDER BY SOCKEN LIMIT 500");
-
-					try (PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
-						int idx = 1;
-						pstmt.setString(idx++, value);
-						if (provNr != -1) pstmt.setInt(idx++, provNr);
-						if (useDistrict) pstmt.setString(idx, district);
-
-						try (ResultSet result = pstmt.executeQuery()) {
-							while (result.next()) {
-								int north = result.getInt(1);
-								int east = result.getInt(2);
-
-								// Convert from H2's SWEREF99TM to whatever the canvas currently uses
-								Coordinate c = CoordSystem.SWEREF99TM.convertTo(new Coordinate(north, east), targetCRS);
-								String label = result.getString(3) + ", " + result.getString(4) + " (Lantmäteriet)";
-
-								// ID is -1 because these are from the H2 file, not the editable MySQL DB
-								results.add(new SearchResult(c, label, -1));
-							}
-						}
+						// ID is -1 because these are from the H2 file, not the editable MySQL DB
+						results.add(new SearchResult(c, label, -1));
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -197,57 +174,15 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 			}
 
 			private ArrayList<SearchResult> fetchFromMysql() {
-				StringBuilder sql = new StringBuilder("SELECT ID, lat, `long`, locality, district FROM Locality WHERE 1=1 ");
-				ArrayList<Object> params = new ArrayList<>();
 				ArrayList<SearchResult> results = new ArrayList<>();
-
-				if (!lokalText.isEmpty()) {
-					String p = lokalText.replace("*", "%");
-					sql.append(" AND (locality LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ? OR alternative_names LIKE ?)");
-					params.add(p); params.add(p); params.add(p + ",%"); params.add("%, " + p); params.add("%, " + p + ",%");
-				}
-
-				addNullableLikeFilter(sql, params, "country", countryText);
-				addNullableLikeFilter(sql, params, "district", districtText);
-				addNullableLikeFilter(sql, params, "coordinate_source", sourceText);
-
-				if (!"*".equals(precInput)) {
-					if (precInput.isEmpty()) {
-						sql.append(" AND (Coordinateprecision IS NULL OR Coordinateprecision = 0)");
-					} else {
-						try {
-							int val = Integer.parseInt(precInput.replace("*", ""));
-							sql.append(" AND (Coordinateprecision >= ? OR Coordinateprecision IS NULL OR Coordinateprecision = 0)");
-							params.add(val);
-						} catch (NumberFormatException ignored) {}
-					}
-				}
-
-				addNullableLikeFilter(sql, params, "category", catText);
-
-				if (!"*".equals(provSelected)) {
-					sql.append(" AND province = ?");
-					params.add(provSelected);
-				}
-
-				if (isPlaceSelected) sql.append(" AND isPlace = 1");
-				sql.append(" LIMIT 500");
-
-				// --- MySQL Query ---
 				try {
-					Connection conn = DBConnection.getConn();
-					try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-						for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
-						try (ResultSet rs = stmt.executeQuery()) {
-							while (rs.next()) {
-								int id = rs.getInt("ID");
-								String label = String.format("%s (%s)", rs.getString("locality"), rs.getString("district"));
-								Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
+					LocalityRepository.SearchCriteria criteria = new LocalityRepository.SearchCriteria(
+							lokalText, countryText, districtText, sourceText, precInput, catText,
+							String.valueOf(provSelected), isPlaceSelected);
 
-								Coordinate c = mapCanvas.getCRS().toProjected(wgs84);
-								results.add(new SearchResult(c, label, id));
-							}
-						}
+					for (LocalityRepository.SearchHit hit : localities.search(criteria)) {
+						String label = String.format("%s (%s)", hit.locality(), hit.district());
+						results.add(new SearchResult(currentCRS.toProjected(hit.wgs84()), label, hit.id()));
 					}
 				} catch (SQLException e) {
 					e.printStackTrace();
@@ -301,20 +236,6 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 		}.execute();
 	}
 
-	private void addNullableLikeFilter(StringBuilder sql, ArrayList<Object> params, String columnName, String input) {
-		String trimmed = input.trim();
-		if (!"*".equals(trimmed)) {
-			if (trimmed.isEmpty()) {
-				// Optional: specific character to force search for empty records
-				sql.append(" AND (" + columnName + " IS NULL OR " + columnName + " = '')");
-			} else {
-				String pattern = trimmed.replace("*", "%");
-				sql.append(" AND " + columnName + " LIKE ?");
-				params.add(pattern);
-			}
-		}
-	}
-
 	private void addResultButton(Coordinate coord, String label, int id) {
 		JButton btn = new JButton(label);
 		btn.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -351,7 +272,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 					Frame owner = (Frame) SwingUtilities.getWindowAncestor(SearchLocalityDialog.this);
 
 					// Open EditLocalityDialog using the ID from the search results
-					EditLocalityDialog editDlg = new EditLocalityDialog(gui, owner, id, null , mapCanvas); // null should be the bridge dialog
+					EditLocalityDialog editDlg = new EditLocalityDialog(gui, owner, id, null, mapCanvas, localities); // null should be the bridge dialog
 					editDlg.setVisible(true);
 				});
 

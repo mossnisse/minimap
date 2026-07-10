@@ -6,16 +6,14 @@ import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.io.Serial;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import javax.swing.*;
 
 import main.coords.*;
 import main.core.*;
 import main.core.MapCanvas;
 import main.layers.MapLayers;
+import main.repo.LocalityRepository;
+import main.repo.PlaceNameRepository;
 
 public class CreateLocalityDialog extends JDialog implements ActionListener {
 	@Serial
@@ -23,17 +21,22 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private final GUI gui;
 	private final MapCanvas mapCanvas;
 	private final SpecimenBridgeDialog bridgeDialog;
+	private final LocalityRepository localities;
+	private final PlaceNameRepository placeNames;
 	Coordinate c;
 	private JTextField localityT, districtT, provinceT, countryT, continentT, alternativeT, coordsourceT, locSizeT, categoryT, zoomLevelT;
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;
 	private JButton cancel, ok;
 
-	public CreateLocalityDialog(Frame owner, GUI gui, MapCanvas mapCanvas, SpecimenBridgeDialog bridge, Coordinate c) {
+	public CreateLocalityDialog(Frame owner, GUI gui, MapCanvas mapCanvas, SpecimenBridgeDialog bridge, Coordinate c,
+			LocalityRepository localities, PlaceNameRepository placeNames) {
 		super(owner, "Create New Locality", false);
 		this.gui = gui;
 		this.mapCanvas = mapCanvas;
 		this.bridgeDialog = bridge;
+		this.localities = localities;
+		this.placeNames = placeNames;
 		this.c = c;
 
 		// Use Content Pane for Layout
@@ -69,9 +72,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		if (distName != null) district = distName;
 
 		// Logic for Suggesting Name
-		String suggestName = mapCanvas.layerManager.get(MapLayers.ORTNAMN)
-				.map(odb -> odb.findNearest(mapCanvas.getCRS().convertTo(c, CoordSystem.SWEREF99TM), 1000))
-				.orElse("");
+		String suggestName = placeNames.findNearestName(mapCanvas.getCRS().convertTo(c, CoordSystem.SWEREF99TM), 1000);
 
 		if (!"".equals(province)) {
 			continent = "Europe";
@@ -184,8 +185,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 			protected Boolean doInBackground() throws Exception {
 				gui.setCursorWait();
 
-				Connection conn = DBConnection.getConn();
-				if (localityExists(conn, localityName, distr, prov, coun)) {
+				if (localities.exists(localityName, distr, prov, coun)) {
 					return false;
 				}
 
@@ -197,8 +197,11 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 				int zli;
 				try { zli = Integer.parseInt(zlStr); } catch (NumberFormatException e) { zli = -1; }
 
-				executeInsert(conn, localityName, distr, prov, coun, cont, wgs84c, swerefc, rt90c,
-						alt, src, comm, size, cat, zli, isPlace);
+				localities.insert(
+						new LocalityRepository.LocalityDetails(localityName, alt, distr, prov, coun, cont,
+								src, comm, size, cat, zli, isPlace),
+						new LocalityRepository.StoredCoordinates(wgs84c, swerefc, rt90c),
+						Settings.getValue("user"));
 				return true;
 			}
 
@@ -218,56 +221,6 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 				}
 			}
 		}.execute();
-	}
-
-	private void executeInsert(Connection conn, String localityName, String districtName, String provinceName,
-							   String countryVal, String continentVal,
-							   Coordinate wgs84c, Coordinate swerefc, Coordinate rt90c,
-							   String alternativeVal, String coordsourceVal, String commentsVal, int size,
-							   String categoryVal, int zli, boolean isPlace) throws SQLException {
-
-		String sqlstmt = "INSERT INTO locality (locality, district, province, country, continent, lat, `long`, RT90N, RT90E, SWTMN, SWTME, createdby, alternative_names, coordinate_source, lcomments, Coordinateprecision, category, zoomLevel, isPlace) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-		try (PreparedStatement preparedStmt = conn.prepareStatement(sqlstmt)) {
-			preparedStmt.setString(1, localityName);
-			preparedStmt.setString(2, districtName);
-			preparedStmt.setString(3, provinceName);
-			preparedStmt.setString(4, countryVal);
-			preparedStmt.setString(5, continentVal);
-			preparedStmt.setDouble(6, wgs84c.getNorth());
-			preparedStmt.setDouble(7, wgs84c.getEast());
-			preparedStmt.setInt(8, (int) Math.round(rt90c.getNorth()));
-			preparedStmt.setInt(9, (int) Math.round(rt90c.getEast()));
-			preparedStmt.setInt(10, (int) Math.round(swerefc.getNorth()));
-			preparedStmt.setInt(11, (int) Math.round(swerefc.getEast()));
-			preparedStmt.setString(12, Settings.getValue("user"));
-			preparedStmt.setString(13, alternativeVal);
-			preparedStmt.setString(14, coordsourceVal);
-			preparedStmt.setString(15, commentsVal);
-			preparedStmt.setInt(16, size);
-			preparedStmt.setString(17, categoryVal);
-			preparedStmt.setInt(18, zli);
-			preparedStmt.setBoolean(19, isPlace);
-
-			preparedStmt.executeUpdate();
-		}
-	}
-
-	private boolean localityExists(Connection conn, String localityName, String districtName, String provinceName, String countryName) throws SQLException {
-		// We only need to know if at least one row exists
-		String sql = "SELECT 1 FROM locality WHERE locality = ? AND district = ? AND province = ? AND country = ? LIMIT 1;";
-
-		try (PreparedStatement ps = conn.prepareStatement(sql)) {
-			// Use trim() to prevent accidental space mismatches
-			ps.setString(1, localityName.trim());
-			ps.setString(2, districtName.trim());
-			ps.setString(3, provinceName.trim());
-			ps.setString(4, countryName.trim());
-
-			try (ResultSet rs = ps.executeQuery()) {
-				return rs.next(); // If there is a row, it exists
-			}
-		}
 	}
 
 	private void refreshMapsAndLists() {
