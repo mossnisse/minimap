@@ -69,7 +69,7 @@ public class convSocken {
 				statement.execute();
 				//System.out.println("query:"+statement.toString());
 				 } catch(SQLException e) {
-					 System.out.println("lyckades inte s‰tta in: "+name);
+					 System.out.println("lyckades inte s√§tta in: "+name);
 					 e.printStackTrace();
 				 }
 			    i++;

@@ -123,7 +123,7 @@ public class ShapePointFileLayer extends Layer {
 			//TNGPointFile x = new TNGPointFile("");
 			if (record.getField(0).equals(value)) {
 			//if(matcher.find()) {
-				//System.out.println("tr‰ff");
+				//System.out.println("tr√§ff");
 				ans.add(new Coordinate(point.toPoint()));
 				names.add(record.getField(0)+", "+record.getField(3)+", " +record.getField(1));
 			}

@@ -1,6 +1,7 @@
 package main.dialogs;
 
 import main.coords.Coordinate;
+import main.core.LayerKey;
 import main.core.MapCanvas;
 import main.layers.DistanceLayer;
 
@@ -15,15 +16,17 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 	@Serial
 	private static final long serialVersionUID = 2464657686998213912L;
 	private final MapCanvas mapCanvas;
+	private final LayerKey<DistanceLayer> overlayKey;
 	private final Coordinate origin;
 	private final JTextField distance;
 	private final JComboBox<String> direction;
 	private final JOptionPane optionPane;
 
-	public DistanceDialog(Frame aFrame, MapCanvas mapCanvas, Coordinate c) {
+	public DistanceDialog(Frame aFrame, MapCanvas mapCanvas, Coordinate c, LayerKey<DistanceLayer> overlayKey) {
 		super(aFrame, true); // Modal
 		setTitle("Distance and Direction");
 		this.mapCanvas = mapCanvas;
+		this.overlayKey = overlayKey;
 		this.origin = c;
 
 		direction = new JComboBox<>(Coordinate.directions);
@@ -93,11 +96,10 @@ public class DistanceDialog extends JDialog implements PropertyChangeListener {
 			int distVal = Integer.parseInt(getDistance());
 			String dir = getDirection();
 
-			DistanceLayer distLayer = new DistanceLayer(mapCanvas,"dist", origin, distVal, dir);
+			DistanceLayer distLayer = new DistanceLayer(mapCanvas, "Distance", origin, distVal, dir);
 			distLayer.setColor(Color.RED);
 
-			mapCanvas.layerManager.delLayer("dist");
-			mapCanvas.layerManager.addLayerTop(distLayer);
+			mapCanvas.layerManager.setOverlay(overlayKey, distLayer);
 			mapCanvas.repaint();
 			return true;
 		} catch (NumberFormatException ex) {

@@ -13,10 +13,10 @@ public class SpecimenSearchDialog extends JDialog {
     private JLabel statusLabel;
     private JButton searchButton;
 
-    private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "�sele lappmark",
-            "�ngermanland", "V�sterbotten", "H�rjedalen", "Medelpad", "J�mtland", "H�lsingland", "Dalarna", "G�strikland",
-            "Uppland", "V�rmland", "V�stmanland", "N�rke", "S�dermanland", "Dalsland", "Gotland", "�sterg�tland", "Bohusl�n",
-            "Halland", "�land", "Blekinge", "Sk�ne", "Sm�land", "V�sterg�tland"};
+    private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
+            "Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
+            "Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
+            "Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
 
     public SpecimenSearchDialog(Dialog owner, SpecimenService service) {
         super(owner, "Search Specimens", false);

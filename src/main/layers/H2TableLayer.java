@@ -6,20 +6,27 @@ import main.core.DBConnection;
 import main.core.Layer;
 import main.geometry.Extent;
 
+import javax.swing.SwingUtilities;
 import java.awt.*;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class H2TableLayer extends Layer {
 	private final String tableName;
 	private final MapCanvas mapCanvas;
-	private final ArrayList<Locality> cache = new ArrayList<>();
-	private Extent lastQueryBounds;
+	// volatile: the fetch swaps this in from a background thread; draw reads it on the EDT
+	private volatile List<Locality> cache = Collections.emptyList();
+	private volatile Extent lastQueryBounds;
+	private final AtomicBoolean isFetching = new AtomicBoolean(false);
 
-	private static record Locality(Coordinate c, String name) {}
+	private record Locality(Coordinate c, String name) {}
 	
 	public H2TableLayer(String tableName, MapCanvas mapCanvas) {
 		super(tableName, false, CoordSystem.SWEREF99TM);
@@ -27,13 +34,29 @@ public class H2TableLayer extends Layer {
 		this.mapCanvas = mapCanvas;
 	}
 
-	private void updateCache(Extent bounds) {
-		cache.clear();
+	// Fetch off the EDT so panning never blocks on the database. compareAndSet
+	// ensures only one fetch runs at a time even if draw() fires repeatedly.
+	private void refreshCacheAsync(Extent bounds) {
+		if (!isFetching.compareAndSet(false, true)) return;
+		CompletableFuture.runAsync(() -> {
+			try {
+				List<Locality> fetched = fetch(bounds);
+				this.cache = fetched;
+				this.lastQueryBounds = bounds;
+			} finally {
+				isFetching.set(false);
+				SwingUtilities.invokeLater(mapCanvas::repaint);
+			}
+		});
+	}
+
+	private List<Locality> fetch(Extent bounds) {
+		List<Locality> result = new ArrayList<>();
+		CoordSystem canvasCRS = mapCanvas.getCRS();
+		String sql = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
+				" WHERE NORTH BETWEEN ? AND ? AND EAST BETWEEN ? AND ?";
 		try {
 			Connection conn = DBConnection.getH2Conn();
-			String sql = "SELECT NORTH, EAST, Ortnamn FROM " + tableName +
-					" WHERE NORTH BETWEEN ? AND ? AND EAST BETWEEN ? AND ?";
-
 			try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
 				pstmt.setInt(1, (int) bounds.c1.getNorth());
 				pstmt.setInt(2, (int) bounds.c2.getNorth());
@@ -42,15 +65,15 @@ public class H2TableLayer extends Layer {
 
 				try (ResultSet rs = pstmt.executeQuery()) {
 					while (rs.next()) {
-						// Cache the raw coordinates and name
-						Coordinate c =  new Coordinate (rs.getInt(1), rs.getInt(2));
-						cache.add(new Locality(getCRS().convertTo(c, mapCanvas.getCRS()), rs.getString(3)));
+						Coordinate c = new Coordinate(rs.getInt(1), rs.getInt(2));
+						result.add(new Locality(getCRS().convertTo(c, canvasCRS), rs.getString(3)));
 					}
 				}
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+		return result;
 	}
 
 	public String findNearest(Coordinate c, int limit) {
@@ -116,22 +139,19 @@ public class H2TableLayer extends Layer {
 	public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
 		if (isHidden()) return;
 
-		Coordinate c1 = bounds.c1;
-		Coordinate c2 = bounds.c2;
-		Extent queryBounds = new Extent( mapCanvas.getCRS().convertTo(c1, getCRS()), mapCanvas.getCRS().convertTo(c2, getCRS()));
+		Extent queryBounds = new Extent(mapCanvas.getCRS().convertTo(bounds.c1, getCRS()),
+				mapCanvas.getCRS().convertTo(bounds.c2, getCRS()));
 
-		// Refresh if we don't have a cache, or if the new view is not fully contained in the old one
+		// Refresh (off the EDT) if we have no cache or the view left the cached area.
+		// Fetch a slightly larger area than needed to avoid constant DB hits on small pans.
 		if (lastQueryBounds == null || !lastQueryBounds.isInside(queryBounds)) {
-			// Optimization: Fetch a slightly larger area than needed (25% bigger)
-			// to prevent constant database hits during small pans.
-			Extent bufferedBounds = queryBounds.grow(0.25);
-			updateCache(bufferedBounds);
-			lastQueryBounds = bufferedBounds;
+			refreshCacheAsync(queryBounds.grow(0.25));
 		}
 
+		// Draw whatever is currently cached (may be one frame stale while a fetch runs).
 		g2d.setColor(getColor());
-		// Draw logic remains the same
-		for (Locality loc : cache) {
+		List<Locality> localCache = this.cache;
+		for (Locality loc : localCache) {
 			int x = (int) ((loc.c.getEast() * xScale) + xShift);
 			int y = (int) ((loc.c.getNorth() * yScale) + yShift);
 			g2d.drawOval(x - 3, y - 3, 6, 6);

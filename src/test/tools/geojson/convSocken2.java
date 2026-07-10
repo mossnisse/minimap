@@ -29,7 +29,7 @@ public class convSocken2 {
 				String url = "jdbc:mysql://130.239.50.18:3306/samhall";
 				String user = "root";
 				Connection conn = DriverManager.getConnection(url, user, "slupeN@23");
-				String sqlstmt = "update district set geojson =? where district =? and L‰n =? and country =\"Sweden\" and geojson is null";
+				String sqlstmt = "update district set geojson =? where district =? and L√§n =? and country =\"Sweden\" and geojson is null";
 				PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			 
 			int i=1;
@@ -69,7 +69,7 @@ public class convSocken2 {
 				statement.execute();
 				//System.out.println("query:"+statement.toString());
 				 } catch(SQLException e) {
-					 System.out.println("lyckades inte s‰tta in: "+name);
+					 System.out.println("lyckades inte s√§tta in: "+name);
 					 e.printStackTrace();
 				 }
 			    i++;

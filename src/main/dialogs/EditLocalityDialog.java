@@ -3,7 +3,7 @@ package main.dialogs;
 import main.coords.*;
 import main.core.*;
 import main.core.MapCanvas;
-import main.layers.MYSQLTableLayer;
+import main.layers.MapLayers;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -260,10 +260,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 						bridgeDialog.invalidateLocalityList();
 					}
 
-					Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
-					if (layer instanceof MYSQLTableLayer mysqlLayer) {
-						mysqlLayer.invalidateCache();
-					}
+					mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
 					this.dispose();
 				}
 			} catch (SQLException e) {
@@ -412,10 +409,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 							bridgeDialog.invalidateLocalityList();
 						}
 
-						Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
-						if (layer instanceof MYSQLTableLayer mysqlLayer) {
-							mysqlLayer.invalidateCache();
-						}
+						mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
 						mapCanvas.repaint();
 						dispose();
 					}

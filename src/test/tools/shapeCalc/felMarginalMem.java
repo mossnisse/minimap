@@ -52,7 +52,7 @@ public class felMarginalMem {
 			
 			
 			//District
-			writer.println("Country,Län,District,X,Y,maxdist,maxX,maxY,minX,minY");
+			writer.println("Country,LÃ¤n,District,X,Y,maxdist,maxX,maxY,minX,minY");
 			
 			//Provinser
 			//writer.println("\"Country\",\"Province\",\"alt_names\",\"native_name\",\"TypeEng\",\"TypeNative\",Code,X,Y,maxdist,maxX,maxY,minX,minY");
@@ -106,7 +106,7 @@ public class felMarginalMem {
 			writer.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			System.out.println("kunde inte öppna .shp filerna");
+			System.out.println("kunde inte Ã¶ppna .shp filerna");
 			e.printStackTrace();
 		}
 		

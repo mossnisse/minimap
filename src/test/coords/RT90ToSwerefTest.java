@@ -20,7 +20,7 @@ class RT90ToSwerefTest {
      */
     static Stream<Arguments> coordinateProvider() {
         return Stream.of(
-                // Data from Lantm‰teriet official control points
+                // Data from Lantm√§teriet official control points
                 Arguments.of("A", 7453389.762, 1727060.905, 7454204.710, 761811.285),
                 Arguments.of("B", 7047738.415, 1522128.637, 7046077.551, 562140.294),
                 Arguments.of("C", 6671665.273, 1441843.186, 6669189.356, 486557.060),

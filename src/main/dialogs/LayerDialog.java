@@ -63,13 +63,14 @@ public class LayerDialog extends JDialog {
 		add(bottomPanel, BorderLayout.SOUTH);
 
 		// Register the listener to refresh the UI
-		mapCanvas.layerManager.setOnLayersChanged(this::refreshListModel);
+		final Runnable layersChangedListener = this::refreshListModel;
+		mapCanvas.layerManager.addLayersChangedListener(layersChangedListener);
 
-		// Crucial: Clear the listener when dialog is closed to avoid memory leaks
+		// Crucial: Remove the listener when dialog is closed to avoid memory leaks
 		addWindowListener(new java.awt.event.WindowAdapter() {
 			@Override
 			public void windowClosed(java.awt.event.WindowEvent e) {
-				mapCanvas.layerManager.setOnLayersChanged(null);
+				mapCanvas.layerManager.removeLayersChangedListener(layersChangedListener);
 			}
 		});
 

@@ -15,9 +15,7 @@ import javax.swing.*;
 import main.coords.*;
 import main.core.*;
 import main.core.MapCanvas;
-import main.layers.H2TableLayer;
-import main.layers.MYSQLTableLayer;
-import main.layers.TNGPolygonFileLayer;
+import main.layers.MapLayers;
 
 public class CreateLocalityDialog extends JDialog implements ActionListener {
 	@Serial
@@ -65,17 +63,15 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		String province = "";
 		String district = "";
 
-		String provName = TNGPolygonFileLayer.nameAt(mapCanvas, "provinser", c);
+		String provName = MapLayers.provinceAt(mapCanvas, c);
 		if (provName != null) province = provName;
-		String distName = TNGPolygonFileLayer.nameAt(mapCanvas, "socknar", c);
+		String distName = MapLayers.districtAt(mapCanvas, c);
 		if (distName != null) district = distName;
 
 		// Logic for Suggesting Name
-		String suggestName = "";
-		H2TableLayer odb = (H2TableLayer) mapCanvas.layerManager.getLayer("Ortnamnsdb");
-		if (odb != null) {
-			suggestName = odb.findNearest(mapCanvas.getCRS().convertTo(c, CoordSystem.SWEREF99TM), 1000);
-		}
+		String suggestName = mapCanvas.layerManager.get(MapLayers.ORTNAMN)
+				.map(odb -> odb.findNearest(mapCanvas.getCRS().convertTo(c, CoordSystem.SWEREF99TM), 1000))
+				.orElse("");
 
 		if (!"".equals(province)) {
 			continent = "Europe";
@@ -280,10 +276,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 			bridgeDialog.invalidateLocalityList();
 		}
 
-		Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
-		if (layer instanceof MYSQLTableLayer mysqlLayer) {
-			mysqlLayer.invalidateCache();
-		}
+		mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(Layer::invalidateCache);
 		mapCanvas.repaint();
 	}
 

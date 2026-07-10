@@ -32,7 +32,7 @@ class CoordinateTransformationTest {
     @ParameterizedTest(name = "RT90/SWEREF Roundtrip")
     @CsvSource({
             "59.3293, 18.0686", // Stockholm
-            "55.6050, 13.0038",  // Malmö
+            "55.6050, 13.0038",  // MalmÃ¶
             "67.856107, 20.233727" // Kiruna
     })
     void testRoundTrip(double lat, double lon) {

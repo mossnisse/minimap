@@ -54,7 +54,7 @@ public class Geojson {
 				statement.setString(2, name);
 				statement.execute();
 				 } catch(SQLException e) {
-					 System.out.println("lyckades inte s‰tta in: "+name);
+					 System.out.println("lyckades inte s√§tta in: "+name);
 					 e.printStackTrace();
 				 }
 			    i++;

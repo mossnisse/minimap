@@ -35,6 +35,9 @@ public class GUI  {
 		frame.setContentPane(createContentPane());
 		frame.add(mapCanvas);
 
+		// Interactive distance measuring (G + click twice)
+		mapCanvas.addMouseListener(new DistanceTool(mapCanvas, MapLayers.DISTANCE_OVERLAY));
+
 		// Mouse Interaction Logic
 		final java.awt.Point pressPt = new java.awt.Point();
 		mapCanvas.addMouseListener(new MouseAdapter() {
@@ -232,7 +235,7 @@ public class GUI  {
 		menuItem1.addActionListener(e->addSocknar());
 		menu3.add(menuItem1);
 
-		menuItem1 = new JMenuItem("Add Lantm�teriet ortnamn Layer");
+		menuItem1 = new JMenuItem("Add Lantmäteriet ortnamn Layer");
 		menuItem1.addActionListener(e->addOrtnamn());
 		menu3.add(menuItem1);
 
@@ -307,7 +310,7 @@ public class GUI  {
 			try {
 				RasterFileLayer rFile = new RasterFileLayer(file.getPath(), mapCanvas);
 				mapCanvas.layerManager.addLayerTop(rFile);
-				//JOptionPane.showMessageDialog(null, "�ppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
+				//JOptionPane.showMessageDialog(null, "Öppnar2: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
 			} catch (IOException e) {
 				e.printStackTrace();
 				JOptionPane.showMessageDialog(null, "Can't open the file: "+file.getPath(), "InfoBox", JOptionPane.INFORMATION_MESSAGE);
@@ -358,19 +361,19 @@ public class GUI  {
 	}
 
 	public void addLandskap() {
-		mapCanvas.layerManager.addLayerTop(LayerFactory.provinser(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.PROVINSER, LayerFactory.provinser(mapCanvas));
 	}
 
 	public void addSocknar() {
-		mapCanvas.layerManager.addLayerTop(LayerFactory.socknar(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.SOCKNAR, LayerFactory.socknar(mapCanvas));
 	}
 
 	public void addOrtnamn() {
-		mapCanvas.layerManager.addLayerTop(LayerFactory.ortnamn(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.ORTNAMN, LayerFactory.ortnamn(mapCanvas));
 	}
 
 	public void addLocalityLayer() {
-		mapCanvas.layerManager.addLayerTop(LayerFactory.lokalDB(mapCanvas));
+		mapCanvas.layerManager.addLayerTop(MapLayers.LOKAL_DB, LayerFactory.lokalDB(mapCanvas));
 	}
 
 	public void saveCSV() {
@@ -414,8 +417,7 @@ public class GUI  {
 			RubinLayer r = new RubinLayer(s.trim(), mapCanvas, "Rubin", Color.green);
 			Coordinate c = r.getMiddle();
 			if (c != null) {
-				mapCanvas.layerManager.delLayer("Rubin");
-				mapCanvas.layerManager.addLayerTop(r);
+				mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
 				mapCanvas.focus(c);
 				mapCanvas.repaint();
 			} else {
@@ -430,8 +432,7 @@ public class GUI  {
 		Coordinate c = mapCanvas.translatePoint(e.getPoint());
 		String rubin = RUBIN.fromSweref99TM(c);
 		RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.green);
-		mapCanvas.layerManager.delLayer("Rubin");
-		mapCanvas.layerManager.addLayerTop(r);
+		mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
 	}
 
 	public void distanceAtCoord() {
@@ -440,12 +441,12 @@ public class GUI  {
 			JOptionPane.showMessageDialog(mapCanvas, "Please select a point on the map first.");
 			return;
 		}
-		new DistanceDialog(frame, mapCanvas, c).setVisible(true);
+		new DistanceDialog(frame, mapCanvas, c, MapLayers.DISTANCE_OVERLAY).setVisible(true);
 	}
 
 	public void distance(MouseEvent me) {
 		Coordinate c = mapCanvas.translatePoint(new Point(me.getX(), me.getY()));
-		new DistanceDialog(frame, mapCanvas, c).setVisible(true);
+		new DistanceDialog(frame, mapCanvas, c, MapLayers.DISTANCE_OVERLAY).setVisible(true);
 	}
 
 	public void userDialog() {
@@ -461,7 +462,7 @@ public class GUI  {
 						"Press d and click on the map to show distance and direction\n" +
 						"Press g and click on the map for the distance tool\n" +
 						"in Link specimen mark text and\n" +
-						"Ctr+F for search locality in the locality db and a Lantm�teriets ortnamn db\n" +
+						"Ctr+F for search locality in the locality db and a Lantmäteriets ortnamn db\n" +
 						"Ctr+B for search in Ortnamnsregistret\n" +
 						"Ctr+L copy data from last saved link";
 
@@ -470,24 +471,22 @@ public class GUI  {
 
 	public void showLocality(MouseEvent e) {
 		Coordinate c = mapCanvas.translatePoint(new Point(e.getX(), e.getY()));
-		MYSQLTableLayer ldb = (MYSQLTableLayer) mapCanvas.layerManager.getLayer("LokalDB");
-		int localityID = ldb.findNearest(c, 1000);
-
-		if (localityID != -1) {
-			new EditLocalityDialog(this, frame, localityID, bridgeDialog, mapCanvas).setVisible(true);
-		}
+		editLocalityNear(c);
 	}
-	
+
 	public void showLocalityAtCoord() {
 		Coordinate c = mapCanvas.getCoordinate();
 		if (c == null) return;
-		Layer layer = mapCanvas.layerManager.getLayer("LokalDB");
-		if (layer instanceof MYSQLTableLayer ldb) {
+		editLocalityNear(c);
+	}
+
+	private void editLocalityNear(Coordinate c) {
+		mapCanvas.layerManager.get(MapLayers.LOKAL_DB).ifPresent(ldb -> {
 			int localityID = ldb.findNearest(c, 1000);
 			if (localityID != -1) {
 				new EditLocalityDialog(this, frame, localityID, bridgeDialog, mapCanvas).setVisible(true);
 			}
-		}
+		});
 	}
 
 	public void enterMoveMode(EditLocalityDialog dialog) {

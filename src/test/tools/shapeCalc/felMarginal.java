@@ -51,7 +51,7 @@ public class felMarginal {
 			writer.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			System.out.println("kunde inte öppna .shp filerna");
+			System.out.println("kunde inte Ã¶ppna .shp filerna");
 			e.printStackTrace();
 		}
 		

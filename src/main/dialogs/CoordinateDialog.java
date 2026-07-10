@@ -6,7 +6,7 @@ import javax.swing.border.EmptyBorder;
 
 import main.coords.*;
 import main.core.MapCanvas;
-import main.layers.TNGPolygonFileLayer;
+import main.layers.MapLayers;
 
 public class CoordinateDialog extends JDialog {
 	@Serial
@@ -23,9 +23,10 @@ public class CoordinateDialog extends JDialog {
 		UTM utm = UTM.fromWGS84(wgs84);
 		String mgrs = utm.toMGRS();
 
-		// Look up which province/district polygon the point falls in
-		String prov = TNGPolygonFileLayer.nameAt(mapCanvas, "provinser", sweref);
-		String dist = TNGPolygonFileLayer.nameAt(mapCanvas, "socknar", sweref);
+		// Look up which province/district polygon the point falls in.
+		// The polygons are stored in the canvas CRS, so query with the canvas-CRS point.
+		String prov = MapLayers.provinceAt(mapCanvas, c);
+		String dist = MapLayers.districtAt(mapCanvas, c);
 		if (prov == null) prov = "outside layer";
 		if (dist == null) dist = "outside layer";
 

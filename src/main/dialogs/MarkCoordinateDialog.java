@@ -2,8 +2,8 @@ package main.dialogs;
 
 import main.coords.*;
 import main.core.MapCanvas;
+import main.layers.MapLayers;
 import main.layers.RubinLayer;
-import main.layers.TNGPolygonFileLayer;
 
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
@@ -145,8 +145,7 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 				wgs84 = CoordSystem.RT90.toWGS84(rt90r);
 
 				RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.green);
-				mapCanvas.layerManager.delLayer("Rubin");
-				mapCanvas.layerManager.addLayerTop(r);
+				mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
 			} else {
 				coordinateSys.setText("Invalid Input");
 				return;
@@ -166,9 +165,10 @@ public class MarkCoordinateDialog extends JDialog implements PropertyChangeListe
 		Coordinate cavasCoord = mapCanvas.getCRS().toProjected(wgs84);
 		mapCanvas.focus(cavasCoord);
 		mapCanvas.setCoordinate(cavasCoord);
-		String prov = TNGPolygonFileLayer.nameAt(mapCanvas, "provinser", sweref);
+		// Polygons are stored in the canvas CRS, so query with the canvas-CRS point.
+		String prov = MapLayers.provinceAt(mapCanvas, cavasCoord);
 		provinceF.setText(prov != null ? prov : "outside the layer");
-		String dist = TNGPolygonFileLayer.nameAt(mapCanvas, "socknar", sweref);
+		String dist = MapLayers.districtAt(mapCanvas, cavasCoord);
 		districtF.setText(dist != null ? dist : "outside the layer");
 	}
 

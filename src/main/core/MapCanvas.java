@@ -1,7 +1,6 @@
 package main.core;
 
 import main.coords.*;
-import main.dialogs.DistanceTool;
 import main.geometry.Extent;
 
 import java.awt.*;
@@ -22,8 +21,6 @@ public class MapCanvas extends JPanel {
 		bounds = cs.getBoundaries();
 		coord = null;
 		layerManager = new LayerManager(this);
-		DistanceTool tool = new DistanceTool(this);
-		addMouseListener(tool);
 
 		/*
 		Graphics2D g2d = (Graphics2D) this.getGraphics();
@@ -31,11 +28,8 @@ public class MapCanvas extends JPanel {
 		*/
 	}
 
-	// todo use the MYSQLTableLayer concurently with the UI thread. check for null?
 	public void setCoordinate(Coordinate c) {
 		coord = c;
-		//MYSQLTableLayer ort = (MYSQLTableLayer) getLayer("LokalDB");
-		//ort.selectNearest(p);
 		repaint();
 	}
 	
@@ -95,46 +89,54 @@ public class MapCanvas extends JPanel {
 		repaint();
 	}
 
-	public Coordinate translatePoint(Point p) {
-		Dimension size = getSize();
-		if (size.width <= 0 || size.height <= 0 || bounds == null) return null;
+	/**
+	 * The uniform world->screen mapping for the current bounds and panel size:
+	 * screenX = east * scale + xShift, screenY = north * -scale + yShift.
+	 */
+	private record ViewTransform(double scale, double xShift, double yShift) {
+		Point toScreen(Coordinate c) {
+			return new Point((int) (c.getEast() * scale + xShift),
+					(int) (c.getNorth() * -scale + yShift));
+		}
+	}
 
+	/** Returns the view transform for the given panel size, or null if it can't be computed. */
+	private ViewTransform viewTransform(Dimension size) {
+		if (size.width <= 0 || size.height <= 0 || bounds == null) return null;
 		double scale = Math.min(size.width / bounds.getWidth(), size.height / bounds.getHeight());
 		Coordinate m = bounds.getMidlePoint();
-
 		double xShift = (size.width / 2.0) - (m.getEast() * scale);
 		double yShift = (size.height / 2.0) - (m.getNorth() * -scale);
+		return new ViewTransform(scale, xShift, yShift);
+	}
 
-		// Inverse of the logic above
-		double east = (p.x - xShift) / scale;
-		double north = (p.y - yShift) / -scale;
+	public Coordinate translatePoint(Point p) {
+		ViewTransform t = viewTransform(getSize());
+		if (t == null) return null;
+
+		// Inverse of ViewTransform.toScreen
+		double east = (p.x - t.xShift()) / t.scale();
+		double north = (p.y - t.yShift()) / -t.scale();
 
 		return new Coordinate(north, east);
 	}
 
 	public Point toScreenSpace(Coordinate c) {
-		Dimension size = getSize();
-		if (size.width <= 0 || size.height <= 0 || bounds == null) return new Point(0,0);
-
-		double scale = Math.min(size.width / bounds.getWidth(), size.height / bounds.getHeight());
-		Coordinate m = bounds.getMidlePoint();
-
-		// Use the exact same shift logic as paintComponent
-		double xShift = (size.width / 2.0) - (m.getEast() * scale);
-		double yShift = (size.height / 2.0) - (m.getNorth() * -scale);
-
-		int x = (int) (c.getEast() * scale + xShift);
-		int y = (int) (c.getNorth() * -scale + yShift); // Note the -scale for Y
-
-		return new Point(x, y);
+		ViewTransform t = viewTransform(getSize());
+		return (t != null) ? t.toScreen(c) : new Point(0, 0);
 	}
 
 	public CoordSystem getCRS() {
 		return cs;
 	}
 
-	public void setCRS(CoordSystem cs) {
-		this.cs = cs;
+	public void setCRS(CoordSystem newCs) {
+		// Reproject the current view and marker so switching CRS keeps showing the same place
+		if (newCs != cs) {
+			if (bounds != null) bounds = bounds.convertCRS(cs, newCs);
+			if (coord != null) coord = cs.convertTo(coord, newCs);
+		}
+		this.cs = newCs;
 		layerManager.invalidateCache();
 		repaint();
 	}
@@ -146,17 +148,12 @@ public class MapCanvas extends JPanel {
 		Dimension size = getSize();
 
 		// Safety check for invisible components
-		if (size.width <= 0 || size.height <= 0 || bounds == null) return;
+		ViewTransform t = viewTransform(size);
+		if (t == null) return;
 
-		double h = bounds.getHeight();
-		double w = bounds.getWidth();
-
-		// Calculate the scales for both axes
-		double rawXScale = size.width / w;
-		double rawYScale = size.height / h;
-
-		// Pick the uniform scale (ensures 1m X = 1m Y)
-		double scale = Math.min(rawXScale, rawYScale);
+		double scale = t.scale();
+		double xShift = t.xShift();
+		double yShift = t.yShift();
 
 		// Create "Draw Bounds" (The actual area visible in the window)
 		double drawWidth = size.width / scale;
@@ -169,10 +166,6 @@ public class MapCanvas extends JPanel {
 				m.getNorth() + drawHeight / 2.0,
 				m.getEast() + drawWidth / 2.0
 		);
-
-		// Calculate Shifts to center the map in the window
-		double xShift = (size.width / 2.0) - (m.getEast() * scale);
-		double yShift = (size.height / 2.0) - (m.getNorth() * -scale);
 
 		// zoomL is meters per pixel (approximate)
 		int zoomL = (int) (1.0 / scale);

@@ -1,6 +1,7 @@
 package main.dialogs;
 
 import main.coords.Coordinate;
+import main.core.LayerKey;
 import main.core.MapCanvas;
 import main.core.Keyboard;
 import main.layers.DistanceLayer;
@@ -12,11 +13,13 @@ import java.awt.event.MouseEvent;
 
 public class DistanceTool extends MouseAdapter {
     private final MapCanvas mapCanvas;
+    private final LayerKey<DistanceLayer> overlayKey;
     private Coordinate startCoord = null;
     private Coordinate startWGS84 = null;
 
-    public DistanceTool(MapCanvas mapCanvas) {
+    public DistanceTool(MapCanvas mapCanvas, LayerKey<DistanceLayer> overlayKey) {
         this.mapCanvas = mapCanvas;
+        this.overlayKey = overlayKey;
     }
 
     @Override
@@ -39,24 +42,24 @@ public class DistanceTool extends MouseAdapter {
             double bearing = startWGS84.getBearingWGS84(currentWgs84);
             String direction = Coordinate.getDirectionFromBearing(bearing);
 
-            // Create and add the layer (using your existing DistanceLayer)
+            // Show the measured vector while the result dialog is open
             DistanceLayer layer = new DistanceLayer(
                     mapCanvas,
-                    "Measurement",
+                    "Distance",
                     startCoord,
                     (int)dist,
                     direction
             );
 
-            mapCanvas.layerManager.addLayerTop(layer);
+            mapCanvas.layerManager.setOverlay(overlayKey, layer);
 
             // Show result to user
             JOptionPane.showMessageDialog(mapCanvas,
-                    String.format("Distance: %.0f m\nDirection: %s (%.1f°)", dist, direction, bearing));
+                    String.format("Distance: %.0f m\nDirection: %s (%.1fÂ°)", dist, direction, bearing));
 
             // Reset for next measurement
             startCoord = null;
-            mapCanvas.layerManager.delLayer("Measurement");
+            mapCanvas.layerManager.removeOverlay(overlayKey);
             mapCanvas.repaint();
         }
     }

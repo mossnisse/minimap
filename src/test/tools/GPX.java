@@ -62,14 +62,14 @@ public class GPX {
 			GPXfile = args[0];
 			System.out.println("tools.GPX file: " + GPXfile);
 		} else {
-			System.out.println("Inga parametrar behˆver tools.GPX fil och csv fil");
+			System.out.println("Inga parametrar beh√∂ver tools.GPX fil och csv fil");
 			GPXfile = "hej";
 		}
 		if (args.length > 1) {
 			CSVfile = args[1];
 			System.out.println("CSV file: " + CSVfile);
 		} else {
-			System.out.println("fˆr fÂ parametrar behˆver csv fil");
+			System.out.println("f√∂r f√• parametrar beh√∂ver csv fil");
 			CSVfile = "hej";
 		}
 		if (args.length > 2) {
@@ -104,8 +104,8 @@ public class GPX {
 						+ separator + "dateSE" + separator + "elevation"
 						+ separator + "timeSE" + separator + "latitude"
 						+ separator + "longitude" + separator + "DateTimeUTC"
-						+ separator + "n‰rmaste ort" + separator
-						+ "avstÂnd till n‰rmaste ort (km)" + separator
+						+ separator + "n√§rmaste ort" + separator
+						+ "avst√•nd till n√§rmaste ort (km)" + separator
 						+ "riktning"+separator+"provins"+separator+"socken";
 				bufferedWriter.write(line);
 				bufferedWriter.newLine();

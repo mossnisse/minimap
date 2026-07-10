@@ -102,13 +102,10 @@ public class TNGPolygonFileLayer extends Layer {
 		return null;
 	}
 
-	/** Name of the polygon in the named layer that contains {@code c}, or null. */
-	public static String nameAt(MapCanvas mapCanvas, String layerName, Coordinate c) {
-		if (mapCanvas.layerManager.getLayer(layerName) instanceof TNGPolygonFileLayer layer) {
-			Province p = layer.inPolygon(c);
-			if (p != null) return p.getName();
-		}
-		return null;
+	/** Name of the polygon that contains {@code c}, or null. */
+	public String nameAt(Coordinate c) {
+		Province p = inPolygon(c);
+		return (p != null) ? p.getName() : null;
 	}
 
 	@Override

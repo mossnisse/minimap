@@ -4,6 +4,7 @@ import main.core.MapCanvas;
 import main.core.DBConnection;
 import main.coords.*;
 import main.core.GUI;
+import main.layers.MapLayers;
 import main.layers.TNGPointFileLayer;
 
 import java.awt.*;
@@ -22,10 +23,10 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 	private static final long serialVersionUID = 5830869660497471486L;
 	private final MapCanvas mapCanvas;
 	private final GUI gui;
-	private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "�sele lappmark",
-			"�ngermanland", "V�sterbotten", "H�rjedalen", "Medelpad", "J�mtland", "H�lsingland", "Dalarna", "G�strikland",
-			"Uppland", "V�rmland", "V�stmanland", "N�rke", "S�dermanland", "Dalsland", "Gotland", "�sterg�tland", "Bohusl�n",
-			"Halland", "�land", "Blekinge", "Sk�ne", "Sm�land", "V�sterg�tland"};
+	private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
+			"Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
+			"Uppland", "Värmland", "Västmanland", "Närke", "Södermanland", "Dalsland", "Gotland", "Östergötland", "Bohuslän",
+			"Halland", "Öland", "Blekinge", "Skåne", "Småland", "Västergötland"};
 	private final int[] provnr = {-1, 27, 25,26,28,24,29,22,23,19,20,21,18,17,16,13,12,14,10,9,11,15,6,8,5,3,2,1,4,7};
 
 	private record SearchResult(Coordinate coord, String label, int id) {}
@@ -153,7 +154,8 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 				district = district.trim().replace("*", "%");
 				ArrayList<SearchResult> results = new ArrayList<>();
 
-				try (Connection conn = DBConnection.getH2Conn()) {
+				try {
+					Connection conn = DBConnection.getH2Conn();
 					StringBuilder sql = new StringBuilder("SELECT NORTH, EAST, DETALJTYP, SOCKEN FROM ortnamnSWTM WHERE Ortnamn ILIKE ?");
 
 					if (provNr != -1) {
@@ -180,7 +182,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 
 								// Convert from H2's SWEREF99TM to whatever the canvas currently uses
 								Coordinate c = CoordSystem.SWEREF99TM.convertTo(new Coordinate(north, east), targetCRS);
-								String label = result.getString(3) + ", " + result.getString(4) + " (Lantm�teriet)";
+								String label = result.getString(3) + ", " + result.getString(4) + " (Lantmäteriet)";
 
 								// ID is -1 because these are from the H2 file, not the editable MySQL DB
 								results.add(new SearchResult(c, label, -1));
@@ -232,17 +234,19 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 				sql.append(" LIMIT 500");
 
 				// --- MySQL Query ---
-				try (Connection conn = DBConnection.getConn();
-				     PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
-					for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
-					try (ResultSet rs = stmt.executeQuery()) {
-						while (rs.next()) {
-							int id = rs.getInt("ID");
-							String label = String.format("%s (%s)", rs.getString("locality"), rs.getString("district"));
-							Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
+				try {
+					Connection conn = DBConnection.getConn();
+					try (PreparedStatement stmt = conn.prepareStatement(sql.toString())) {
+						for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
+						try (ResultSet rs = stmt.executeQuery()) {
+							while (rs.next()) {
+								int id = rs.getInt("ID");
+								String label = String.format("%s (%s)", rs.getString("locality"), rs.getString("district"));
+								Coordinate wgs84 = new Coordinate(rs.getDouble("lat"), rs.getDouble("long"));
 
-							Coordinate c = mapCanvas.getCRS().toProjected(wgs84);
-							results.add(new SearchResult(c, label, id));
+								Coordinate c = mapCanvas.getCRS().toProjected(wgs84);
+								results.add(new SearchResult(c, label, id));
+							}
 						}
 					}
 				} catch (SQLException e) {
@@ -277,8 +281,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 						// Update Layer
 						lastResults = new TNGPointFileLayer(allPoints, allNames, "Search Results");
 						lastResults.setColor(Color.blue);
-						mapCanvas.layerManager.delLayer("Search Results");
-						mapCanvas.layerManager.addLayerTop(lastResults);
+						mapCanvas.layerManager.setOverlay(MapLayers.SEARCH_RESULTS, lastResults);
 
 						resultPanel.add(Box.createVerticalGlue());
 						zoomb.setEnabled(true);

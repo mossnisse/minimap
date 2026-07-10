@@ -113,14 +113,14 @@ public class Coordinate {
     }
 
     /**
-     * Returns the latitude in DMS format: 57° 42' 31.9" N
+     * Returns the latitude in DMS format: 57Â° 42' 31.9" N
      */
     public String getLatDMS() {
         return toDMS(this.north, "N", "S");
     }
 
     /**
-     * Returns the longitude in DMS format: 11° 58' 20.32" E
+     * Returns the longitude in DMS format: 11Â° 58' 20.32" E
      */
     public String getLonDMS() {
         return toDMS(this.east, "E", "W");
@@ -139,7 +139,7 @@ public class Coordinate {
         int minutes = (int) remainderMinutes;
         double seconds = (remainderMinutes - minutes) * 60.0;
 
-        // The \u00B0 is the Unicode for the degree symbol °
+        // The \u00B0 is the Unicode for the degree symbol Â°
         return String.format(Locale.US, "%d\u00B0 %d' %.2f\" %s", degrees, minutes, seconds, direction);
     }
 

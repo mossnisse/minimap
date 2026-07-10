@@ -38,7 +38,7 @@ public class TableH2 extends JPanel implements Table  {
 	
 	private void createConnection() {
         JdbcDataSource ds = new JdbcDataSource();
-        ds.setURL("jdbc:h2:˜/test");
+        ds.setURL("jdbc:h2:Ëœ/test");
         ds.setUser("sa");
         ds.setPassword("sa");
         try {

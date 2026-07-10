@@ -6,6 +6,7 @@ import main.core.GUI;
 import main.core.MapCanvas;
 import main.core.Settings;
 import main.layers.DistanceLayer;
+import main.layers.MapLayers;
 import main.layers.RubinLayer;
 
 import javax.swing.*;
@@ -39,36 +40,36 @@ public class SpecimenBridgeDialog extends JDialog {
 
     private static final Map<String, Integer> ISOF_PROVINCE_MAP = new HashMap<>();
     static {
-        ISOF_PROVINCE_MAP.put("Skåne", 1);
+        ISOF_PROVINCE_MAP.put("SkÃ¥ne", 1);
         ISOF_PROVINCE_MAP.put("Blekinge", 2);
-        ISOF_PROVINCE_MAP.put("Öland", 3);
+        ISOF_PROVINCE_MAP.put("Ã–land", 3);
         ISOF_PROVINCE_MAP.put("Halland", 4);
-        ISOF_PROVINCE_MAP.put("Småland", 5);
+        ISOF_PROVINCE_MAP.put("SmÃ¥land", 5);
         ISOF_PROVINCE_MAP.put("Gotland", 6);
-        ISOF_PROVINCE_MAP.put("Västergötland", 7);
-        ISOF_PROVINCE_MAP.put("Östergötland", 8);
-        ISOF_PROVINCE_MAP.put("Bohuslän", 9);
+        ISOF_PROVINCE_MAP.put("VÃ¤stergÃ¶tland", 7);
+        ISOF_PROVINCE_MAP.put("Ã–stergÃ¶tland", 8);
+        ISOF_PROVINCE_MAP.put("BohuslÃ¤n", 9);
         ISOF_PROVINCE_MAP.put("Dalsland", 10);
-        ISOF_PROVINCE_MAP.put("Närke", 11);
-        ISOF_PROVINCE_MAP.put("Södermanland", 12);
-        ISOF_PROVINCE_MAP.put("Värmland", 13);
-        ISOF_PROVINCE_MAP.put("Västmanland", 14);
+        ISOF_PROVINCE_MAP.put("NÃ¤rke", 11);
+        ISOF_PROVINCE_MAP.put("SÃ¶dermanland", 12);
+        ISOF_PROVINCE_MAP.put("VÃ¤rmland", 13);
+        ISOF_PROVINCE_MAP.put("VÃ¤stmanland", 14);
         ISOF_PROVINCE_MAP.put("Uppland", 15);
-        ISOF_PROVINCE_MAP.put("Gästrikland", 16);
+        ISOF_PROVINCE_MAP.put("GÃ¤strikland", 16);
         ISOF_PROVINCE_MAP.put("Dalarna", 17);
-        ISOF_PROVINCE_MAP.put("Hälsingland", 18);
-        ISOF_PROVINCE_MAP.put("Härjedalen", 19);
+        ISOF_PROVINCE_MAP.put("HÃ¤lsingland", 18);
+        ISOF_PROVINCE_MAP.put("HÃ¤rjedalen", 19);
         ISOF_PROVINCE_MAP.put("Medelpad", 20);
-        ISOF_PROVINCE_MAP.put("Ångermanland", 21);
-        ISOF_PROVINCE_MAP.put("Jämtland", 22);
-        ISOF_PROVINCE_MAP.put("Västerbotten", 23);
+        ISOF_PROVINCE_MAP.put("Ã…ngermanland", 21);
+        ISOF_PROVINCE_MAP.put("JÃ¤mtland", 22);
+        ISOF_PROVINCE_MAP.put("VÃ¤sterbotten", 23);
         ISOF_PROVINCE_MAP.put("Norrbotten", 25);
         ISOF_PROVINCE_MAP.put("Lappland", 24); // Note: Isof often groups Lappmarken under 'Lappland' ID 24
         ISOF_PROVINCE_MAP.put("Torne lappmark", 24);
         ISOF_PROVINCE_MAP.put("Lule lappmark", 24);
         ISOF_PROVINCE_MAP.put("Pite lappmark", 24);
         ISOF_PROVINCE_MAP.put("Lycksele lappmark", 24);
-        ISOF_PROVINCE_MAP.put("Åsele lappmark", 24);
+        ISOF_PROVINCE_MAP.put("Ã…sele lappmark", 24);
     }
 
     private JLabel totalLabel;
@@ -579,8 +580,8 @@ public class SpecimenBridgeDialog extends JDialog {
                 isNavigating = false; // Release if index is invalid
             }
 
-            mapCanvas.layerManager.delLayer("Rubin");
-            mapCanvas.layerManager.delLayer("distance");
+            mapCanvas.layerManager.removeOverlay(MapLayers.RUBIN_MARKER);
+            mapCanvas.layerManager.removeOverlay(MapLayers.DISTANCE_OVERLAY);
             mapCanvas.repaint();
 
         } catch (Exception e) {
@@ -849,14 +850,15 @@ public class SpecimenBridgeDialog extends JDialog {
         String directionS = (String) directionCombo.getSelectedItem();
 
         // Clear old distance layer regardless
-        mapCanvas.layerManager.delLayer("distance");
+        mapCanvas.layerManager.removeOverlay(MapLayers.DISTANCE_OVERLAY);
 
         if (!distText.isEmpty() && directionS != null && !directionS.isEmpty()) {
             try {
                 int distanceI = Integer.parseInt(distText);
                 if (distanceI > 0) {
                     // Add the visual vector layer
-                    mapCanvas.layerManager.addLayerTop(new DistanceLayer(mapCanvas, "distance", c, distanceI, directionS));
+                    mapCanvas.layerManager.setOverlay(MapLayers.DISTANCE_OVERLAY,
+                            new DistanceLayer(mapCanvas, "Distance", c, distanceI, directionS));
                 }
             } catch (NumberFormatException e) {
                 // Silent fail for visualization if number is garbled
@@ -871,8 +873,7 @@ public class SpecimenBridgeDialog extends JDialog {
         String rubin = targetSpecimen.getRubin();
         if (rubin != null && !rubin.isEmpty()) {
             RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.GREEN);
-            mapCanvas.layerManager.delLayer("Rubin");
-            mapCanvas.layerManager.addLayerTop(r);
+            mapCanvas.layerManager.setOverlay(MapLayers.RUBIN_MARKER, r);
             mapCanvas.focus(r.getMiddle());
         }
     }
