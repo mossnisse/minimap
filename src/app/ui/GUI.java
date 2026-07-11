@@ -16,6 +16,7 @@ import gis.core.*;
 import gis.ui.*;
 import gis.layers.*;
 import gis.coords.*;
+import gis.shapefile.ShapefileReader;
 
 public class GUI  {
 	private JFrame frame;
@@ -259,6 +260,11 @@ public class GUI  {
 		menuItem1.addActionListener(e->openGPXFile());
 		menu3.add(menuItem1);
 
+		menuItem1 = new JMenuItem("Add shapefile layer (.shp)", KeyEvent.VK_H);
+		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_DOWN_MASK));
+		menuItem1.addActionListener(e->openShapeFile());
+		menu3.add(menuItem1);
+
 		menuItem1 = new JMenuItem("Add raster layer", KeyEvent.VK_G);
 		menuItem1.addActionListener(e->openFile());
 		menu3.add(menuItem1);
@@ -306,8 +312,7 @@ public class GUI  {
 		final JFileChooser fc = new JFileChooser();
 
 		FileNameExtensionFilter filter = new FileNameExtensionFilter(
-				"Map Files", ".shp", ".SHP", "tif", "TIF", "tng", "TNG", "png", "PNG", "jpg", "JPG",
-				"gpx", "tools.GPX");
+				"Raster Files", "tif", "tiff", "png", "jpg", "jpeg", "gif", "bmp");
 		fc.setFileFilter(filter);
 		int returnVal = fc.showOpenDialog(mapCanvas);
 
@@ -327,6 +332,43 @@ public class GUI  {
 			}
 		} else {
 			System.out.println("Open cancelled");
+		}
+	}
+
+	public void openShapeFile() {
+		final JFileChooser fc = new JFileChooser();
+		fc.setFileFilter(new FileNameExtensionFilter("ESRI Shapefiles", "shp"));
+		if (fc.showOpenDialog(mapCanvas) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+		File file = fc.getSelectedFile();
+
+		// Take the CRS from the .prj sidecar; ask when it is missing or unrecognized
+		CoordSystem crs = ShapefileReader.guessCRS(file.getPath());
+		if (crs == null) {
+			crs = (CoordSystem) JOptionPane.showInputDialog(frame,
+					"No .prj file found (or its projection is not supported).\n"
+							+ "Which coordinate system does the shapefile use?",
+					"Shapefile coordinate system", JOptionPane.QUESTION_MESSAGE,
+					null, CoordSystem.values(), mapCanvas.getCRS());
+			if (crs == null) {
+				return; // cancelled
+			}
+		}
+
+		setCursorWait();
+		try {
+			ShapeFileLayer layer = new ShapeFileLayer(file.getPath(), mapCanvas, crs);
+			layer.setName(file.getName());
+			layer.setColor(Color.RED);
+			mapCanvas.getLayerManager().addLayerTop(layer);
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(frame,
+					"Can't open shapefile: " + file.getPath() + "\n" + e.getMessage(),
+					"Error", JOptionPane.ERROR_MESSAGE);
+		} finally {
+			setCursorDefault();
 		}
 	}
 
