@@ -104,7 +104,11 @@ public class SpecimenBridgeDialog extends JDialog {
         this.totalCount = service.getCacheCount(); // Only get the number, not the data
 
         String cnr = Settings.getValue("cnr");
-        currentIndex = (cnr != null) ? Integer.parseInt(cnr) : 0;
+        try {
+            currentIndex = (cnr != null) ? Integer.parseInt(cnr.trim()) : 0;
+        } catch (NumberFormatException e) {
+            currentIndex = 0;
+        }
 
         initUI();
         loadSpecimen(currentIndex);
@@ -842,8 +846,11 @@ public class SpecimenBridgeDialog extends JDialog {
         LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
         if (selected == null || selected.getId() == -1) return;
         // core.GUI.setCursorWait();
-        Coordinate c = service.getLocalityPoint(selected.getId());
-        if (c == null) return;
+        Coordinate sweref = service.getLocalityPoint(selected.getId());
+        if (sweref == null) return;
+
+        // The DB stores SWEREF99TM; the canvas may be in another CRS
+        Coordinate c = CoordSystem.SWEREF99TM.convertTo(sweref, mapCanvas.getCRS());
 
         // Center the map canvas
         mapCanvas.focus(c);
@@ -874,6 +881,7 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     public void focusRubin() {
+        if (targetSpecimen == null) return;
         String rubin = targetSpecimen.getRubin();
         if (rubin != null && !rubin.isEmpty()) {
             RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.GREEN);
@@ -883,6 +891,7 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     public void focusRT90() {
+        if (targetSpecimen == null) return;
         String nStr = targetSpecimen.getRiketsN();
         String oStr = targetSpecimen.getRiketsO();
         // Validate that we have strings, and they aren't just "0" or empty
@@ -896,10 +905,10 @@ public class SpecimenBridgeDialog extends JDialog {
                 while (o < 1000000) o *= 10;
 
                 Coordinate wgs84 = CoordSystem.RT90.toWGS84(n, o);
-                Coordinate swtm = CoordSystem.SWEREF99TM.toProjected(wgs84);
+                Coordinate c = mapCanvas.getCRS().toProjected(wgs84);
 
-                mapCanvas.focus(swtm);
-                mapCanvas.setCoordinate(swtm);
+                mapCanvas.focus(c);
+                mapCanvas.setCoordinate(c);
             } catch (NumberFormatException e) {
                 System.err.println("Invalid RT90 format");
             }
@@ -907,11 +916,12 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     public void focusSweref() {
+        if (targetSpecimen == null) return;
         int n = targetSpecimen.getSwerefN();
         int e = targetSpecimen.getSwerefE();
         // Basic validation for SWEREF99 TM range (approximate Sweden bounds)
         if (n > 6000000 && e > 200000) {
-            Coordinate c = new Coordinate(n, e);
+            Coordinate c = CoordSystem.SWEREF99TM.convertTo(new Coordinate(n, e), mapCanvas.getCRS());
             mapCanvas.focus(c);
             mapCanvas.setCoordinate(c);
         }
@@ -932,10 +942,10 @@ public class SpecimenBridgeDialog extends JDialog {
                     targetSpecimen.getLongDeg(), targetSpecimen.getLongMin(), targetSpecimen.getLongSec(), targetSpecimen.getLongDir()
             );
 
-            Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(c);
+            Coordinate canvasCoord = mapCanvas.getCRS().toProjected(c);
 
-            mapCanvas.focus(sweref);
-            mapCanvas.setCoordinate(sweref);
+            mapCanvas.focus(canvasCoord);
+            mapCanvas.setCoordinate(canvasCoord);
         } catch (Exception e) {
             System.err.println("Lat/Long conversion failed");
         }
@@ -1025,6 +1035,8 @@ public class SpecimenBridgeDialog extends JDialog {
             System.out.println("Browser not supported on this system.");
             return;
         }
+
+        if (targetSpecimen == null) return;
 
         String placeName = "";
         String provinceName = targetSpecimen.getProvince();

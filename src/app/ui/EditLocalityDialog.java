@@ -313,11 +313,12 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			moved = null;
 		}
 
+		gui.setCursorWait();
+
 		// Start Background Worker
 		new SwingWorker<Boolean, Void>() {
 			@Override
 			protected Boolean doInBackground() throws Exception {
-				gui.setCursorWait();
 				localities.update(localityID, details, moved, Settings.getValue("user"));
 				return true;
 			}

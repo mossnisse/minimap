@@ -179,12 +179,12 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		final String zlStr = zoomLevelT.getText().trim();
 		final boolean isPlace = isPlaceT.isSelected();
 
+		gui.setCursorWait();
+
 		// Start Background Worker
 		new SwingWorker<Boolean, Void>() {
 			@Override
 			protected Boolean doInBackground() throws Exception {
-				gui.setCursorWait();
-
 				if (localities.exists(localityName, distr, prov, coun)) {
 					return false;
 				}

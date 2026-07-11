@@ -11,9 +11,11 @@ public class LatLongStrategy implements ProjectionStrategy {
         return new Coordinate(northing, easting);
     }
 
-    //different factor for the lat and lon
+    // Canvas units (degrees) per meter. Latitude and longitude differ; use the
+    // longitude factor since callers scale horizontal (east-west) distances.
     @Override
     public double getScaleFactor(Coordinate c) {
-        return 0;
+        double metersPerDegree = 111_320.0 * Math.cos(Math.toRadians(c.getNorth()));
+        return (metersPerDegree > 1) ? 1.0 / metersPerDegree : 0;
     }
 }

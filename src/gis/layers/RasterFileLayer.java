@@ -66,7 +66,9 @@ public class RasterFileLayer extends Layer {
 
 	@Override
 	public Extent getBoundaries() {
-		return box;
+		// In the canvas CRS, like the other layers
+		if (needsProjection) projectCorners();
+		return projectedBox;
 	}
 
 	private void projectCorners() {
@@ -97,7 +99,8 @@ public class RasterFileLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-
+		// Re-project the corners next draw (e.g. after a canvas CRS change)
+		needsProjection = true;
 	}
 
 	@Override

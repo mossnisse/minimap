@@ -30,6 +30,10 @@ public class Database {
 		if (mysqlConn == null || mysqlConn.isClosed() || !mysqlConn.isValid(2)) {
 			createMysqlConn();
 		}
+		if (mysqlConn == null) {
+			// Happens when the user cancels the password prompt
+			throw new SQLException("No MySQL connection (login cancelled)");
+		}
 		return mysqlConn;
 	}
 

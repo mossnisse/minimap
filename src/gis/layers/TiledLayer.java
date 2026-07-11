@@ -73,7 +73,8 @@ public abstract class TiledLayer extends Layer {
 
     @Override
     public Extent getBoundaries() {
-        return getCRS().getBoundaries();
+        // In the canvas CRS, like the other layers
+        return getCRS().getBoundaries().convertCRS(getCRS(), mapCanvas.getCRS());
     }
 
     @Override

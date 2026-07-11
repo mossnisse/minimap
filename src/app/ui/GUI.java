@@ -480,7 +480,8 @@ public class GUI  {
 
 	public void showRubin(MouseEvent e) {
 		Coordinate c = mapCanvas.translatePoint(e.getPoint());
-		String rubin = RUBIN.fromSweref99TM(c);
+		// The clicked point is in the canvas CRS, which is not necessarily SWEREF99TM
+		String rubin = RUBIN.fromRT90(mapCanvas.getCRS().convertTo(c, CoordSystem.RT90));
 		RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.green);
 		mapCanvas.getLayerManager().setOverlay(MapLayers.RUBIN_MARKER, r);
 	}
@@ -624,7 +625,7 @@ public class GUI  {
 			int zoomLevel = 12;
 
 			Coordinate c = mapCanvas.translatePoint(me.getPoint());
-			Coordinate wgs84  = CoordSystem.SWEREF99TM.toWGS84(c);
+			Coordinate wgs84  = mapCanvas.getCRS().toWGS84(c);
 
 			// Format the URI string. Format: #zoom/lat/lon/type  //https://kartbild.com/?marker=58.88545,11.02363#14/58.88545/11.02363+/0x20"
 			String uriString = String.format(Locale.US, "https://kartbild.com/?marker=%f,%f#%d/%f/%f/0x%d",

@@ -136,12 +136,12 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 		final int provNr = getProvinsNr();
 		final CoordSystem currentCRS = mapCanvas.getCRS();
 
+		gui.setCursorWait(); // Set hourglass cursor (on the EDT, before the worker starts)
+
 		// Run Database logic in background
 		new SwingWorker<ArrayList<SearchResult>, Void>() {
 			@Override
 			protected ArrayList<SearchResult> doInBackground() {
-				gui.setCursorWait(); // Set hourglass cursor
-
 				ArrayList<SearchResult> results = fetchFromMysql();
 
 				if (!lokalText.isEmpty() && ("Sweden".equals(countryText) || "*".equals(countryText))) {
@@ -181,7 +181,7 @@ public class SearchLocalityDialog extends JDialog implements ActionListener {
 							String.valueOf(provSelected), isPlaceSelected);
 
 					for (LocalityRepository.SearchHit hit : localities.search(criteria)) {
-						String label = String.format("%s (%s)", hit.locality(), hit.district());
+						String label = String.format("%s (%s)", hit.locality(), hit.district() != null ? hit.district() : "");
 						results.add(new SearchResult(currentCRS.toProjected(hit.wgs84()), label, hit.id()));
 					}
 				} catch (SQLException e) {

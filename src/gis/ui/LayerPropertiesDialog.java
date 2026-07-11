@@ -98,9 +98,6 @@ public class LayerPropertiesDialog extends JDialog {
             JOptionPane.showMessageDialog(this, "Layer name cannot be empty.");
             return;
         }
-        layer.setName(nameField.getText());
-        layer.setColor(selectedColor);
-        layer.setCRS((CoordSystem) crsBox.getSelectedItem());
 
         int min = (Integer) minZoomSpin.getValue();
         int max = (Integer) maxZoomSpin.getValue();
@@ -108,6 +105,10 @@ public class LayerPropertiesDialog extends JDialog {
             JOptionPane.showMessageDialog(this, "Min Zoom cannot be greater than Max Zoom.");
             return;
         }
+
+        layer.setName(nameField.getText());
+        layer.setColor(selectedColor);
+        layer.setCRS((CoordSystem) crsBox.getSelectedItem());
         layer.setMinZoomL(min);
         layer.setMaxZoomL(max);
 

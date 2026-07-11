@@ -88,37 +88,53 @@ public class SpecimenSearchDialog extends JDialog {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         searchButton.setEnabled(false);
         statusLabel.setText("Updating H2 cache...");
+        statusLabel.setForeground(UIManager.getColor("Label.foreground"));
 
-        // Parse precision safely
-        int precision = 0;
+        // Parse precision safely, and capture all input on the EDT
+        int parsedPrecision = 0;
         try {
-            precision = Integer.parseInt(precisionField.getText().trim());
+            parsedPrecision = Integer.parseInt(precisionField.getText().trim());
         } catch (NumberFormatException ignored) {}
+        final int precision = parsedPrecision;
+        final String province = (String) provinceCombo.getSelectedItem();
+        final String district = districtField.getText().trim();
+        final String collector = collectorField.getText().trim();
+        final String accession = accessionField.getText().trim();
+        final String year = yearField.getText().trim();
+        final String locality = localityField.getText().trim();
+        final String genus = genusField.getText().trim();
+        final String herbarium = herbariumField.getText().trim();
+        final String coordSource = coordSourceField.getText().trim();
+        final boolean lackBridge = lackBridgeOnly.isSelected();
 
-        // Call refreshed service method
-        int hitCount = service.refreshCache(
-                (String) provinceCombo.getSelectedItem(),
-                districtField.getText().trim(),
-                collectorField.getText().trim(),
-                accessionField.getText().trim(),
-                yearField.getText().trim(),
-                localityField.getText().trim(),
-                genusField.getText().trim(),
-                herbariumField.getText().trim(),
-                coordSourceField.getText().trim(),
-                precision,
-                lackBridgeOnly.isSelected()
-        );
+        // The cache refresh copies every hit from MySQL to H2 - keep it off the EDT
+        new SwingWorker<Integer, Void>() {
+            @Override
+            protected Integer doInBackground() {
+                return service.refreshCache(province, district, collector, accession, year,
+                        locality, genus, herbarium, coordSource, precision, lackBridge);
+            }
 
-        if (hitCount > 0) {
-            statusLabel.setText("Found " + hitCount + " specimens. Cache updated.");
-            statusLabel.setForeground(new Color(0, 100, 0));
-        } else {
-            statusLabel.setText("No results found.");
-            statusLabel.setForeground(Color.RED);
-        }
+            @Override
+            protected void done() {
+                int hitCount = 0;
+                try {
+                    hitCount = get();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-        searchButton.setEnabled(true);
-        setCursor(Cursor.getDefaultCursor());
+                if (hitCount > 0) {
+                    statusLabel.setText("Found " + hitCount + " specimens. Cache updated.");
+                    statusLabel.setForeground(new Color(0, 100, 0));
+                } else {
+                    statusLabel.setText("No results found.");
+                    statusLabel.setForeground(Color.RED);
+                }
+
+                searchButton.setEnabled(true);
+                setCursor(Cursor.getDefaultCursor());
+            }
+        }.execute();
     }
 }
