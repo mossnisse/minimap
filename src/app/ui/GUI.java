@@ -16,6 +16,7 @@ import gis.core.*;
 import gis.ui.*;
 import gis.layers.*;
 import gis.coords.*;
+import gis.csv.CsvFile;
 import gis.shapefile.ShapefileReader;
 
 public class GUI  {
@@ -131,13 +132,6 @@ public class GUI  {
 		menuItem0.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
 		menuItem0.addActionListener(e->openFile());
 		menu.add(menuItem0);
-
-		menuItem2 = new JMenuItem("Save as .csv", KeyEvent.VK_S);
-		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK));
-		menuItem2.getAccessibleContext().setAccessibleDescription(
-				"This doesn't really do anything");
-		menuItem2.addActionListener(e->saveCSV());
-		menu.add(menuItem2);
 
 		menuItem2 = new JMenuItem("Set Canvas CRS");
 		menuItem2.addActionListener(e->setCanvasCRS());
@@ -263,6 +257,10 @@ public class GUI  {
 		menuItem1 = new JMenuItem("Add shapefile layer (.shp)", KeyEvent.VK_H);
 		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_DOWN_MASK));
 		menuItem1.addActionListener(e->openShapeFile());
+		menu3.add(menuItem1);
+
+		menuItem1 = new JMenuItem("Add .csv point layer (table editor)");
+		menuItem1.addActionListener(e->openCsvFile());
 		menu3.add(menuItem1);
 
 		menuItem1 = new JMenuItem("Add raster layer", KeyEvent.VK_G);
@@ -426,18 +424,25 @@ public class GUI  {
 		mapCanvas.getLayerManager().addLayerTop(MapLayers.LOKAL_DB, MapLayers.lokalDb(mapCanvas, ctx.localities));
 	}
 
-	public void saveCSV() {
-		System.out.println("Save");
+	public void openCsvFile() {
 		final JFileChooser fc = new JFileChooser();
-		int returnVal = fc.showSaveDialog(mapCanvas);
+		fc.setFileFilter(new FileNameExtensionFilter("CSV files", "csv", "txt", "tsv"));
+		if (fc.showOpenDialog(mapCanvas) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+		File file = fc.getSelectedFile();
 
-		if (returnVal == JFileChooser.APPROVE_OPTION) {
-			File file = fc.getSelectedFile();
-			System.out.println("Save: " + file.getName());
-			// log.append("Opening: " + file.getName() + "." + newline);
-		} else {
-			// log.append("Open command cancelled by user." + newline);
-			System.out.println("Save cancelled");
+		setCursorWait();
+		try {
+			CsvFile csv = CsvFile.read(file.toPath());
+			new CsvEditorDialog(frame, mapCanvas, file, csv);
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(frame,
+					"Can't open CSV file: " + file.getPath() + "\n" + e.getMessage(),
+					"Error", JOptionPane.ERROR_MESSAGE);
+		} finally {
+			setCursorDefault();
 		}
 	}
 

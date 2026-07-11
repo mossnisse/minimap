@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Generic labeled-point layer backed by any point source (typically a
@@ -43,6 +44,9 @@ public class PointTableLayer extends Layer {
 	private volatile List<LabeledPoint> cache = Collections.emptyList(); // in canvas CRS
 	private volatile Extent lastQueryBounds; // in layer CRS
 	private final AtomicBoolean isFetching = new AtomicBoolean(false);
+	// Bumped by invalidateCache() so a fetch that was already in flight when the
+	// data changed can't mark its (stale) result as current in the finally below.
+	private final AtomicLong invalidationStamp = new AtomicLong();
 
 	/**
 	 * @param growFactor how much extra area to fetch around the view, so small pans
@@ -63,6 +67,7 @@ public class PointTableLayer extends Layer {
 	// ensures only one fetch runs at a time even if draw() fires repeatedly.
 	private void refreshCacheAsync(Extent boundsInLayerCrs) {
 		if (!isFetching.compareAndSet(false, true)) return;
+		long stamp = invalidationStamp.get();
 		CoordSystem canvasCRS = mapCanvas.getCRS();
 		CompletableFuture.runAsync(() -> {
 			try {
@@ -78,8 +83,12 @@ public class PointTableLayer extends Layer {
 			} finally {
 				// Remember the attempted bounds even on failure, so an unreachable
 				// database doesn't retrigger a fetch on every repaint. A pan/zoom
-				// outside the bounds or invalidateCache() will retry.
-				this.lastQueryBounds = boundsInLayerCrs;
+				// outside the bounds or invalidateCache() will retry. But if the
+				// data was invalidated while this fetch ran, leave the null that
+				// invalidateCache() wrote, so the next repaint refetches.
+				if (stamp == invalidationStamp.get()) {
+					this.lastQueryBounds = boundsInLayerCrs;
+				}
 				isFetching.set(false);
 				SwingUtilities.invokeLater(mapCanvas::repaint);
 			}
@@ -88,11 +97,34 @@ public class PointTableLayer extends Layer {
 
 	@Override
 	public Extent getBoundaries() {
-		return getCRS().getBoundaries().convertCRS(getCRS(), mapCanvas.getCRS());
+		// Extent of the cached points (already in canvas CRS). Converting the
+		// whole CRS boundary instead would zoom to the entire coordinate system
+		// — and WGS84's lat ±90 becomes ±Infinity under Web Mercator.
+		List<LabeledPoint> localCache = this.cache;
+		if (localCache.isEmpty()) return null;
+
+		double minN = Double.MAX_VALUE, maxN = -Double.MAX_VALUE;
+		double minE = Double.MAX_VALUE, maxE = -Double.MAX_VALUE;
+		for (LabeledPoint p : localCache) {
+			minN = Math.min(minN, p.c().getNorth());
+			maxN = Math.max(maxN, p.c().getNorth());
+			minE = Math.min(minE, p.c().getEast());
+			maxE = Math.max(maxE, p.c().getEast());
+		}
+		Extent extent = new Extent(minN, minE, maxN, maxE);
+
+		// Pad so a lone point (zero-size extent) doesn't collapse the view scale
+		double pad = Math.max(extent.getWidth(), extent.getHeight()) * 0.05;
+		if (pad == 0) {
+			Extent world = mapCanvas.getCRS().getBoundaries();
+			pad = Math.max(world.getWidth(), world.getHeight()) * 0.001;
+		}
+		return extent.expand(pad);
 	}
 
 	@Override
 	public void invalidateCache() {
+		invalidationStamp.incrementAndGet();
 		lastQueryBounds = null;
 	}
 
