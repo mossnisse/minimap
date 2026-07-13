@@ -17,6 +17,7 @@ import gis.ui.*;
 import gis.layers.*;
 import gis.coords.*;
 import gis.csv.CsvFile;
+import gis.geopackage.GeoPackageReader;
 import gis.shapefile.ShapefileReader;
 
 public class GUI  {
@@ -259,6 +260,10 @@ public class GUI  {
 		menuItem1.addActionListener(e->openShapeFile());
 		menu3.add(menuItem1);
 
+		menuItem1 = new JMenuItem("Add GeoPackage layer (.gpkg)");
+		menuItem1.addActionListener(e->openGeoPackageFile());
+		menu3.add(menuItem1);
+
 		menuItem1 = new JMenuItem("Add .csv point layer (table editor)");
 		menuItem1.addActionListener(e->openCsvFile());
 		menu3.add(menuItem1);
@@ -364,6 +369,73 @@ public class GUI  {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(frame,
 					"Can't open shapefile: " + file.getPath() + "\n" + e.getMessage(),
+					"Error", JOptionPane.ERROR_MESSAGE);
+		} finally {
+			setCursorDefault();
+		}
+	}
+
+	public void openGeoPackageFile() {
+		final JFileChooser fc = new JFileChooser();
+		fc.setFileFilter(new FileNameExtensionFilter("GeoPackage files", "gpkg"));
+		if (fc.showOpenDialog(mapCanvas) != JFileChooser.APPROVE_OPTION) {
+			return;
+		}
+		File file = fc.getSelectedFile();
+
+		// List the feature tables and take the CRS from the file's metadata
+		GeoPackageReader.FeatureTable table;
+		CoordSystem crs;
+		try (GeoPackageReader reader = new GeoPackageReader(file.getPath())) {
+			java.util.List<GeoPackageReader.FeatureTable> tables = reader.getFeatureTables();
+			if (tables.isEmpty()) {
+				JOptionPane.showMessageDialog(frame,
+						"No feature tables found in: " + file.getPath(),
+						"Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			if (tables.size() == 1) {
+				table = tables.get(0);
+			} else {
+				table = (GeoPackageReader.FeatureTable) JOptionPane.showInputDialog(frame,
+						"Which feature table do you want to add?",
+						"GeoPackage feature table", JOptionPane.QUESTION_MESSAGE,
+						null, tables.toArray(), tables.get(0));
+				if (table == null) {
+					return; // cancelled
+				}
+			}
+			crs = reader.guessCRS(table);
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(frame,
+					"Can't open GeoPackage: " + file.getPath() + "\n" + e.getMessage(),
+					"Error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+
+		// Ask when the file's spatial reference system is unsupported
+		if (crs == null) {
+			crs = (CoordSystem) JOptionPane.showInputDialog(frame,
+					"The layer's coordinate system is not recognized.\n"
+							+ "Which coordinate system does it use?",
+					"GeoPackage coordinate system", JOptionPane.QUESTION_MESSAGE,
+					null, CoordSystem.values(), mapCanvas.getCRS());
+			if (crs == null) {
+				return; // cancelled
+			}
+		}
+
+		setCursorWait();
+		try {
+			GeoPackageLayer layer = new GeoPackageLayer(file.getPath(), table.tableName, mapCanvas, crs);
+			layer.setName(file.getName() + ":" + table.tableName);
+			layer.setColor(Color.RED);
+			mapCanvas.getLayerManager().addLayerTop(layer);
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(frame,
+					"Can't open GeoPackage layer: " + file.getPath() + "\n" + e.getMessage(),
 					"Error", JOptionPane.ERROR_MESSAGE);
 		} finally {
 			setCursorDefault();
