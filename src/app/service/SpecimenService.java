@@ -23,7 +23,7 @@ public class SpecimenService {
     }
 
     // creates the H2 cache and reports found specimens
-    public int refreshCache(String province, String district, String collector, String accession, String year, String locality, String genus, String herbarium, String coordSource, int coordPrecision, boolean lackBridgeOnly) {
+    public int refreshCache(String province, String district, String collector, String accession, String year, String locality, String genus, String herbarium, String coordSource, int coordPrecision, boolean lackBridgeOnly) throws SQLException {
         int count = 0;
         List<Object> params = new ArrayList<>();
 
@@ -95,50 +95,46 @@ public class SpecimenService {
                 + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
 
-        try {
-            Connection mysqlConn = db.mysql();
-            Connection h2Conn = db.h2();
+        Connection mysqlConn = db.mysql();
+        Connection h2Conn = db.h2();
 
-            try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
-                prepareH2Table(h2Conn);
+        try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
+            prepareH2Table(h2Conn);
 
-                // Map dynamic parameters to the PreparedStatement
-                for (int i = 0; i < params.size(); i++) {
-                    selectStmt.setObject(i + 1, params.get(i));
-                }
+            // Map dynamic parameters to the PreparedStatement
+            for (int i = 0; i < params.size(); i++) {
+                selectStmt.setObject(i + 1, params.get(i));
+            }
 
-                try (ResultSet rs = selectStmt.executeQuery();
-                     PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
+            try (ResultSet rs = selectStmt.executeQuery();
+                 PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
 
-                    h2Conn.setAutoCommit(false); // Start transaction
-                    try {
-                        while (rs.next()) {
-                            for (int i = 1; i <= 32; i++) {
-                                insertStmt.setObject(i, rs.getObject(i));
-                            }
-                            insertStmt.addBatch();
-                            count++;
-
-                            // Execute batch every 500 records to manage memory
-                            if (count % 500 == 0) {
-                                insertStmt.executeBatch();
-                            }
+                h2Conn.setAutoCommit(false); // Start transaction
+                try {
+                    while (rs.next()) {
+                        for (int i = 1; i <= 32; i++) {
+                            insertStmt.setObject(i, rs.getObject(i));
                         }
+                        insertStmt.addBatch();
+                        count++;
 
-                        // Finalize remaining records
-                        insertStmt.executeBatch();
-                        h2Conn.commit(); // Single commit at the very end
-
-                    } catch (SQLException e) {
-                        h2Conn.rollback(); // Critical: Roll back if something goes wrong!
-                        throw e;
-                    } finally {
-                        h2Conn.setAutoCommit(true); // Reset state for the connection pool
+                        // Execute batch every 500 records to manage memory
+                        if (count % 500 == 0) {
+                            insertStmt.executeBatch();
+                        }
                     }
+
+                    // Finalize remaining records
+                    insertStmt.executeBatch();
+                    h2Conn.commit(); // Single commit at the very end
+
+                } catch (SQLException e) {
+                    h2Conn.rollback(); // Critical: Roll back if something goes wrong!
+                    throw e;
+                } finally {
+                    h2Conn.setAutoCommit(true); // Reset state for the shared connection
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
         return count;
     }

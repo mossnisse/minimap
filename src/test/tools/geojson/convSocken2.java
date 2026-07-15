@@ -28,7 +28,11 @@ public class convSocken2 {
 				//Connection conn = MYSQLConnection.getConn();
 				String url = "jdbc:mysql://130.239.50.18:3306/samhall";
 				String user = "root";
-				Connection conn = DriverManager.getConnection(url, user, "slupeN@23");
+				String password = System.getenv("MINIMAP_DB_PASSWORD");
+				if (password == null || password.isBlank()) {
+					throw new SQLException("Set MINIMAP_DB_PASSWORD before running this utility");
+				}
+				Connection conn = DriverManager.getConnection(url, user, password);
 				String sqlstmt = "update district set geojson =? where district =? and Län =? and country =\"Sweden\" and geojson is null";
 				PreparedStatement statement = conn.prepareStatement(sqlstmt);
 			 

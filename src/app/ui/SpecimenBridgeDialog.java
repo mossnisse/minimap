@@ -40,6 +40,8 @@ public class SpecimenBridgeDialog extends JDialog {
     private boolean isNavigating = false;
     private String currentLoadedDistrict = null;
     private String currentLoadedProvince = null;
+    private SwingWorker<List<LocalityRecord>, Void> localityWorker;
+    private long localityRequestGeneration = 0;
 
     private static final Map<String, Integer> ISOF_PROVINCE_MAP = new HashMap<>();
     static {
@@ -114,7 +116,7 @@ public class SpecimenBridgeDialog extends JDialog {
         loadSpecimen(currentIndex);
         this.pack();
         this.setLocationRelativeTo(owner);
-        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
     }
 
     private void initUI() {
@@ -154,9 +156,13 @@ public class SpecimenBridgeDialog extends JDialog {
                     boolean wasPreviouslyLinked = (targetSpecimen != null && targetSpecimen.getLocalityId() > 0);
 
                     if (selected != null && selected.getId() > 0) {
-                        saveBridge(); // Save and stay (to close)
+                        if (!saveBridge()) {
+                            return;
+                        }
                     } else if (wasPreviouslyLinked) {
-                        deleteBridge();
+                        if (!deleteBridge()) {
+                            return;
+                        }
                     }
                 }
                 saveCurrentIndex();
@@ -213,7 +219,7 @@ public class SpecimenBridgeDialog extends JDialog {
             try {
                 int target = Integer.parseInt(indexField.getText().trim()) - 1; // 1-based to 0-based
                 if (target >= 0 && target < totalCount) {
-                    loadSpecimen(target);
+                    handleNavigation(target);
                 } else {
                     // Reset to current if out of bounds
                     indexField.setText(String.valueOf(currentIndex + 1));
@@ -576,7 +582,10 @@ public class SpecimenBridgeDialog extends JDialog {
                         return;
                     }
                 } else if(wasPreviouslyLinked) {
-                    deleteBridge();
+                    if (!deleteBridge()) {
+                        isNavigating = false;
+                        return;
+                    }
                 }
             }
 
@@ -677,6 +686,11 @@ public class SpecimenBridgeDialog extends JDialog {
         final String finalDist = targetDistrict;
         final String finalProv = targetProvince;
         final int finalId = idToSelect;
+        final long requestGeneration = ++localityRequestGeneration;
+
+        if (localityWorker != null) {
+            localityWorker.cancel(true);
+        }
 
         // --- NEW: Bypass rebuild if the list data hasn't changed ---
         if (finalDist.equals(currentLoadedDistrict) && finalProv.equals(currentLoadedProvince)) {
@@ -691,7 +705,7 @@ public class SpecimenBridgeDialog extends JDialog {
         localityCombo.addItem(new LocalityRecord(-1, "Loading..."));
         isAdjusting = wasAdjusting;
 
-        SwingWorker<List<LocalityRecord>, Void> worker = new SwingWorker<>() {
+        localityWorker = new SwingWorker<>() {
             @Override
             protected List<LocalityRecord> doInBackground() {
                 return service.getLocalitiesInDistrict(finalDist, finalProv);
@@ -699,6 +713,9 @@ public class SpecimenBridgeDialog extends JDialog {
 
             @Override
             protected void done() {
+                if (isCancelled() || requestGeneration != localityRequestGeneration) {
+                    return;
+                }
                 try {
                     List<LocalityRecord> localities = get();
 
@@ -734,7 +751,7 @@ public class SpecimenBridgeDialog extends JDialog {
                 }
             }
         };
-        worker.execute();
+        localityWorker.execute();
     }
 
     public void invalidateLocalityList() {
@@ -818,8 +835,8 @@ public class SpecimenBridgeDialog extends JDialog {
         }
     }
 
-    private void deleteBridge() {
-        if (targetSpecimen == null) return;
+    private boolean deleteBridge() {
+        if (targetSpecimen == null) return true;
 
         int result = JOptionPane.showConfirmDialog(this,
                 "Are you sure you want to delete the link for this specimen?",
@@ -836,10 +853,13 @@ public class SpecimenBridgeDialog extends JDialog {
                 targetSpecimen.setDirection("");
 
                 updateUIFields(targetSpecimen);
+                return true;
             } else {
                 JOptionPane.showMessageDialog(this, "Error: Could not delete link from MySQL.");
+                return false;
             }
         }
+        return false;
     }
 
     public void focusLocality() {

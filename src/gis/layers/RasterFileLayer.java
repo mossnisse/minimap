@@ -18,6 +18,7 @@ public class RasterFileLayer extends Layer {
 	private Extent box;
 	private Extent projectedBox;
 	private double x0, y0, x1, y1, x2, y2; // Cached projected world coords
+	private double sourceX0, sourceY0, sourceX1, sourceY1, sourceX2, sourceY2, sourceX3, sourceY3;
 	private boolean needsProjection = true;
 
 	public RasterFileLayer(String fileName, MapCanvas mapCanvas) throws IOException {
@@ -35,33 +36,40 @@ public class RasterFileLayer extends Layer {
 		String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
 		String worldExtension = extension.charAt(0) + extension.substring(extension.length() - 1) + "w";
 		File worldFile = new File(baseName + "." + worldExtension);
+		if (!worldFile.isFile()) {
+			worldFile = new File(baseName + ".wld");
+		}
 
 		img = ImageIO.read(imageFile);
 		if (img == null) throw new IOException("Could not decode image: " + fileName);
 
 		try (Scanner s = new Scanner(worldFile)) {
 			s.useLocale(java.util.Locale.US); // Handle decimal points correctly
-			double pixelSizeX = s.nextDouble(); // A Pixel size in the X direction (meters per pixel)
-			s.nextDouble(); // D (Rotation) about Y axis (usually 0)
-			s.nextDouble(); // B (Rotation) about X axis (usually 0)
-			double pixelSizeY = s.nextDouble(); // E Pixel size in the Y direction (almost always negative).
+			double pixelSizeX = s.nextDouble(); // A
+			double rotationY = s.nextDouble();  // D
+			double rotationX = s.nextDouble();  // B
+			double pixelSizeY = s.nextDouble(); // E
 			double centerX = s.nextDouble();    // C X-coordinate (Easting) of the center of the top-left pixel.
 			double centerY = s.nextDouble();    // F Y-coordinate (Northing) of the center of the top-left pixel.
 
 			int width = img.getWidth(null);
 			int height = img.getHeight(null);
 
-			// Adjust from "center of pixel" to "outer corner of pixel"
-			double xMin = centerX - (pixelSizeX / 2.0);
-			double yMax = centerY - (pixelSizeY / 2.0); // Subtracting a negative Y adds it
+			// World files locate pixel centers. Shift half a pixel in both axes to
+			// obtain the outer image corner used by Graphics2D's image transform.
+			sourceX0 = centerX - (pixelSizeX + rotationX) / 2.0;
+			sourceY0 = centerY - (rotationY + pixelSizeY) / 2.0;
+			sourceX1 = sourceX0 + width * pixelSizeX;
+			sourceY1 = sourceY0 + width * rotationY;
+			sourceX2 = sourceX0 + height * rotationX;
+			sourceY2 = sourceY0 + height * pixelSizeY;
+			sourceX3 = sourceX1 + height * rotationX;
+			sourceY3 = sourceY1 + height * pixelSizeY;
 
-			double xMax = xMin + (width * pixelSizeX);
-			double yMin = yMax + (height * pixelSizeY); // Adding a negative Y lowers it
-
-			// Extent usually takes (NorthMax, EastMax, NorthMin, EastMin)
-			// Verify your Extent constructor order!
-			box = new Extent(yMax, xMin, yMin, xMax);
+			box = extentOf(sourceX0, sourceY0, sourceX1, sourceY1,
+					sourceX2, sourceY2, sourceX3, sourceY3);
 		}
+		needsProjection = true;
 	}
 
 	@Override
@@ -72,29 +80,30 @@ public class RasterFileLayer extends Layer {
 	}
 
 	private void projectCorners() {
-		if (getCRS() == mapCanvas.getCRS()) {
-			projectedBox = box;
-			// Map world coordinates directly
-			x0 = box.c1.getEast();  y0 = box.c1.getNorth(); // TL
-			x1 = box.c2.getEast();  y1 = box.c1.getNorth(); // TR
-			x2 = box.c1.getEast();  y2 = box.c2.getNorth(); // BL
-		} else {
-			// Project the three corners needed for AffineTransform
-			Coordinate tl = getCRS().convertTo(new Coordinate(box.c1.getNorth(), box.c1.getEast()), mapCanvas.getCRS());
-			Coordinate tr = getCRS().convertTo(new Coordinate(box.c1.getNorth(), box.c2.getEast()), mapCanvas.getCRS());
-			Coordinate bl = getCRS().convertTo(new Coordinate(box.c2.getNorth(), box.c1.getEast()), mapCanvas.getCRS());
+		Coordinate tl = project(sourceX0, sourceY0);
+		Coordinate tr = project(sourceX1, sourceY1);
+		Coordinate bl = project(sourceX2, sourceY2);
+		Coordinate br = project(sourceX3, sourceY3);
 
-			x0 = tl.getEast();  y0 = tl.getNorth();
-			x1 = tr.getEast();  y1 = tr.getNorth();
-			x2 = bl.getEast();  y2 = bl.getNorth();
-
-			// Create a bounding box for the intersection check
-			projectedBox = new Extent(
-					Math.max(y0, y1), Math.min(x0, x2), // Rough Top-Left
-					Math.min(y0, y2), Math.max(x1, x2)  // Rough Bottom-Right
-			);
-		}
+		x0 = tl.getEast();  y0 = tl.getNorth();
+		x1 = tr.getEast();  y1 = tr.getNorth();
+		x2 = bl.getEast();  y2 = bl.getNorth();
+		projectedBox = extentOf(x0, y0, x1, y1, x2, y2, br.getEast(), br.getNorth());
 		needsProjection = false;
+	}
+
+	private Coordinate project(double east, double north) {
+		Coordinate source = new Coordinate(north, east);
+		return (getCRS() == mapCanvas.getCRS()) ? source : getCRS().convertTo(source, mapCanvas.getCRS());
+	}
+
+	private static Extent extentOf(double x0, double y0, double x1, double y1,
+	                               double x2, double y2, double x3, double y3) {
+		double minX = Math.min(Math.min(x0, x1), Math.min(x2, x3));
+		double maxX = Math.max(Math.max(x0, x1), Math.max(x2, x3));
+		double minY = Math.min(Math.min(y0, y1), Math.min(y2, y3));
+		double maxY = Math.max(Math.max(y0, y1), Math.max(y2, y3));
+		return new Extent(minY, minX, maxY, maxX);
 	}
 
 	@Override
@@ -112,34 +121,21 @@ public class RasterFileLayer extends Layer {
 		// Use the cached projectedBox for the intersection check
 		if (!bounds.intersects(projectedBox)) return;
 
-		if (getCRS() == mapCanvas.getCRS()) {
-			// OPTIMIZED: Standard drawImage for matching CRS
-			int sx1 = (int) (x0 * xScale + xShift);
-			int sy1 = (int) (y0 * yScale + yShift);
-			int sx2 = (int) (box.c2.getEast() * xScale + xShift);
-			int sy2 = (int) (box.c2.getNorth() * yScale + yShift);
+		g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		double screenX0 = x0 * xScale + xShift;
+		double screenY0 = y0 * yScale + yShift;
+		double screenX1 = x1 * xScale + xShift;
+		double screenY1 = y1 * yScale + yShift;
+		double screenX2 = x2 * xScale + xShift;
+		double screenY2 = y2 * yScale + yShift;
 
-			g2d.drawImage(img, sx1, sy1, sx2 - sx1, sy2 - sy1, null);
-		} else {
-			g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-			// ACCURATE: AffineTransform for mismatched CRS
-			double screenX0 = x0 * xScale + xShift;
-			double screenY0 = y0 * yScale + yShift;
-			double screenX1 = x1 * xScale + xShift;
-			double screenY1 = y1 * yScale + yShift;
-			double screenX2 = x2 * xScale + xShift;
-			double screenY2 = y2 * yScale + yShift;
-
-			double w = img.getWidth(null);
-			double h = img.getHeight(null);
-
-			java.awt.geom.AffineTransform at = new java.awt.geom.AffineTransform(
-					(screenX1 - screenX0) / w, (screenY1 - screenY0) / w,
-					(screenX2 - screenX0) / h, (screenY2 - screenY0) / h,
-					screenX0, screenY0
-			);
-
-			g2d.drawImage(img, at, null);
-		}
+		double w = img.getWidth(null);
+		double h = img.getHeight(null);
+		java.awt.geom.AffineTransform at = new java.awt.geom.AffineTransform(
+				(screenX1 - screenX0) / w, (screenY1 - screenY0) / w,
+				(screenX2 - screenX0) / h, (screenY2 - screenY0) / h,
+				screenX0, screenY0
+		);
+		g2d.drawImage(img, at, null);
 	}
 }

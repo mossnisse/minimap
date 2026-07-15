@@ -110,30 +110,33 @@ public class SpecimenSearchDialog extends JDialog {
         // The cache refresh copies every hit from MySQL to H2 - keep it off the EDT
         new SwingWorker<Integer, Void>() {
             @Override
-            protected Integer doInBackground() {
+            protected Integer doInBackground() throws Exception {
                 return service.refreshCache(province, district, collector, accession, year,
                         locality, genus, herbarium, coordSource, precision, lackBridge);
             }
 
             @Override
             protected void done() {
-                int hitCount = 0;
                 try {
-                    hitCount = get();
+                    int hitCount = get();
+                    if (hitCount > 0) {
+                        statusLabel.setText("Found " + hitCount + " specimens. Cache updated.");
+                        statusLabel.setForeground(new Color(0, 100, 0));
+                    } else {
+                        statusLabel.setText("No results found. Cache updated.");
+                        statusLabel.setForeground(UIManager.getColor("Label.foreground"));
+                    }
                 } catch (Exception e) {
                     e.printStackTrace();
-                }
-
-                if (hitCount > 0) {
-                    statusLabel.setText("Found " + hitCount + " specimens. Cache updated.");
-                    statusLabel.setForeground(new Color(0, 100, 0));
-                } else {
-                    statusLabel.setText("No results found.");
+                    Throwable cause = (e.getCause() != null) ? e.getCause() : e;
+                    String message = cause.getMessage();
+                    statusLabel.setText("Cache update failed" +
+                            ((message == null || message.isBlank()) ? "." : ": " + message));
                     statusLabel.setForeground(Color.RED);
+                } finally {
+                    searchButton.setEnabled(true);
+                    setCursor(Cursor.getDefaultCursor());
                 }
-
-                searchButton.setEnabled(true);
-                setCursor(Cursor.getDefaultCursor());
             }
         }.execute();
     }

@@ -27,7 +27,11 @@ public class convDistr {
 				//Connection conn = MYSQLConnection.getConn();
 				String url = "jdbc:mysql://172.18.144.38:3306/samhall";
 				String user = "root";
-				Connection conn = DriverManager.getConnection(url, user, "Bo#hEj2");
+				String password = System.getenv("MINIMAP_DB_PASSWORD");
+				if (password == null || password.isBlank()) {
+					throw new SQLException("Set MINIMAP_DB_PASSWORD before running this utility");
+				}
+				Connection conn = DriverManager.getConnection(url, user, password);
 				String sqlstmt = "update district1935 set geojson =? where district =? and province =? and country =?";
 				PreparedStatement statement = conn.prepareStatement(sqlstmt);
 				String country = "Sweden";

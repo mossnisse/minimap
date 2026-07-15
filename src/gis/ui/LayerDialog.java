@@ -77,25 +77,47 @@ public class LayerDialog extends JDialog {
 		refreshListModel(); // Initial load
 
 		layerList.addMouseListener(new MouseAdapter() {
+			// Checkbox logic. Toggle on press: with drag-and-drop enabled,
+			// mouseClicked is swallowed whenever the mouse moves a pixel
+			// between press and release, making clicks feel unresponsive.
 			@Override
-			public void mouseClicked(MouseEvent e) {
-				int index = layerList.locationToIndex(e.getPoint());
+			public void mousePressed(MouseEvent e) {
+				int index = rowAt(e);
 				if (index == -1) return;
 
-				Layer l = listModel.getElementAt(index);
-
-				// Checkbox logic
-				LayerCellRenderer renderer = (LayerCellRenderer) layerList.getCellRenderer();
-				if (e.getX() <= renderer.visibleBox.getPreferredSize().width + 10) {
+				if (e.getX() <= checkboxWidth() + 10) {
+					Layer l = listModel.getElementAt(index);
 					l.setHidden(!l.isHidden());
 					mapCanvas.repaint();
 					layerList.repaint();
 				}
-				// Double click logic
-				else if (e.getClickCount() == 2) {
+			}
+
+			// Double click logic
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				int index = rowAt(e);
+				if (index == -1) return;
+
+				if (e.getX() > checkboxWidth() + 10 && e.getClickCount() == 2) {
+					Layer l = listModel.getElementAt(index);
 					new LayerPropertiesDialog(LayerDialog.this, l, mapCanvas).setVisible(true);
 					layerList.repaint(); // In case name changed
 				}
+			}
+
+			/** The row under the cursor, or -1 when the click is outside every cell. */
+			private int rowAt(MouseEvent e) {
+				int index = layerList.locationToIndex(e.getPoint());
+				if (index == -1 || !layerList.getCellBounds(index, index).contains(e.getPoint())) {
+					return -1;
+				}
+				return index;
+			}
+
+			private int checkboxWidth() {
+				LayerCellRenderer renderer = (LayerCellRenderer) layerList.getCellRenderer();
+				return renderer.visibleBox.getPreferredSize().width;
 			}
 		});
 
