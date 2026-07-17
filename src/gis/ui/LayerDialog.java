@@ -11,16 +11,19 @@ import javax.swing.*;
 import gis.core.MapCanvas;
 import gis.geometry.Extent;
 import gis.core.Layer;
+import gis.layers.CsvPointLayer;
 
 public class LayerDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = -5204215066837865198L;
+	private final Frame ownerFrame;
 	private final MapCanvas mapCanvas;
 	private final JList<Layer> layerList;
 	private final DefaultListModel<Layer> listModel;
 
 	public LayerDialog(Frame aFrame, MapCanvas mapCanvas) {
 		super(aFrame, "Layer Manager (Drag to Reorder)", false);
+		this.ownerFrame = aFrame;
 		this.mapCanvas = mapCanvas;
 
 		setLayout(new BorderLayout());
@@ -51,6 +54,13 @@ public class LayerDialog extends JDialog {
 		JButton zoomBtn = new JButton("Zoom to Selected");
 		zoomBtn.addActionListener(e -> zoomToSelected());
 
+		// Only enabled for layers with an editable table (currently CSV layers)
+		JButton editBtn = new JButton("Edit Data");
+		editBtn.setEnabled(false);
+		editBtn.addActionListener(e -> editSelected());
+		layerList.addListSelectionListener(
+				e -> editBtn.setEnabled(layerList.getSelectedValue() instanceof CsvPointLayer));
+
 		JButton removeBtn = new JButton("Remove Selected");
 		removeBtn.addActionListener(e -> removeSelected());
 
@@ -58,6 +68,7 @@ public class LayerDialog extends JDialog {
 		close.addActionListener(e -> dispose());
 
 		bottomPanel.add(zoomBtn);
+		bottomPanel.add(editBtn);
 		bottomPanel.add(removeBtn);
 		bottomPanel.add(close);
 		add(bottomPanel, BorderLayout.SOUTH);
@@ -150,6 +161,12 @@ public class LayerDialog extends JDialog {
 				//canvas.focus(extent.getMidlePoint());
 				mapCanvas.repaint();
 			}
+		}
+	}
+
+	private void editSelected() {
+		if (layerList.getSelectedValue() instanceof CsvPointLayer csvLayer) {
+			CsvEditorDialog.open(ownerFrame, mapCanvas, csvLayer);
 		}
 	}
 

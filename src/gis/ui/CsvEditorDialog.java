@@ -6,29 +6,25 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serial;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
 import gis.coords.CoordSystem;
-import gis.coords.Coordinate;
-import gis.csv.CsvFile;
 import gis.csv.CsvTableModel;
 import gis.core.MapCanvas;
-import gis.layers.PointTableLayer;
+import gis.layers.CsvPointLayer;
 
 /**
- * Non-modal CSV table editor. The user picks which columns hold the northing
- * and easting (plus an optional label column) and which CRS the values are
- * in; the rows then show as a {@link PointTableLayer} that follows every
- * table edit. Rows whose coordinates don't parse are tinted and skipped.
- * The layer stays on the map when the editor closes.
+ * Non-modal table editor for a {@link CsvPointLayer}. The user picks which
+ * columns hold the northing and easting (plus an optional label column) and
+ * which CRS the values are in; the layer's points follow every table edit.
+ * Rows whose coordinates don't parse are tinted and skipped.
+ *
+ * The CSV data, mapping and dirty state live on the layer, so the editor can
+ * be closed and reopened (via the Layer Manager) without losing edits; the
+ * layer keeps showing them until it is removed from the map.
  */
 public class CsvEditorDialog extends JDialog {
 	@Serial
@@ -36,11 +32,10 @@ public class CsvEditorDialog extends JDialog {
 
 	private static final String UNSELECTED = "(select)";
 	private static final String NO_LABEL = "(none)";
-	private static final List<String> NORTH_NAMES = List.of("north", "northing", "n", "lat", "latitude", "y", "nord");
-	private static final List<String> EAST_NAMES = List.of("east", "easting", "e", "lon", "lng", "longitude", "x", "ost", "öst");
 	private static final Color BAD_ROW_COLOR = new Color(255, 220, 220);
 
 	private final MapCanvas mapCanvas;
+	private final CsvPointLayer layer;
 	private final CsvTableModel model;
 	private final JTable table;
 	private final JComboBox<String> northCombo = new JComboBox<>();
@@ -49,33 +44,35 @@ public class CsvEditorDialog extends JDialog {
 	private final JComboBox<CoordSystem> crsCombo;
 	private final JLabel statusLabel = new JLabel(" ");
 
-	private PointTableLayer layer;
-	// The layer's PointSource reads this snapshot off the EDT. It is an
-	// AtomicReference (not a field read from a lambda) so the lambda captures
-	// only the reference: a closed editor can then be garbage collected even
-	// though its layer stays on the map.
-	private final AtomicReference<List<PointTableLayer.LabeledPoint>> points =
-			new AtomicReference<>(List.of());
-	private final Set<Integer> badRows = new HashSet<>();
-	private File file;
-	private boolean dirty = false;
 	private boolean updatingCombos = false;
 	// Set only while a column rename is in flight, so fillCombos can carry the
 	// combo selections over to the new name instead of dropping the mapping
 	private String renamedFrom, renamedTo;
 
-	public CsvEditorDialog(Frame owner, MapCanvas mapCanvas, File file, CsvFile csv) {
-		super(owner, file.getName(), false);
+	/** Opens the editor for the layer, or brings an already open one to front. */
+	public static void open(Frame owner, MapCanvas mapCanvas, CsvPointLayer layer) {
+		Window editor = layer.getOpenEditor();
+		if (editor != null) {
+			editor.toFront();
+			editor.requestFocus();
+			return;
+		}
+		new CsvEditorDialog(owner, mapCanvas, layer);
+	}
+
+	private CsvEditorDialog(Frame owner, MapCanvas mapCanvas, CsvPointLayer layer) {
+		super(owner, layer.getFile().getName(), false);
 		this.mapCanvas = mapCanvas;
-		this.file = file;
-		this.model = new CsvTableModel(csv);
+		this.layer = layer;
+		this.model = new CsvTableModel(layer.getCsv());
+		layer.setOpenEditor(this);
 
 		table = new JTable(model) {
 			@Override
 			public Component prepareRenderer(javax.swing.table.TableCellRenderer renderer, int row, int column) {
 				Component c = super.prepareRenderer(renderer, row, column);
 				if (!isRowSelected(row)) {
-					c.setBackground(badRows.contains(row) ? BAD_ROW_COLOR : getBackground());
+					c.setBackground(layer.getBadRows().contains(row) ? BAD_ROW_COLOR : getBackground());
 				}
 				return c;
 			}
@@ -84,7 +81,7 @@ public class CsvEditorDialog extends JDialog {
 		table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
 
 		crsCombo = new JComboBox<>(CoordSystem.values());
-		crsCombo.setSelectedItem(mapCanvas.getCRS());
+		crsCombo.setSelectedItem(layer.getCRS());
 
 		JPanel mappingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		mappingPanel.add(new JLabel("North:"));
@@ -117,16 +114,16 @@ public class CsvEditorDialog extends JDialog {
 		add(bottomPanel, BorderLayout.SOUTH);
 
 		fillCombos();
-		guessMapping();
+		selectFromLayerMapping();
 
 		model.addTableModelListener(e -> {
-			dirty = true;
+			layer.setDirty(true);
 			updateTitle();
 			if (e.getFirstRow() == TableModelEvent.HEADER_ROW) {
 				fillCombos(); // structure changed: recreate combo items, keep selection by name
-				rebuildPoints();
+				refresh();
 			} else if (affectsMapping(e.getColumn())) {
-				rebuildPoints();
+				refresh();
 			}
 		});
 		northCombo.addActionListener(e -> mappingChanged());
@@ -134,11 +131,18 @@ public class CsvEditorDialog extends JDialog {
 		labelCombo.addActionListener(e -> mappingChanged());
 		crsCombo.addActionListener(e -> crsChanged());
 
-		// If the layer is removed in the Layer Manager, forget it so the next
-		// edit or mapping change adds a fresh one instead of updating a ghost.
+		// If the layer is removed in the Layer Manager, the editor has nothing
+		// left to edit: offer to save unsaved changes, then close.
 		final Runnable layersChangedListener = () -> {
-			if (layer != null && !mapCanvas.getLayerManager().getLayers().contains(layer)) {
-				layer = null;
+			if (!mapCanvas.getLayerManager().getLayers().contains(layer)) {
+				if (layer.isDirty()) {
+					int choice = JOptionPane.showConfirmDialog(this,
+							"The layer was removed from the map. Save changes to "
+									+ layer.getFile().getName() + "?",
+							"Layer removed", JOptionPane.YES_NO_OPTION);
+					if (choice == JOptionPane.YES_OPTION) save();
+				}
+				dispose();
 			}
 		};
 		mapCanvas.getLayerManager().addLayersChangedListener(layersChangedListener);
@@ -153,10 +157,12 @@ public class CsvEditorDialog extends JDialog {
 			@Override
 			public void windowClosed(WindowEvent e) {
 				mapCanvas.getLayerManager().removeLayersChangedListener(layersChangedListener);
+				layer.setOpenEditor(null);
 			}
 		});
 
-		rebuildPoints();
+		refresh();
+		updateTitle();
 		pack();
 		setLocationRelativeTo(owner);
 		setVisible(true);
@@ -198,29 +204,13 @@ public class CsvEditorDialog extends JDialog {
 		}
 	}
 
-	private void guessMapping() {
+	/** Sets the combos to the layer's stored mapping (kept from a previous editor). */
+	private void selectFromLayerMapping() {
 		updatingCombos = true;
 		try {
-			List<String> header = model.getCsv().getHeader();
-			for (String column : header) {
-				if (NORTH_NAMES.contains(column.trim().toLowerCase())) {
-					northCombo.setSelectedItem(column);
-					break;
-				}
-			}
-			for (String column : header) {
-				if (EAST_NAMES.contains(column.trim().toLowerCase())) {
-					eastCombo.setSelectedItem(column);
-					break;
-				}
-			}
-			// Label: first column that is neither coordinate
-			for (String column : header) {
-				if (!column.equals(northCombo.getSelectedItem()) && !column.equals(eastCombo.getSelectedItem())) {
-					labelCombo.setSelectedItem(column);
-					break;
-				}
-			}
+			if (layer.getNorthColumn() != null) northCombo.setSelectedItem(layer.getNorthColumn());
+			if (layer.getEastColumn() != null) eastCombo.setSelectedItem(layer.getEastColumn());
+			if (layer.getLabelColumn() != null) labelCombo.setSelectedItem(layer.getLabelColumn());
 		} finally {
 			updatingCombos = false;
 		}
@@ -237,6 +227,11 @@ public class CsvEditorDialog extends JDialog {
 		return index <= 0 ? -1 : index - 1;
 	}
 
+	/** The selected column name, or null for "(select)" / "(none)". */
+	private String selectedName(JComboBox<String> combo) {
+		return selectedColumn(combo) < 0 ? null : (String) combo.getSelectedItem();
+	}
+
 	/** True when a change to this model column (or ALL_COLUMNS) can move points. */
 	private boolean affectsMapping(int column) {
 		return column == TableModelEvent.ALL_COLUMNS
@@ -247,72 +242,34 @@ public class CsvEditorDialog extends JDialog {
 
 	private void mappingChanged() {
 		if (updatingCombos) return;
-		rebuildPoints();
+		refresh();
 	}
 
 	private void crsChanged() {
 		if (updatingCombos) return;
 		CoordSystem crs = (CoordSystem) crsCombo.getSelectedItem();
-		if (layer != null && crs != null) {
-			layer.setCRS(crs); // rebuildPoints below revalidates rows and refetches
+		if (crs != null) {
+			layer.setCRS(crs); // refresh below revalidates rows and refetches
 		}
-		rebuildPoints();
+		refresh();
 	}
 
 	// ---- table model -> map layer ----
 
-	private void rebuildPoints() {
-		int northColumn = selectedColumn(northCombo);
-		int eastColumn = selectedColumn(eastCombo);
-		int labelColumn = selectedColumn(labelCombo);
-		CoordSystem crs = (CoordSystem) crsCombo.getSelectedItem();
-		boolean mapped = northColumn >= 0 && eastColumn >= 0 && crs != null;
-
-		badRows.clear();
-		List<PointTableLayer.LabeledPoint> rebuilt = new ArrayList<>();
-		if (mapped) {
-			List<List<String>> rows = model.getCsv().getRows();
-			for (int i = 0; i < rows.size(); i++) {
-				List<String> row = rows.get(i);
-				Double north = parseCoordinate(row.get(northColumn));
-				Double east = parseCoordinate(row.get(eastColumn));
-				if (north == null || east == null || !crs.isValid(north, east)) {
-					badRows.add(i);
-					continue;
-				}
-				String label = labelColumn >= 0 ? row.get(labelColumn) : "";
-				rebuilt.add(new PointTableLayer.LabeledPoint(new Coordinate(north, east), label, 0));
-			}
-		}
-		points.set(List.copyOf(rebuilt));
+	/** Pushes the combo mapping to the layer, rebuilds its points and updates the UI. */
+	private void refresh() {
+		layer.setNorthColumn(selectedName(northCombo));
+		layer.setEastColumn(selectedName(eastCombo));
+		layer.setLabelColumn(selectedName(labelCombo));
+		layer.rebuildPoints();
 		table.repaint();
 
-		if (mapped) {
-			statusLabel.setText(rebuilt.size() + " points on map"
-					+ (badRows.isEmpty() ? "" : ", " + badRows.size() + " rows skipped (bad coordinates)"));
+		if (layer.isMapped()) {
+			int bad = layer.getBadRows().size();
+			statusLabel.setText(layer.getPointCount() + " points on map"
+					+ (bad == 0 ? "" : ", " + bad + " rows skipped (bad coordinates)"));
 		} else {
 			statusLabel.setText("Select the northing and easting columns to show the points on the map");
-		}
-
-		if (layer != null) {
-			layer.invalidateCache();
-			mapCanvas.repaint();
-		} else if (mapped) {
-			// Local so the lambda captures the reference only, not the dialog
-			AtomicReference<List<PointTableLayer.LabeledPoint>> ref = points;
-			layer = new PointTableLayer(file.getName(), crs, mapCanvas, bounds -> ref.get(), 1.0, false);
-			layer.setColor(Color.MAGENTA);
-			mapCanvas.getLayerManager().addLayerTop(layer);
-		}
-	}
-
-	/** Accepts European comma decimals and embedded spaces; null when unparseable. */
-	private static Double parseCoordinate(String s) {
-		if (s == null || s.isBlank()) return null;
-		try {
-			return Double.parseDouble(s.trim().replace(" ", "").replace(',', '.'));
-		} catch (NumberFormatException e) {
-			return null;
 		}
 	}
 
@@ -395,20 +352,19 @@ public class CsvEditorDialog extends JDialog {
 	// ---- save / close ----
 
 	private void updateTitle() {
-		setTitle((dirty ? "*" : "") + file.getName());
+		setTitle((layer.isDirty() ? "*" : "") + layer.getFile().getName());
 	}
 
 	/** @return true when the file was written */
 	private boolean save() {
 		stopEditing();
 		try {
-			model.getCsv().write(file.toPath());
-			dirty = false;
+			layer.save();
 			updateTitle();
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Can't save: " + file.getPath() + "\n" + e.getMessage(),
+			JOptionPane.showMessageDialog(this, "Can't save: " + layer.getFile().getPath() + "\n" + e.getMessage(),
 					"Error", JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
@@ -416,6 +372,7 @@ public class CsvEditorDialog extends JDialog {
 
 	private void saveAs() {
 		stopEditing();
+		File file = layer.getFile();
 		final JFileChooser fc = new JFileChooser(file.getParentFile());
 		fc.setFileFilter(new FileNameExtensionFilter("CSV files", "csv"));
 		fc.setSelectedFile(file);
@@ -431,17 +388,18 @@ public class CsvEditorDialog extends JDialog {
 					"Save As", JOptionPane.YES_NO_OPTION);
 			if (confirm != JOptionPane.YES_OPTION) return;
 		}
-		file = selected;
-		if (save() && layer != null) {
-			layer.setName(file.getName());
-			mapCanvas.getLayerManager().notifyListeners();
+		layer.setFile(selected);
+		if (save()) {
+			mapCanvas.getLayerManager().notifyListeners(); // layer was renamed
 		}
 	}
 
 	private void closeRequested() {
 		stopEditing();
-		if (dirty) {
-			int choice = JOptionPane.showConfirmDialog(this, "Save changes to " + file.getName() + "?",
+		if (layer.isDirty()) {
+			int choice = JOptionPane.showConfirmDialog(this,
+					"Save changes to " + layer.getFile().getName() + "?\n"
+							+ "(No keeps the edits on the map layer; reopen it from the Layer Manager to save later.)",
 					"Close", JOptionPane.YES_NO_CANCEL_OPTION);
 			if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) return;
 			if (choice == JOptionPane.YES_OPTION && !save()) return;

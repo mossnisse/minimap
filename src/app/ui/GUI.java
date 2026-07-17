@@ -507,7 +507,12 @@ public class GUI  {
 		setCursorWait();
 		try {
 			CsvFile csv = CsvFile.read(file.toPath());
-			new CsvEditorDialog(frame, mapCanvas, file, csv);
+			CsvPointLayer layer = new CsvPointLayer(file, csv, mapCanvas.getCRS(), mapCanvas);
+			layer.setColor(Color.MAGENTA);
+			layer.guessMapping();
+			layer.rebuildPoints();
+			mapCanvas.getLayerManager().addLayerTop(layer);
+			CsvEditorDialog.open(frame, mapCanvas, layer);
 		} catch (Exception e) {
 			e.printStackTrace();
 			JOptionPane.showMessageDialog(frame,
