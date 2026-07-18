@@ -123,16 +123,24 @@ public class GeoPackageLayer extends Layer implements EditableTableLayer {
 		rebuildProjection();
 	}
 
+	// Placeholder for rows without geometry so features stays index-aligned
+	// with rows (draw() skips zero-point features)
+	private static final Feature EMPTY_FEATURE =
+			new Feature(ShapeType.NULL, new int[0], new Coordinate[0], null);
+
 	/** Re-derives the drawn features from the raw rows (file CRS -> canvas CRS). */
 	private void rebuildProjection() {
 		List<Feature> projected = new ArrayList<>(rows.size());
 		for (Row row : rows) {
-			if (row.geometry != null && !row.geometry.isEmpty()) {
-				projected.add(project(row.geometry));
-			}
+			projected.add(feature(row));
 		}
 		features = projected;
 		cachedExtent = calculateExtent();
+	}
+
+	private Feature feature(Row row) {
+		return (row.geometry == null || row.geometry.isEmpty())
+				? EMPTY_FEATURE : project(row.geometry);
 	}
 
 	private Feature project(GpkgGeometry g) {
@@ -323,7 +331,10 @@ public class GeoPackageLayer extends Layer implements EditableTableLayer {
 		r.geometry = (x == null || y == null) ? null : GpkgGeometry.point(x, y);
 		r.geometryDirty = true;
 		dirty = true;
-		rebuildProjection();
+		// features is index-aligned with rows: re-project just this row; the
+		// extent recompute below only scans cached boxes (no transforms)
+		features.set(row, feature(r));
+		cachedExtent = calculateExtent();
 		mapCanvas.repaint();
 	}
 
@@ -339,6 +350,7 @@ public class GeoPackageLayer extends Layer implements EditableTableLayer {
 			values.add(null);
 		}
 		rows.add(new Row(null, null, values));
+		features.add(EMPTY_FEATURE);
 		dirty = true;
 	}
 
@@ -349,12 +361,13 @@ public class GeoPackageLayer extends Layer implements EditableTableLayer {
 		for (int i = sorted.length - 1; i >= 0; i--) {
 			if (i < sorted.length - 1 && sorted[i] == sorted[i + 1]) continue;
 			Row removed = rows.remove(sorted[i]);
+			features.remove(sorted[i]);
 			if (removed.rowid != null) {
 				deletedRowids.add(removed.rowid);
 			}
 		}
 		dirty = true;
-		rebuildProjection();
+		cachedExtent = calculateExtent();
 		mapCanvas.repaint();
 	}
 

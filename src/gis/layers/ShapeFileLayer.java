@@ -283,7 +283,9 @@ public class ShapeFileLayer extends Layer implements EditableTableLayer {
 	/** Moves the row's point (file CRS); either coordinate null makes it a null shape. */
 	public void setPoint(int row, Double x, Double y) {
 		geometries.set(row, (x == null || y == null) ? ShpGeometry.nullShape() : ShpGeometry.point(x, y));
-		markGeometryChanged();
+		// features is index-aligned with geometries: re-project just this row
+		features.set(row, project(geometries.get(row)));
+		geometryEdited();
 	}
 
 	/** Appends a row with empty attributes and no geometry yet. */
@@ -296,7 +298,8 @@ public class ShapeFileLayer extends Layer implements EditableTableLayer {
 		}
 		rows.add(row);
 		deletedFlags.add(false);
-		markGeometryChanged();
+		features.add(project(geometries.get(geometries.size() - 1)));
+		geometryEdited();
 	}
 
 	/** Deletes the given rows (any order, duplicates tolerated), geometry included. */
@@ -308,14 +311,20 @@ public class ShapeFileLayer extends Layer implements EditableTableLayer {
 			geometries.remove(sorted[i]);
 			rows.remove(sorted[i]);
 			deletedFlags.remove(sorted[i]);
+			features.remove(sorted[i]);
 		}
-		markGeometryChanged();
+		geometryEdited();
 	}
 
-	private void markGeometryChanged() {
+	/**
+	 * Refreshes the cheap derived state after an in-place feature edit. The
+	 * extent recompute only scans cached boxes — no coordinate transforms —
+	 * so per-cell edits stay O(1) in projection work even on large files.
+	 */
+	private void geometryEdited() {
 		dirty = true;
 		geometryDirty = true;
-		rebuildProjection();
+		cachedExtent = calculateExtent();
 		mapCanvas.repaint();
 	}
 

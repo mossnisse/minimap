@@ -91,6 +91,40 @@ public class Extent {
         c2 = new Coordinate(c2.getNorth() - sy, c2.getEast() - sx);
     }
 
+    /**
+     * Cheap 4-corner conversion with a small safety margin, for callers that
+     * tolerate slack (e.g. computing a tile fetch range every repaint).
+     * Projection curves can push an edge extremum slightly outside the corner
+     * box, hence the margin; use {@link #convertCRS} when the envelope must be
+     * exact.
+     */
+    public Extent convertCRSApprox(CoordSystem fromCRS, CoordSystem toCRS) {
+        if (fromCRS == toCRS) return convertCRS(fromCRS, toCRS);
+
+        double minN = Double.POSITIVE_INFINITY;
+        double maxN = Double.NEGATIVE_INFINITY;
+        double minE = Double.POSITIVE_INFINITY;
+        double maxE = Double.NEGATIVE_INFINITY;
+        Coordinate[] corners = {
+                fromCRS.convertTo(new Coordinate(c1.getNorth(), c1.getEast()), toCRS),
+                fromCRS.convertTo(new Coordinate(c1.getNorth(), c2.getEast()), toCRS),
+                fromCRS.convertTo(new Coordinate(c2.getNorth(), c1.getEast()), toCRS),
+                fromCRS.convertTo(new Coordinate(c2.getNorth(), c2.getEast()), toCRS)
+        };
+        for (Coordinate point : corners) {
+            if (!Double.isFinite(point.getNorth()) || !Double.isFinite(point.getEast())) continue;
+            minN = Math.min(minN, point.getNorth());
+            maxN = Math.max(maxN, point.getNorth());
+            minE = Math.min(minE, point.getEast());
+            maxE = Math.max(maxE, point.getEast());
+        }
+        if (!Double.isFinite(minN)) {
+            // No finite corner: fall back to the exact edge-sampled conversion
+            return convertCRS(fromCRS, toCRS);
+        }
+        return new Extent(minN, minE, maxN, maxE).grow(0.05);
+    }
+
     public Extent convertCRS(CoordSystem fromCRS, CoordSystem toCRS) {
         if (fromCRS == toCRS) {
             return new Extent(

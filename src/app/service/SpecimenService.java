@@ -17,7 +17,6 @@ import java.util.List;
 
 public class SpecimenService {
     private static final String CACHE_TABLE = "tempspecimens";
-    private static final String STAGING_CACHE_TABLE = "tempspecimens_staging";
 
     private final Database db;
     private final Object cacheLock = new Object();
@@ -92,12 +91,12 @@ public class SpecimenService {
 
         mysqlSql.append(" ORDER BY Year ASC, Month ASC, Day ASC, original_text ASC");
 
-        String h2Insert = "INSERT INTO " + STAGING_CACHE_TABLE + " (AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
+        String h2Insert = "INSERT INTO " + CACHE_TABLE + " (cache_id, AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
                 + "InstitutionCode, specimen_locality, district, province, specimens_ID, "
                 + "RUBIN, RiketsN, RiketsO, SwerefN, SwerefE, Lat_dir, Lat_deg, Lat_min, "
                 + "Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, CollectionCode, "
                 + "locality_ID,  distance, direction, oDistrict, oProvince) "
-                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);";
 
 
         Connection mysqlConn = db.mysql();
@@ -105,7 +104,6 @@ public class SpecimenService {
 
         synchronized (cacheLock) {
             ensureH2Table(h2Conn, CACHE_TABLE);
-            recreateH2Table(h2Conn, STAGING_CACHE_TABLE);
 
             try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
 
@@ -120,12 +118,20 @@ public class SpecimenService {
                     boolean oldAutoCommit = h2Conn.getAutoCommit();
                     h2Conn.setAutoCommit(false);
                     try {
+                        // Refill the cache in place inside one transaction: a
+                        // failure rolls back to the previous cache, so each row
+                        // is written once instead of staged and copied.
+                        try (Statement clear = h2Conn.createStatement()) {
+                            clear.executeUpdate("DELETE FROM " + CACHE_TABLE);
+                        }
                         while (rs.next()) {
+                            // Explicit dense cache_id (1..count in result order):
+                            // getSpecimenAt relies on cache_id = index + 1
+                            insertStmt.setInt(1, ++count);
                             for (int i = 1; i <= 32; i++) {
-                                insertStmt.setObject(i, rs.getObject(i));
+                                insertStmt.setObject(i + 1, rs.getObject(i));
                             }
                             insertStmt.addBatch();
-                            count++;
 
                             // Execute batch every 500 records to manage memory
                             if (count % 500 == 0) {
@@ -134,14 +140,6 @@ public class SpecimenService {
                         }
 
                         insertStmt.executeBatch();
-
-                        // Replacing the stable table is DML, so a failure restores the
-                        // previous cache instead of exposing an empty/partial result set.
-                        try (Statement replace = h2Conn.createStatement()) {
-                            replace.executeUpdate("DELETE FROM " + CACHE_TABLE);
-                            replace.executeUpdate("INSERT INTO " + CACHE_TABLE
-                                    + " SELECT * FROM " + STAGING_CACHE_TABLE);
-                        }
                         h2Conn.commit();
                     } catch (SQLException e) {
                         h2Conn.rollback();
@@ -150,8 +148,6 @@ public class SpecimenService {
                         h2Conn.setAutoCommit(oldAutoCommit);
                     }
                 }
-            } finally {
-                dropH2TableQuietly(h2Conn, STAGING_CACHE_TABLE);
             }
         }
         return count;
@@ -174,13 +170,6 @@ public class SpecimenService {
 
     private void ensureH2Table(Connection h2Conn, String table) throws SQLException {
         createH2Table(h2Conn, table, true);
-    }
-
-    private void recreateH2Table(Connection h2Conn, String table) throws SQLException {
-        try (Statement drop = h2Conn.createStatement()) {
-            drop.executeUpdate("DROP TABLE IF EXISTS " + table);
-        }
-        createH2Table(h2Conn, table, false);
     }
 
     private void createH2Table(Connection h2Conn, String table, boolean ifNotExists) throws SQLException {
@@ -228,18 +217,20 @@ public class SpecimenService {
         try (Statement drop = h2Conn.createStatement()) {
             drop.executeUpdate("DROP TABLE IF EXISTS " + table);
         } catch (SQLException e) {
-            System.err.println("Couldn't remove specimen-cache staging table: " + e.getMessage());
+            System.err.println("Couldn't remove specimen-cache table: " + e.getMessage());
         }
     }
 
     public Specimen getSpecimenAt(int index) {
-        String sql = "SELECT * FROM " + CACHE_TABLE + " ORDER BY cache_id LIMIT 1 OFFSET ?";
+        // refreshCache assigns dense cache_ids (1..count in result order), so
+        // this is an indexed key probe instead of an O(n) OFFSET row skip
+        String sql = "SELECT * FROM " + CACHE_TABLE + " WHERE cache_id = ?";
         synchronized (cacheLock) {
             try {
                 Connection conn = db.h2();
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-                    ps.setInt(1, index);
+                    ps.setInt(1, index + 1);
                     try (ResultSet rs = ps.executeQuery()) {
                         if (rs.next()) {
                             return mapResultSetToSpecimen(rs);

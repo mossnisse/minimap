@@ -3,7 +3,6 @@ package gis.ui;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.IOException;
 import java.io.Serial;
 
 import javax.swing.*;
@@ -34,6 +33,7 @@ public class TableEditorDialog extends JDialog {
 	private final EditorTableModel model;
 	private final JTable table;
 	private final JLabel statusLabel = new JLabel(" ");
+	private boolean saving;
 
 	/** Opens the editor for the layer, or brings an already open one to front. */
 	public static <L extends Layer & EditableTableLayer> void open(Frame owner, MapCanvas mapCanvas, L layer) {
@@ -57,6 +57,9 @@ public class TableEditorDialog extends JDialog {
 		table = new JTable(model);
 		table.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		table.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+		// A listener makes the glass pane consume mouse events while visible,
+		// blocking edits during a background save
+		getGlassPane().addMouseListener(new java.awt.event.MouseAdapter() {});
 
 		JScrollPane scrollPane = new JScrollPane(table);
 		scrollPane.setPreferredSize(new Dimension(700, 400));
@@ -71,7 +74,7 @@ public class TableEditorDialog extends JDialog {
 		addButton(buttonPanel, "Add Column", this::addColumn);
 		addButton(buttonPanel, "Rename Column", this::renameColumn);
 		addButton(buttonPanel, "Delete Column", this::deleteColumn);
-		addButton(buttonPanel, "Save", this::save);
+		addButton(buttonPanel, "Save", () -> saveAsync(null));
 		addButton(buttonPanel, "Close", this::closeRequested);
 		bottomPanel.add(buttonPanel, BorderLayout.CENTER);
 		statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 8, 4, 8));
@@ -97,7 +100,10 @@ public class TableEditorDialog extends JDialog {
 									+ data.getSourceName() + "?",
 							"Layer removed", JOptionPane.YES_NO_OPTION);
 					if (choice == JOptionPane.CLOSED_OPTION) return;
-					if (choice == JOptionPane.YES_OPTION && !save()) return;
+					if (choice == JOptionPane.YES_OPTION) {
+						saveAsync(TableEditorDialog.this::dispose);
+						return;
+					}
 				}
 				dispose();
 			}
@@ -249,23 +255,47 @@ public class TableEditorDialog extends JDialog {
 
 	// ---- save / close ----
 
-	/** @return true when the changes were written */
-	private boolean save() {
+	/**
+	 * Saves in the background so a full file rewrite or database transaction
+	 * doesn't freeze the UI; input is blocked meanwhile. Runs onSuccess on the
+	 * EDT after a successful save; a failure shows an error and keeps the
+	 * dialog open.
+	 */
+	private void saveAsync(Runnable onSuccess) {
 		stopEditing();
-		try {
-			data.save();
-			updateTitle();
-			model.fireTableDataChanged(); // e.g. database-assigned ids for new rows
-			return true;
-		} catch (IOException e) {
-			e.printStackTrace();
-			JOptionPane.showMessageDialog(this, "Can't save: " + data.getSourcePath() + "\n" + e.getMessage(),
-					"Error", JOptionPane.ERROR_MESSAGE);
-			return false;
-		}
+		if (saving) return;
+		saving = true;
+		table.setEnabled(false);
+		setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+		getGlassPane().setVisible(true); // swallows mouse input during the save
+		new SwingWorker<Void, Void>() {
+			@Override protected Void doInBackground() throws Exception {
+				data.save();
+				return null;
+			}
+
+			@Override protected void done() {
+				saving = false;
+				getGlassPane().setVisible(false);
+				setCursor(Cursor.getDefaultCursor());
+				table.setEnabled(true);
+				try {
+					get();
+					updateTitle();
+					model.fireTableDataChanged(); // e.g. database-assigned ids for new rows
+					if (onSuccess != null) onSuccess.run();
+				} catch (Exception e) {
+					e.printStackTrace();
+					JOptionPane.showMessageDialog(TableEditorDialog.this,
+							"Can't save: " + data.getSourcePath() + "\n" + e.getMessage(),
+							"Error", JOptionPane.ERROR_MESSAGE);
+				}
+			}
+		}.execute();
 	}
 
 	private void closeRequested() {
+		if (saving) return;
 		stopEditing();
 		if (data.isDirty()) {
 			int choice = JOptionPane.showConfirmDialog(this,
@@ -273,7 +303,10 @@ public class TableEditorDialog extends JDialog {
 							+ "(No keeps the edits on the map layer; reopen it from the Layer Manager to save later.)",
 					"Close", JOptionPane.YES_NO_CANCEL_OPTION);
 			if (choice == JOptionPane.CANCEL_OPTION || choice == JOptionPane.CLOSED_OPTION) return;
-			if (choice == JOptionPane.YES_OPTION && !save()) return;
+			if (choice == JOptionPane.YES_OPTION) {
+				saveAsync(this::dispose);
+				return;
+			}
 		}
 		dispose(); // the layer deliberately stays on the map
 	}

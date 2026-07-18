@@ -136,13 +136,17 @@ public final class LayerSerializer {
             }
             default -> throw new IOException("Unknown type " + r.type);
         }
+        CoordSystem builtCrs = layer.getCRS();
         layer.setName(r.name);
         layer.setColor(new Color(r.rgb, true));
         layer.setHidden(r.hidden);
         layer.setCRS(r.crs);
         layer.setMinZoomL(r.minZoom);
         layer.setMaxZoomL(r.maxZoom);
-        layer.invalidateCache();
+        // The constructors above already read and projected the data; only the
+        // file layers whose constructor default differs from the manifest CRS
+        // need the (expensive) re-projection.
+        if (builtCrs != r.crs) layer.invalidateCache();
         add(layers, keyed, key, layer);
     }
 

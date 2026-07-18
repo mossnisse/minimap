@@ -85,7 +85,9 @@ public abstract class TiledLayer extends Layer {
     public void draw(Graphics2D g2d, double xShift, double xScale, double yShift, double yScale, Extent bounds) {
         int zoom = calculateZoom(xScale);
         boolean isNative = (mapCanvas.getCRS() == getCRS());
-        Extent layerBounds = bounds.convertCRS(mapCanvas.getCRS(), getCRS());
+        // Approximate conversion: this runs on every repaint and the tile
+        // range tolerates slack, so skip the exact edge-sampled envelope
+        Extent layerBounds = bounds.convertCRSApprox(mapCanvas.getCRS(), getCRS());
         double tileSize = tileSizeMeters(zoom);
 
         g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
