@@ -60,6 +60,24 @@ public class GeoPackageReader implements Closeable {
 		}
 	}
 
+	/**
+	 * One row read for editing: its SQLite rowid, its geometry (null when
+	 * NULL, unsupported or corrupt) and all other columns in their JDBC-native
+	 * representation. Keeping the native values is important for BLOB columns
+	 * and for preserving the distinction between SQL NULL and empty text.
+	 */
+	public static class Row {
+		public final long rowid;
+		public final GpkgGeometry geometry;
+		public final Object[] attributes;
+
+		Row(long rowid, GpkgGeometry geometry, Object[] attributes) {
+			this.rowid = rowid;
+			this.geometry = geometry;
+			this.attributes = attributes;
+		}
+	}
+
 	private final String fileName;
 	private final Connection conn;
 	private List<FeatureTable> featureTables;
@@ -170,6 +188,25 @@ public class GeoPackageReader implements Closeable {
 		}
 	}
 
+	/** JDBC types for {@link #getFieldNames}, in the same order. */
+	public int[] getFieldTypes(FeatureTable table) throws IOException {
+		try (Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery("SELECT * FROM " + quote(table.tableName) + " LIMIT 0")) {
+			ResultSetMetaData meta = rs.getMetaData();
+			List<Integer> types = new ArrayList<Integer>();
+			for (int i = 1; i <= meta.getColumnCount(); i++) {
+				if (!meta.getColumnName(i).equalsIgnoreCase(table.geometryColumn)) {
+					types.add(meta.getColumnType(i));
+				}
+			}
+			int[] result = new int[types.size()];
+			for (int i = 0; i < result.length; i++) result[i] = types.get(i);
+			return result;
+		} catch (SQLException e) {
+			throw new IOException("Can't read table " + table.tableName + ": " + e.getMessage(), e);
+		}
+	}
+
 	/**
 	 * Reads all rows of a feature table. Rows with a NULL, empty,
 	 * unsupported (e.g. GeometryCollection, curve types) or corrupt
@@ -227,6 +264,79 @@ public class GeoPackageReader implements Closeable {
 					+ ": skipped " + unreadable + " unsupported or corrupt geometries");
 		}
 		return features;
+	}
+
+	/**
+	 * The table's INTEGER PRIMARY KEY column name (the GeoPackage fid), or
+	 * null when the table has none. Its values alias the SQLite rowid, so
+	 * editors should treat the column as read-only.
+	 */
+	public String getPrimaryKeyColumn(FeatureTable table) throws IOException {
+		try (Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery("PRAGMA table_info(" + quote(table.tableName) + ")")) {
+			while (rs.next()) {
+				if (rs.getInt("pk") == 1 && "INTEGER".equalsIgnoreCase(rs.getString("type"))) {
+					return rs.getString("name");
+				}
+			}
+			return null;
+		} catch (SQLException e) {
+			throw new IOException("Can't read table info for " + table.tableName + ": " + e.getMessage(), e);
+		}
+	}
+
+	/**
+	 * Reads all rows of a feature table for editing: unlike
+	 * {@link #readFeatures}, rows with a NULL, unsupported or corrupt
+	 * geometry are included (with a null geometry), and every row carries
+	 * its rowid so edits can be written back.
+	 */
+	public List<Row> readRows(FeatureTable table) throws IOException {
+		List<Row> rows = new ArrayList<Row>();
+		try (Statement stmt = conn.createStatement();
+				ResultSet rs = stmt.executeQuery(
+						"SELECT rowid AS __rid, * FROM " + quote(table.tableName))) {
+			ResultSetMetaData meta = rs.getMetaData();
+			int columns = meta.getColumnCount();
+			int geomIdx = -1;
+			for (int i = 2; i <= columns; i++) { // column 1 is __rid
+				if (meta.getColumnName(i).equalsIgnoreCase(table.geometryColumn)) {
+					geomIdx = i;
+					break;
+				}
+			}
+			if (geomIdx == -1) {
+				throw new IOException("Geometry column '" + table.geometryColumn
+						+ "' not found in table " + table.tableName);
+			}
+			while (rs.next()) {
+				long rowid = rs.getLong(1);
+				GpkgGeometry geometry = null;
+				byte[] blob = rs.getBytes(geomIdx);
+				if (blob != null) {
+					try {
+						GpkgGeometry parsed = GpkgGeometry.parse(blob);
+						if (!parsed.isEmpty()) {
+							geometry = parsed;
+						}
+					} catch (IOException e) {
+						// Corrupt blob: keep the row, just without geometry
+					}
+				}
+				Object[] attributes = new Object[columns - 2];
+				int a = 0;
+				for (int i = 2; i <= columns; i++) {
+					if (i == geomIdx) {
+						continue;
+					}
+					attributes[a++] = rs.getObject(i);
+				}
+				rows.add(new Row(rowid, geometry, attributes));
+			}
+		} catch (SQLException e) {
+			throw new IOException("Can't read table " + table.tableName + ": " + e.getMessage(), e);
+		}
+		return rows;
 	}
 
 	private static String quote(String identifier) {

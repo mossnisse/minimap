@@ -2,8 +2,6 @@ package app;
 
 import app.db.Database;
 import app.ui.PasswDialog;
-import app.service.SpecimenService;
-import app.repo.LocalityRepository;
 import app.repo.PlaceNameRepository;
 
 /**
@@ -14,15 +12,11 @@ import app.repo.PlaceNameRepository;
  */
 public final class AppContext {
 	public final Database db;
-	public final LocalityRepository localities;
 	public final PlaceNameRepository placeNames;
-	public final SpecimenService specimens;
 
 	private AppContext(Database db) {
 		this.db = db;
-		this.localities = new LocalityRepository(db);
 		this.placeNames = new PlaceNameRepository(db);
-		this.specimens = new SpecimenService(db);
 	}
 
 	public static AppContext create() {

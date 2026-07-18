@@ -12,6 +12,12 @@ import java.util.Locale;
 
 import app.AppContext;
 import app.MapLayers;
+import app.plugin.MenuContributions;
+import app.plugin.Plugin;
+import app.plugin.PluginContext;
+import app.plugin.PluginManager;
+import app.plugin.herbarium.HerbariumPlugin;
+import app.project.ProjectManager;
 import gis.core.*;
 import gis.ui.*;
 import gis.layers.*;
@@ -20,26 +26,38 @@ import gis.csv.CsvFile;
 import gis.geopackage.GeoPackageReader;
 import gis.shapefile.ShapefileReader;
 
-public class GUI  {
+public class GUI implements BusyCursor {
 	private JFrame frame;
 	private MapCanvas mapCanvas;
 	private AppContext ctx;
-	private Coordinate coord;
-	private SpecimenBridgeDialog bridgeDialog;
-	private EditLocalityDialog moveTarget = null;
+	private PluginContext pluginContext;
+	private PluginManager pluginManager;
+	private ProjectManager projectManager;
 
 	public GUI() {
 	}
 
 	private void createAndShowGUI() {
-		// Wire databases and repositories before anything can touch the DB
+		ProjectManager.Bootstrap bootstrap;
+		try {
+			bootstrap = ProjectManager.bootstrap();
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "Could not initialize projects:\n" + e.getMessage(),
+					"Startup error", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
 		ctx = AppContext.create();
 
 		// Set up the frame and canvas
 		frame = new JFrame("Minimap");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		mapCanvas = new MapCanvas();
 		MapLayers.installDefaultLayers(mapCanvas, ctx);
+		pluginContext = new PluginContext(frame, mapCanvas, this, ctx);
+		pluginManager = new PluginManager(pluginContext);
+		pluginManager.register(new HerbariumPlugin());
+		projectManager = new ProjectManager(bootstrap, this, frame, mapCanvas, ctx, pluginManager);
+		pluginManager.setEnabledChangedListener(projectManager::saveEnabledPluginsQuietly);
 
 		// Setup Menus and Content
 		frame.setJMenuBar(createMenuBar());
@@ -68,24 +86,20 @@ public class GUI  {
 
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if (moveTarget != null) {
-					leaveMoveMode(e);
+				Coordinate clicked = mapCanvas.translatePoint(e.getPoint());
+				if (pluginContext.dispatchClick(e, clicked)) {
+					return;
 				}
-				if (Keyboard.isKeyDown(KeyEvent.VK_A)) {
-					showLocality(e);
-				} else if (Keyboard.isKeyDown(KeyEvent.VK_R)) {
+				if (Keyboard.isKeyDown(KeyEvent.VK_R)) {
 					showRubin(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_C)) {
 					showCoordinateInfo(e);
-				} else if (Keyboard.isKeyDown(KeyEvent.VK_S)) {
-					createLocalityDialog(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_K)) {
 					OpenKartbildcom(e);
 				} else if (Keyboard.isKeyDown(KeyEvent.VK_D)) {
 					distance(e);
 				} else {
-					Coordinate c = mapCanvas.translatePoint(new Point(e.getX(), e.getY()));
-					mapCanvas.setCoordinate(c);
+					mapCanvas.setCoordinate(clicked);
 				}
 			}
 		});
@@ -96,14 +110,13 @@ public class GUI  {
 			mapCanvas.zoom(step);
 		});
 
-		// Final Display Setup
-		frame.setSize(1000, 1000);
+		frame.addWindowListener(new WindowAdapter() {
+			@Override public void windowClosing(WindowEvent e) { requestApplicationClose(); }
+		});
+
+		projectManager.restoreInitial();
 		frame.setLocationRelativeTo(null);
 		frame.setVisible(true);
-		
-		if ("open".equals(Settings.getValue("specimen dialog"))) {
-			searchSpecimens();
-		}
 
 		Keyboard.activate();
 	}
@@ -138,18 +151,11 @@ public class GUI  {
 		menuItem2.addActionListener(e->setCanvasCRS());
 		menu.add(menuItem2);
 
-		menuItem2 = new JMenuItem("Set user", KeyEvent.VK_I);
-		menuItem2.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, InputEvent.CTRL_DOWN_MASK));
-		menuItem2.getAccessibleContext().setAccessibleDescription(
-				"It sets the name for the registrator");
-		menuItem2.addActionListener(e->userDialog());
-		menu.add(menuItem2);
-
 		menuItem3 = new JMenuItem("Exit", KeyEvent.VK_Q);
 		menuItem3.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK));
 		menuItem3.getAccessibleContext().setAccessibleDescription(
 				"This doesn't really do anything");
-		menuItem3.addActionListener(e->System.exit(0));
+		menuItem3.addActionListener(e->requestApplicationClose());
 		menu.add(menuItem3);
 
 		menu2 = new JMenu("View");
@@ -190,10 +196,10 @@ public class GUI  {
 		menuItem8.addActionListener(e->viewRubin());
 		menu2.add(menuItem8);
 
-		menuItem7 = new JMenuItem("Search localities", KeyEvent.VK_F);
+		menuItem7 = new JMenuItem("Search place names", KeyEvent.VK_F);
 		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
 		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK));
-		menuItem7.addActionListener(e->searchLocality());
+		menuItem7.addActionListener(e->searchPlaceNames());
 		menu2.add(menuItem7);
 
 		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
@@ -202,24 +208,6 @@ public class GUI  {
 		menuItem8.addActionListener(e->distanceAtCoord());
 		menu2.add(menuItem8);
 		
-		menuItem9 = new JMenuItem("Search specimens", KeyEvent.VK_E);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem9.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, InputEvent.CTRL_DOWN_MASK));
-		menuItem9.addActionListener(e->searchSpecimens());
-		menu2.add(menuItem9);
-
-		menuItem10 = new JMenuItem("Edit locality at marker", KeyEvent.VK_J);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_J, InputEvent.CTRL_DOWN_MASK));
-		menuItem10.addActionListener(e->showLocalityAtCoord());
-		menu2.add(menuItem10);
-		
-		menuItem11 = new JMenuItem("Create locality at marker", KeyEvent.VK_Y);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem11.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK));
-		menuItem11.addActionListener(e->createLocalityAtCoord());
-		menu2.add(menuItem11);
-
 		menu3 = new JMenu("Layers");
 		menuBar.add(menu3);
 
@@ -241,10 +229,6 @@ public class GUI  {
 
 		menuItem1 = new JMenuItem("Add Lantmäteriet ortnamn Layer");
 		menuItem1.addActionListener(e->addOrtnamn());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add Virtual Herbarium locality Layer");
-		menuItem1.addActionListener(e->addLocalityLayer());
 		menu3.add(menuItem1);
 
 		menuItem1 = new JMenuItem("Add .gpx layer", KeyEvent.VK_G);
@@ -272,6 +256,17 @@ public class GUI  {
 		menuItem1.addActionListener(e->openFile());
 		menu3.add(menuItem1);
 
+		for (Plugin plugin : pluginManager.all()) {
+			if (pluginManager.isActive(plugin.id())) {
+				plugin.contributeMenus(new MenuContributions(menu, menu2, menu3));
+			}
+		}
+
+		JMenu projectMenu = buildProjectMenu();
+		menuBar.add(projectMenu);
+		JMenu pluginsMenu = buildPluginsMenu();
+		menuBar.add(pluginsMenu);
+
 		menuBar.add(Box.createHorizontalGlue());
 
 		menu4 = new JMenu("Help");
@@ -289,6 +284,76 @@ public class GUI  {
 		return menuBar;
 	}
 
+	public void rebuildMenuBar() {
+		if (frame == null || pluginManager == null) return;
+		frame.setJMenuBar(createMenuBar());
+		frame.revalidate();
+		frame.repaint();
+		if (projectManager != null) frame.setTitle("Minimap — " + projectManager.activeName());
+	}
+
+	private JMenu buildProjectMenu() {
+		JMenu menu = new JMenu("Project");
+		JMenuItem create = new JMenuItem("New…");
+		create.addActionListener(e -> {
+			String name = JOptionPane.showInputDialog(frame, "Project name:", "New project",
+					JOptionPane.PLAIN_MESSAGE);
+			if (name != null) projectManager.createBlank(name);
+		});
+		menu.add(create);
+
+		JMenuItem open = new JMenuItem("Open / Switch…");
+		open.addActionListener(e -> {
+			java.util.List<String> names = projectManager.listProjects();
+			String selected = (String) JOptionPane.showInputDialog(frame, "Open project:",
+					"Projects", JOptionPane.PLAIN_MESSAGE, null, names.toArray(), projectManager.activeName());
+			if (selected != null) projectManager.switchTo(selected);
+		});
+		menu.add(open);
+
+		JMenuItem save = new JMenuItem("Save");
+		save.addActionListener(e -> {
+			try { projectManager.saveCurrent(); }
+			catch (IOException ex) { JOptionPane.showMessageDialog(frame, ex.getMessage(), "Save failed", JOptionPane.ERROR_MESSAGE); }
+		});
+		menu.add(save);
+
+		JMenuItem saveAs = new JMenuItem("Save As…");
+		saveAs.addActionListener(e -> {
+			String name = JOptionPane.showInputDialog(frame, "New project name:", "Save project as",
+					JOptionPane.PLAIN_MESSAGE);
+			if (name != null) projectManager.saveAs(name);
+		});
+		menu.add(saveAs);
+		return menu;
+	}
+
+	private JMenu buildPluginsMenu() {
+		JMenu menu = new JMenu("Plugins");
+		for (Plugin plugin : pluginManager.all()) {
+			JCheckBoxMenuItem item = new JCheckBoxMenuItem(plugin.displayName(),
+					pluginManager.isActive(plugin.id()));
+			item.addActionListener(e -> {
+				boolean wanted = item.isSelected();
+				if (!pluginManager.setEnabled(plugin.id(), wanted)) item.setSelected(!wanted);
+			});
+			menu.add(item);
+		}
+		return menu;
+	}
+
+	private void searchPlaceNames() {
+		new PlaceNameSearchDialog(frame, this, mapCanvas, ctx.placeNames).setVisible(true);
+	}
+
+	private void requestApplicationClose() {
+		if (projectManager != null && projectManager.prepareAndSaveForExit()) {
+			frame.dispose();
+			System.exit(0);
+		}
+	}
+
+	@Override
 	public void setCursorWait() {
 		frame.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		for (Window window : frame.getOwnedWindows() ){
@@ -298,6 +363,7 @@ public class GUI  {
         }
 	}
 	
+	@Override
 	public void setCursorDefault() {
 		frame.setCursor(Cursor.getDefaultCursor());
 		for (Window window : frame.getOwnedWindows()) {
@@ -492,10 +558,6 @@ public class GUI  {
 		mapCanvas.getLayerManager().addLayerTop(MapLayers.ORTNAMN, MapLayers.ortnamn(mapCanvas, ctx.placeNames));
 	}
 
-	public void addLocalityLayer() {
-		mapCanvas.getLayerManager().addLayerTop(MapLayers.LOKAL_DB, MapLayers.lokalDb(mapCanvas, ctx.localities));
-	}
-
 	public void openCsvFile() {
 		final JFileChooser fc = new JFileChooser();
 		fc.setFileFilter(new FileNameExtensionFilter("CSV files", "csv", "txt", "tsv"));
@@ -521,10 +583,6 @@ public class GUI  {
 		} finally {
 			setCursorDefault();
 		}
-	}
-
-	public void searchLocality() {
-		new SearchLocalityDialog(frame, this, mapCanvas, "", "", ctx.localities, ctx.placeNames).setVisible(true);
 	}
 
 	public void showLayerDialog() {
@@ -582,10 +640,6 @@ public class GUI  {
 		new DistanceDialog(frame, mapCanvas, c, MapLayers.DISTANCE_OVERLAY).setVisible(true);
 	}
 
-	public void userDialog() {
-		new SetUserDialog().setVisible(true);
-	}
-
 	public void showShortcuts() {
 		String message = "Press s and click on the map to create a new Locality\n" +
 						"Press a and click on the map to edit Locality information\n" +
@@ -600,100 +654,6 @@ public class GUI  {
 						"Ctr+L copy data from last saved link";
 
 		JOptionPane.showMessageDialog(frame, message, "Shortcuts", JOptionPane.INFORMATION_MESSAGE);
-	}
-
-	public void showLocality(MouseEvent e) {
-		Coordinate c = mapCanvas.translatePoint(new Point(e.getX(), e.getY()));
-		editLocalityNear(c);
-	}
-
-	public void showLocalityAtCoord() {
-		Coordinate c = mapCanvas.getCoordinate();
-		if (c == null) return;
-		editLocalityNear(c);
-	}
-
-	private void editLocalityNear(Coordinate c) {
-		int localityID = ctx.localities.findNearestId(mapCanvas.getCRS().toWGS84(c), 1000);
-		if (localityID != -1) {
-			new EditLocalityDialog(this, frame, localityID, bridgeDialog, mapCanvas, ctx.localities).setVisible(true);
-		}
-	}
-
-	public void enterMoveMode(EditLocalityDialog dialog) {
-		this.moveTarget = dialog;
-		Cursor crosshair = Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR);
-		frame.setCursor(crosshair);
-		mapCanvas.setCursor(crosshair);
-		if (dialog != null) {
-			dialog.setCursor(crosshair);
-		}
-	}
-
-	public void leaveMoveMode(MouseEvent me) {
-		if (moveTarget == null) return;
-		Coordinate mapP = mapCanvas.translatePoint(me.getPoint());
-		moveTarget.updateCoordinates(mapP);
-
-		// Reset everything back to default
-		Cursor defaultCursor = Cursor.getDefaultCursor();
-		frame.setCursor(defaultCursor);
-		mapCanvas.setCursor(defaultCursor);
-		moveTarget.setCursor(defaultCursor);
-
-		moveTarget = null;
-	}
-
-	public void cancelMoveMode() {
-		if (moveTarget != null) {
-			Cursor defaultCursor = Cursor.getDefaultCursor();
-			frame.setCursor(defaultCursor);
-			mapCanvas.setCursor(defaultCursor);
-			moveTarget.setCursor(defaultCursor);
-			moveTarget.setTitle("Edit Locality: " + moveTarget.getOldName());
-			moveTarget = null;
-		}
-	}
-
-	private void createLocalityAtCoord() {
-		coord = mapCanvas.getCoordinate();
-		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord, ctx.localities, ctx.placeNames).setVisible(true);
-	}
-
-	private void createLocalityDialog(MouseEvent me) {
-		coord = mapCanvas.translatePoint(me.getPoint());
-		new CreateLocalityDialog(frame, this, mapCanvas, bridgeDialog, coord, ctx.localities, ctx.placeNames).setVisible(true);
-	}
-
-	public void searchSpecimens() {
-		// Check if the dialog is already open
-		if (bridgeDialog != null && bridgeDialog.isVisible()) {
-			bridgeDialog.toFront(); // Bring the existing window to the top
-			bridgeDialog.requestFocus();
-			return; // Exit the method so we don't create a duplicate
-		}
-
-		bridgeDialog = new SpecimenBridgeDialog(frame, this, ctx.specimens, mapCanvas, ctx);
-
-		bridgeDialog.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				try {
-					Settings.setValue("specimen dialog", "closed");
-					bridgeDialog = null; // Important for the "if" check above to work later
-				} catch (IOException ex) {
-					ex.printStackTrace();
-				}
-			}
-		});
-
-		try {
-			Settings.setValue("specimen dialog", "open");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		bridgeDialog.setVisible(true);
 	}
 
 	private void OpenKartbildcom(MouseEvent me) {

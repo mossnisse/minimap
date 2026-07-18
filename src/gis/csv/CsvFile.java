@@ -1,11 +1,15 @@
 package gis.csv;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -67,7 +71,24 @@ public class CsvFile {
 		for (List<String> row : rows) {
 			appendRecord(sb, row);
 		}
-		Files.writeString(path, sb.toString(), StandardCharsets.UTF_8);
+
+		Path target = path.toAbsolutePath();
+		Path temp = Files.createTempFile(target.getParent(), "minimap-csv-", ".tmp");
+		boolean replaced = false;
+		try {
+			Files.writeString(temp, sb.toString(), StandardCharsets.UTF_8);
+			try (FileChannel channel = FileChannel.open(temp, StandardOpenOption.WRITE)) {
+				channel.force(true);
+			}
+			try {
+				Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+			}
+			replaced = true;
+		} finally {
+			if (!replaced) Files.deleteIfExists(temp);
+		}
 	}
 
 	public List<String> getHeader() {

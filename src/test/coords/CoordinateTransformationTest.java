@@ -2,6 +2,8 @@ package test.coords;
 
 import gis.coords.CoordSystem;
 import gis.coords.Coordinate;
+import gis.geometry.Extent;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,5 +44,32 @@ class CoordinateTransformationTest {
 
         assertEquals(lat, back.getNorth(), TOLERANCE_DEGREES);
         assertEquals(lon, back.getEast(), TOLERANCE_DEGREES);
+    }
+
+    @Test
+    void convertedExtentContainsEverySourceCorner() {
+        Extent source = new Extent(6_000_000, 200_000, 7_700_000, 960_000);
+        Extent converted = source.convertCRS(CoordSystem.SWEREF99TM, CoordSystem.WGS84);
+
+        Coordinate[] corners = {
+                new Coordinate(6_000_000, 200_000),
+                new Coordinate(6_000_000, 960_000),
+                new Coordinate(7_700_000, 200_000),
+                new Coordinate(7_700_000, 960_000)
+        };
+        for (Coordinate corner : corners) {
+            assertTrue(converted.isInside(CoordSystem.SWEREF99TM.convertTo(corner, CoordSystem.WGS84)));
+        }
+    }
+
+    @Test
+    void webMercatorClampsUnprojectablePoles() {
+        Extent world = CoordSystem.WGS84.getBoundaries()
+                .convertCRS(CoordSystem.WGS84, CoordSystem.WEB_MERCATOR);
+
+        assertTrue(Double.isFinite(world.c1.getNorth()));
+        assertTrue(Double.isFinite(world.c2.getNorth()));
+        assertEquals(CoordSystem.WEB_MERCATOR.nMin, world.c1.getNorth(), 0.1);
+        assertEquals(CoordSystem.WEB_MERCATOR.nMax, world.c2.getNorth(), 0.1);
     }
 }

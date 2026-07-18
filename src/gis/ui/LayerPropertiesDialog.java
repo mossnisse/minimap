@@ -3,6 +3,7 @@ package gis.ui;
 import gis.coords.CoordSystem;
 import gis.core.MapCanvas;
 import gis.core.Layer;
+import gis.layers.TiledLayer;
 
 import javax.swing.*;
 import java.awt.*;
@@ -63,6 +64,10 @@ public class LayerPropertiesDialog extends JDialog {
         gbc.gridx = 1;
         crsBox = new JComboBox<>(CoordSystem.values());
         crsBox.setSelectedItem(layer.getCRS());
+        crsBox.setEnabled(!(layer instanceof TiledLayer));
+        crsBox.setToolTipText(layer instanceof TiledLayer
+                ? "Web tile layers use the coordinate system required by their server."
+                : null);
         panel.add(crsBox, gbc);
 
         // Row 3 & 4: Zoom Range
@@ -106,11 +111,17 @@ public class LayerPropertiesDialog extends JDialog {
             return;
         }
 
+        CoordSystem oldCrs = layer.getCRS();
+        CoordSystem newCrs = (CoordSystem) crsBox.getSelectedItem();
+
         layer.setName(nameField.getText());
         layer.setColor(selectedColor);
-        layer.setCRS((CoordSystem) crsBox.getSelectedItem());
+        layer.setCRS(newCrs);
         layer.setMinZoomL(min);
         layer.setMaxZoomL(max);
+        if (newCrs != oldCrs) {
+            layer.invalidateCache();
+        }
 
         mapCanvas.getLayerManager().notifyListeners();
         dispose();

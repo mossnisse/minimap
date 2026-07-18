@@ -5,6 +5,7 @@ import gis.core.*;
 import gis.core.MapCanvas;
 import app.MapLayers;
 import app.repo.LocalityRepository;
+import app.plugin.herbarium.HerbariumController;
 
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -18,7 +19,7 @@ import javax.swing.*;
 
 public class EditLocalityDialog extends JDialog implements ActionListener {
 	private final MapCanvas mapCanvas;
-	private final GUI gui;
+	private final HerbariumController gui;
 	private final int localityID;
 	private final SpecimenBridgeDialog bridgeDialog;
 	private final LocalityRepository localities;
@@ -31,8 +32,11 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 	private JCheckBox isPlace;
 	private JLabel labelCreated, labelModified;
 	private JButton cancel, delete, ok, move;
+	private SwingWorker<Boolean, Void> saveWorker;
+	// Field contents right after loading; unsaved work = any deviation from it
+	private String baseline;
 
-	public EditLocalityDialog(GUI gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, MapCanvas mapCanvas,
+	public EditLocalityDialog(HerbariumController gui, Frame owner, int localityID, SpecimenBridgeDialog bridge, MapCanvas mapCanvas,
 			LocalityRepository localities) {
 		// 'false' makes it non-modal, 'true' would stop interaction with map
 		super(owner, "Edit Locality", false);
@@ -48,6 +52,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 		initComponents();
 		loadData();
+		baseline = fieldsSnapshot();
 
 		this.pack();
 		this.setLocationRelativeTo(owner);
@@ -316,7 +321,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		gui.setCursorWait();
 
 		// Start Background Worker
-		new SwingWorker<Boolean, Void>() {
+		saveWorker = new SwingWorker<Boolean, Void>() {
 			@Override
 			protected Boolean doInBackground() throws Exception {
 				localities.update(localityID, details, moved, Settings.getValue("user"));
@@ -340,7 +345,64 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 					JOptionPane.showMessageDialog(EditLocalityDialog.this, "Error updating locality: " + e.getMessage());
 				}
 			}
-		}.execute();
+		};
+		saveWorker.execute();
+	}
+
+	private String fieldsSnapshot() {
+		return String.join("\u0000", name.getText(), altNames.getText(), district.getText(),
+				province.getText(), country.getText(), continent.getText(),
+				coordinateSource.getText(), comments.getText(), localitySize.getText(),
+				zoomLevel.getText(), category.getText(),
+				Boolean.toString(isPlace.isSelected()));
+	}
+
+	/** True when the user has edited a field or staged a move since the dialog opened. */
+	public boolean hasUnsavedWork() {
+		return pendingCoords != null
+				|| (baseline != null && !baseline.equals(fieldsSnapshot()));
+	}
+
+	/** Synchronous save used only by the guarded project/plugin transition. */
+	public boolean saveForProjectTransition() {
+		String newName = name.getText().trim();
+		if (newName.isEmpty()) {
+			JOptionPane.showMessageDialog(this, "Locality name cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		int size;
+		try {
+			size = Integer.parseInt(localitySize.getText().trim());
+			if (size < 0) throw new NumberFormatException();
+		} catch (NumberFormatException e) {
+			JOptionPane.showMessageDialog(this, "Size must be a positive integer.", "Error", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		try {
+			int zoom;
+			try { zoom = Integer.parseInt(zoomLevel.getText().trim()); }
+			catch (NumberFormatException e) { zoom = -1; }
+			LocalityRepository.LocalityDetails details = new LocalityRepository.LocalityDetails(
+					newName, altNames.getText().trim(), district.getText().trim(), province.getText().trim(),
+					country.getText().trim(), continent.getText().trim(), coordinateSource.getText().trim(),
+					comments.getText().trim(), size, category.getText().trim(), zoom, isPlace.isSelected());
+			LocalityRepository.StoredCoordinates moved = null;
+			if (pendingCoords != null) {
+				Coordinate wgs84 = mapCanvas.getCRS().toWGS84(pendingCoords);
+				moved = new LocalityRepository.StoredCoordinates(wgs84,
+						CoordSystem.SWEREF99TM.toProjected(wgs84), CoordSystem.RT90.toProjected(wgs84));
+			}
+			localities.update(localityID, details, moved, Settings.getValue("user"));
+			if (oldName != null && !oldName.equals(newName) && bridgeDialog != null && bridgeDialog.isVisible()) {
+				bridgeDialog.invalidateLocalityList();
+			}
+			MapLayers.refreshLocalities(mapCanvas);
+			dispose();
+			return true;
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
+			return false;
+		}
 	}
 
 	public void updateCoordinates(Coordinate c) {

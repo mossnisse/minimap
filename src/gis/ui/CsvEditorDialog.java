@@ -140,7 +140,7 @@ public class CsvEditorDialog extends JDialog {
 							"The layer was removed from the map. Save changes to "
 									+ layer.getFile().getName() + "?",
 							"Layer removed", JOptionPane.YES_NO_OPTION);
-					if (choice == JOptionPane.YES_OPTION) save();
+					if (choice == JOptionPane.YES_OPTION && !save()) return;
 				}
 				dispose();
 			}

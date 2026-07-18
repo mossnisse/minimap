@@ -5,6 +5,7 @@ import gis.core.Layer;
 import gis.coords.*;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 
 import gis.geometry.Extent;
 import org.w3c.dom.Document;
@@ -26,22 +27,26 @@ public class GPXFileLayer extends Layer {
 		Coordinate projectedPoint; // Store the result here!
 	}
 
-	public GPXFileLayer(String fileName, MapCanvas mapCanvas) {
+	public GPXFileLayer(String fileName, MapCanvas mapCanvas) throws IOException {
 		super(fileName, false, CoordSystem.WGS84);
 		this.fileName = fileName;
 		this.mapCanvas = mapCanvas;
 		readFile();
 	}
 
-	private void readFile() {
+	private void readFile() throws IOException {
 		try {
 			DocumentBuilderFactory docBuilderFactory = DocumentBuilderFactory.newInstance();
 			docBuilderFactory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			docBuilderFactory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			docBuilderFactory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			docBuilderFactory.setXIncludeAware(false);
+			docBuilderFactory.setExpandEntityReferences(false);
 			DocumentBuilder docBuilder = docBuilderFactory.newDocumentBuilder();
 			Document doc = docBuilder.parse(new File(fileName));
 			NodeList waypoints = doc.getElementsByTagName("wpt");
 
-			coordinates = new GPXCoordinate[waypoints.getLength()];
+			GPXCoordinate[] parsed = new GPXCoordinate[waypoints.getLength()];
 
 			for (int s = 0; s < waypoints.getLength(); s++) {
 				Element el = (Element) waypoints.item(s);
@@ -55,15 +60,22 @@ public class GPXFileLayer extends Layer {
 				k.dateTime = getSafeTagString(el, "time");
 				k.name = getSafeTagString(el, "name");
 
-				// PRE-PROJECT the point so draw() is fast
-				Coordinate wgs = new Coordinate(k.latitude, k.longitude);
-				k.projectedPoint = getCRS().convertTo(wgs, mapCanvas.getCRS());
-
-				coordinates[s] = k;
+				parsed[s] = k;
 			}
-			this.cachedExtent = calculateExtent();
+
+			projectCoordinates(parsed);
+			coordinates = parsed; // Publish only after the complete file succeeded.
+			cachedExtent = calculateExtent(parsed);
 		} catch(Exception e) {
-			e.printStackTrace();
+			if (e instanceof IOException io) throw io;
+			throw new IOException("Invalid GPX file " + fileName + ": " + e.getMessage(), e);
+		}
+	}
+
+	private void projectCoordinates(GPXCoordinate[] points) {
+		for (GPXCoordinate point : points) {
+			Coordinate wgs = new Coordinate(point.latitude, point.longitude);
+			point.projectedPoint = getCRS().convertTo(wgs, mapCanvas.getCRS());
 		}
 	}
 
@@ -81,20 +93,24 @@ public class GPXFileLayer extends Layer {
 		return coordinates;
 	}
 
-	private Extent calculateExtent() {
+	public String getSourcePath() {
+		return fileName;
+	}
+
+	private Extent calculateExtent(GPXCoordinate[] points) {
 		// If there are no coordinates, we can't define a boundary
-		if (coordinates == null || coordinates.length == 0) {
+		if (points.length == 0) {
 			return null;
 		}
 
 		// Initialize with the values from the first coordinate
-		double minE = coordinates[0].projectedPoint.getEast();
-		double maxE = coordinates[0].projectedPoint.getEast();
-		double minN = coordinates[0].projectedPoint.getNorth();
-		double maxN = coordinates[0].projectedPoint.getNorth();
+		double minE = points[0].projectedPoint.getEast();
+		double maxE = points[0].projectedPoint.getEast();
+		double minN = points[0].projectedPoint.getNorth();
+		double maxN = points[0].projectedPoint.getNorth();
 
 		// Iterate through all coordinates to expand the boundaries
-		for (GPXCoordinate coord : coordinates) {
+		for (GPXCoordinate coord : points) {
 			if (coord.projectedPoint.getEast() < minE) minE = coord.projectedPoint.getEast();
 			if (coord.projectedPoint.getEast() > maxE) maxE = coord.projectedPoint.getEast();
 			if (coord.projectedPoint.getNorth() < minN) minN = coord.projectedPoint.getNorth();
@@ -112,7 +128,8 @@ public class GPXFileLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-		readFile();
+		projectCoordinates(coordinates);
+		cachedExtent = calculateExtent(coordinates);
 	}
 
 	@Override

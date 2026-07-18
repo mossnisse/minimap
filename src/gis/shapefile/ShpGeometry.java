@@ -73,6 +73,17 @@ public class ShpGeometry {
 		return type + "(" + xs.length + " points, " + parts.length + " parts)";
 	}
 
+	/** A single-point geometry, for editing point shapefiles. */
+	public static ShpGeometry point(double x, double y) {
+		return new ShpGeometry(ShapeType.POINT, SINGLE_PART,
+				new double[]{x}, new double[]{y}, x, y, x, y);
+	}
+
+	/** A null shape: a record slot with no geometry. */
+	public static ShpGeometry nullShape() {
+		return new ShpGeometry(ShapeType.NULL, NO_PARTS, NO_ORDINATES, NO_ORDINATES, 0, 0, 0, 0);
+	}
+
 	/**
 	 * Parses one record's content (everything after the 8-byte record
 	 * header). The buffer must be little-endian. Trailing Z/M data is

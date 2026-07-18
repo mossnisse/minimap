@@ -34,10 +34,12 @@ public class ShapefileReader implements Closeable, Iterable<ShapefileReader.Feat
 		private static final String[] NO_ATTRIBUTES = {};
 		public final ShpGeometry geometry;
 		public final String[] attributes;
+		public final boolean deleted;
 
-		Feature(ShpGeometry geometry, String[] attributes) {
+		Feature(ShpGeometry geometry, String[] attributes, boolean deleted) {
 			this.geometry = geometry;
 			this.attributes = (attributes != null) ? attributes : NO_ATTRIBUTES;
+			this.deleted = deleted;
 		}
 
 		public String toString() {
@@ -94,7 +96,8 @@ public class ShapefileReader implements Closeable, Iterable<ShapefileReader.Feat
 		ShpGeometry geometry = shp.next();
 		if (geometry == null) return null;
 		String[] attributes = (dbf != null) ? dbf.next() : null;
-		return new Feature(geometry, attributes);
+		boolean deleted = dbf != null && dbf.wasLastRecordDeleted();
+		return new Feature(geometry, attributes, deleted);
 	}
 
 	@Override
@@ -185,7 +188,8 @@ public class ShapefileReader implements Closeable, Iterable<ShapefileReader.Feat
 		}
 	}
 
-	private static String stripExtension(String filename) {
+	/** Strips a shapefile-set extension (.shp, .dbf, ...) to get the base path. */
+	public static String stripExtension(String filename) {
 		String lower = filename.toLowerCase(Locale.ROOT);
 		for (String ext : new String[]{".shp", ".dbf", ".shx", ".prj", ".cpg"}) {
 			if (lower.endsWith(ext)) {

@@ -72,6 +72,10 @@ public class RasterFileLayer extends Layer {
 		needsProjection = true;
 	}
 
+	public String getSourcePath() {
+		return fileName;
+	}
+
 	@Override
 	public Extent getBoundaries() {
 		// In the canvas CRS, like the other layers

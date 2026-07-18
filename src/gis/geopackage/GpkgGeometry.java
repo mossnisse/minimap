@@ -71,6 +71,29 @@ public class GpkgGeometry {
 	public double getMaxX() { return maxX; }
 	public double getMaxY() { return maxY; }
 
+	/** A single-point geometry, for editing point tables. */
+	public static GpkgGeometry point(double x, double y) {
+		return new GpkgGeometry(ShapeType.POINT, new int[]{0},
+				new double[]{x}, new double[]{y}, x, y, x, y);
+	}
+
+	/**
+	 * Encodes a single point as a GeoPackage geometry BLOB: a minimal "GP"
+	 * header (little-endian, no envelope) followed by WKB.
+	 */
+	public static byte[] encodePoint(double x, double y, int srsId) {
+		ByteBuffer buf = ByteBuffer.allocate(8 + 21).order(ByteOrder.LITTLE_ENDIAN);
+		buf.put((byte) 'G').put((byte) 'P');
+		buf.put((byte) 0);    // version
+		buf.put((byte) 0x01); // flags: little-endian, no envelope
+		buf.putInt(srsId);
+		buf.put((byte) 1);    // WKB little-endian
+		buf.putInt(1);        // WKB point
+		buf.putDouble(x);
+		buf.putDouble(y);
+		return buf.array();
+	}
+
 	/** Parses a GeoPackage geometry BLOB (GP header + WKB). */
 	public static GpkgGeometry parse(byte[] blob) throws IOException {
 		try {

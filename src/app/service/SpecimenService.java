@@ -11,11 +11,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SpecimenService {
+    private static final String CACHE_TABLE = "tempspecimens";
+    private static final String STAGING_CACHE_TABLE = "tempspecimens_staging";
+
     private final Database db;
+    private final Object cacheLock = new Object();
     private final java.util.Map<String, List<LocalityRecord>> localityCache = new java.util.HashMap<>();
 
     public SpecimenService(Database db) {
@@ -87,7 +92,7 @@ public class SpecimenService {
 
         mysqlSql.append(" ORDER BY Year ASC, Month ASC, Day ASC, original_text ASC");
 
-        String h2Insert = "INSERT INTO tempspecimens (AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
+        String h2Insert = "INSERT INTO " + STAGING_CACHE_TABLE + " (AccessionNo, \"Year\", \"Month\", \"Day\", original_text, Genus, Species, Collector, "
                 + "InstitutionCode, specimen_locality, district, province, specimens_ID, "
                 + "RUBIN, RiketsN, RiketsO, SwerefN, SwerefE, Lat_dir, Lat_deg, Lat_min, "
                 + "Lat_sec, Long_dir, Long_deg, Long_min, Long_sec, CollectionCode, "
@@ -98,53 +103,88 @@ public class SpecimenService {
         Connection mysqlConn = db.mysql();
         Connection h2Conn = db.h2();
 
-        try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
-            prepareH2Table(h2Conn);
+        synchronized (cacheLock) {
+            ensureH2Table(h2Conn, CACHE_TABLE);
+            recreateH2Table(h2Conn, STAGING_CACHE_TABLE);
 
-            // Map dynamic parameters to the PreparedStatement
-            for (int i = 0; i < params.size(); i++) {
-                selectStmt.setObject(i + 1, params.get(i));
-            }
+            try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
 
-            try (ResultSet rs = selectStmt.executeQuery();
-                 PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
-
-                h2Conn.setAutoCommit(false); // Start transaction
-                try {
-                    while (rs.next()) {
-                        for (int i = 1; i <= 32; i++) {
-                            insertStmt.setObject(i, rs.getObject(i));
-                        }
-                        insertStmt.addBatch();
-                        count++;
-
-                        // Execute batch every 500 records to manage memory
-                        if (count % 500 == 0) {
-                            insertStmt.executeBatch();
-                        }
-                    }
-
-                    // Finalize remaining records
-                    insertStmt.executeBatch();
-                    h2Conn.commit(); // Single commit at the very end
-
-                } catch (SQLException e) {
-                    h2Conn.rollback(); // Critical: Roll back if something goes wrong!
-                    throw e;
-                } finally {
-                    h2Conn.setAutoCommit(true); // Reset state for the shared connection
+                // Map dynamic parameters to the PreparedStatement
+                for (int i = 0; i < params.size(); i++) {
+                    selectStmt.setObject(i + 1, params.get(i));
                 }
+
+                try (ResultSet rs = selectStmt.executeQuery();
+                     PreparedStatement insertStmt = h2Conn.prepareStatement(h2Insert)) {
+
+                    boolean oldAutoCommit = h2Conn.getAutoCommit();
+                    h2Conn.setAutoCommit(false);
+                    try {
+                        while (rs.next()) {
+                            for (int i = 1; i <= 32; i++) {
+                                insertStmt.setObject(i, rs.getObject(i));
+                            }
+                            insertStmt.addBatch();
+                            count++;
+
+                            // Execute batch every 500 records to manage memory
+                            if (count % 500 == 0) {
+                                insertStmt.executeBatch();
+                            }
+                        }
+
+                        insertStmt.executeBatch();
+
+                        // Replacing the stable table is DML, so a failure restores the
+                        // previous cache instead of exposing an empty/partial result set.
+                        try (Statement replace = h2Conn.createStatement()) {
+                            replace.executeUpdate("DELETE FROM " + CACHE_TABLE);
+                            replace.executeUpdate("INSERT INTO " + CACHE_TABLE
+                                    + " SELECT * FROM " + STAGING_CACHE_TABLE);
+                        }
+                        h2Conn.commit();
+                    } catch (SQLException e) {
+                        h2Conn.rollback();
+                        throw e;
+                    } finally {
+                        h2Conn.setAutoCommit(oldAutoCommit);
+                    }
+                }
+            } finally {
+                dropH2TableQuietly(h2Conn, STAGING_CACHE_TABLE);
             }
         }
         return count;
     }
 
-    private void prepareH2Table(Connection h2Conn) throws SQLException {
-        try (PreparedStatement drop = h2Conn.prepareStatement("DROP TABLE IF EXISTS tempspecimens;")) {
-            drop.executeUpdate();
+    /**
+     * Drops the persistent cache table. The next search recreates it with the
+     * current schema, so the cache never leaks rows from another project's
+     * database or breaks on a table left behind by an older app version.
+     */
+    public void clearCache() {
+        synchronized (cacheLock) {
+            try {
+                dropH2TableQuietly(db.h2(), CACHE_TABLE);
+            } catch (SQLException e) {
+                System.err.println("Couldn't clear the specimen cache: " + e.getMessage());
+            }
         }
+    }
 
-        String createSql = "CREATE TABLE tempspecimens ("
+    private void ensureH2Table(Connection h2Conn, String table) throws SQLException {
+        createH2Table(h2Conn, table, true);
+    }
+
+    private void recreateH2Table(Connection h2Conn, String table) throws SQLException {
+        try (Statement drop = h2Conn.createStatement()) {
+            drop.executeUpdate("DROP TABLE IF EXISTS " + table);
+        }
+        createH2Table(h2Conn, table, false);
+    }
+
+    private void createH2Table(Connection h2Conn, String table, boolean ifNotExists) throws SQLException {
+        String createSql = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + table + " ("
                 + "cache_id INT AUTO_INCREMENT PRIMARY KEY, "
                 + "AccessionNo VARCHAR(16), "
                 + "\"Year\" SMALLINT, "   // Quoted
@@ -179,41 +219,51 @@ public class SpecimenService {
                 + "oDistrict VARCHAR(32), "
                 + "oProvince VARCHAR(40));";
 
-        try (PreparedStatement create = h2Conn.prepareStatement(createSql)) {
-            create.executeUpdate();
+        try (Statement create = h2Conn.createStatement()) {
+            create.executeUpdate(createSql);
+        }
+    }
+
+    private void dropH2TableQuietly(Connection h2Conn, String table) {
+        try (Statement drop = h2Conn.createStatement()) {
+            drop.executeUpdate("DROP TABLE IF EXISTS " + table);
+        } catch (SQLException e) {
+            System.err.println("Couldn't remove specimen-cache staging table: " + e.getMessage());
         }
     }
 
     public Specimen getSpecimenAt(int index) {
-        // index 0 maps to cache_id 1
-        String sql = "SELECT * FROM tempspecimens WHERE cache_id = ?;";
-        try {
-            Connection conn = db.h2();
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        String sql = "SELECT * FROM " + CACHE_TABLE + " ORDER BY cache_id LIMIT 1 OFFSET ?";
+        synchronized (cacheLock) {
+            try {
+                Connection conn = db.h2();
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-                ps.setInt(1, index + 1);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        return mapResultSetToSpecimen(rs);
+                    ps.setInt(1, index);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            return mapResultSetToSpecimen(rs);
+                        }
                     }
                 }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return null;
     }
 
     public int getCacheCount() {
-        try {
-            Connection conn = db.h2();
-            try (
-                    java.sql.Statement stmt = conn.createStatement();
-                    ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM tempspecimens")) {
-                if (rs.next()) return rs.getInt(1);
+        synchronized (cacheLock) {
+            try {
+                Connection conn = db.h2();
+                try (Statement stmt = conn.createStatement();
+                     ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM " + CACHE_TABLE)) {
+                    if (rs.next()) return rs.getInt(1);
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-        }catch (SQLException e) {
-            e.printStackTrace();
         }
         return 0;
     }
@@ -353,7 +403,7 @@ public class SpecimenService {
 
                 // If MySQL updated successfully, update the local H2 Cache!
                 if (mysqlSuccess) {
-                    updateH2CacheLink(s.getAccessionNo(), localityId, oDist, oProv, dist, dir);
+                    updateH2CacheLink(s, localityId, oDist, oProv, dist, dir);
                 }
 
                 return mysqlSuccess;
@@ -382,7 +432,7 @@ public class SpecimenService {
 
                 // Clear it from the local H2 Cache as well
                 if (mysqlSuccess) {
-                    updateH2CacheLink(s.getAccessionNo(), -1, "", "", 0, "");
+                    updateH2CacheLink(s, -1, "", "", 0, "");
                 }
                 return mysqlSuccess;
             }
@@ -392,34 +442,33 @@ public class SpecimenService {
         }
     }
 
-    private void updateH2CacheLink(String accessionNo, int locId, String oDist, String oProv, int dist, String dir) {
+    private void updateH2CacheLink(Specimen specimen, int locId, String oDist, String oProv, int dist, String dir) {
         String h2Update = "UPDATE tempspecimens SET "
                 + "locality_ID = ?, distance = ?, direction = ?, oDistrict = ?, oProvince = ? "
-                + "WHERE AccessionNo = ?";
-        try {
-            Connection h2Conn = db.h2();
-            try (
-                    PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
+                + "WHERE specimens_ID = ?";
+        synchronized (cacheLock) {
+            try {
+                Connection h2Conn = db.h2();
+                try (PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
 
-                if (locId > 0) ps.setInt(1, locId);
-                else ps.setNull(1, java.sql.Types.INTEGER);
+                    if (locId > 0) ps.setInt(1, locId);
+                    else ps.setNull(1, java.sql.Types.INTEGER);
 
-                if (dist > 0) ps.setInt(2, dist);
-                else ps.setNull(2, java.sql.Types.INTEGER);
+                    if (dist > 0) ps.setInt(2, dist);
+                    else ps.setNull(2, java.sql.Types.INTEGER);
 
-                if (dir != null && !dir.isEmpty()) ps.setString(3, dir);
-                else ps.setNull(3, java.sql.Types.VARCHAR);
+                    if (dir != null && !dir.isEmpty()) ps.setString(3, dir);
+                    else ps.setNull(3, java.sql.Types.VARCHAR);
 
-                ps.setString(4, oDist);
-                ps.setString(5, oProv);
-                ps.setString(6, accessionNo);
+                    ps.setString(4, oDist);
+                    ps.setString(5, oProv);
+                    ps.setInt(6, specimen.getId());
 
-                ps.executeUpdate();
-            } catch (SQLException e) {
+                    ps.executeUpdate();
+                }
+            } catch (Exception e) {
                 e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 

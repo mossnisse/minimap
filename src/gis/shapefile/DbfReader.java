@@ -25,6 +25,7 @@ public class DbfReader implements Closeable {
 	private final int recordCount;
 	private final int recordSize;
 	private int recordsRead = 0;
+	private boolean lastRecordDeleted;
 
 	public DbfReader(File dbfFile, Charset charset) throws IOException {
 		this.charset = (charset != null) ? charset : DEFAULT_CHARSET;
@@ -95,10 +96,14 @@ public class DbfReader implements Closeable {
 	 *         step with the .shp file's records.
 	 */
 	public String[] next() throws IOException {
-		if (!hasNext()) return null;
+		if (!hasNext()) {
+			lastRecordDeleted = false;
+			return null;
+		}
 		byte[] record = new byte[recordSize];
 		in.readFully(record);
 		recordsRead++;
+		lastRecordDeleted = record[0] == 0x2A;
 		String[] values = new String[fields.size()];
 		int offset = 1; // skip the deletion flag
 		for (int i = 0; i < fields.size(); i++) {
@@ -107,6 +112,11 @@ public class DbfReader implements Closeable {
 			offset += len;
 		}
 		return values;
+	}
+
+	/** Whether the record returned by the most recent {@link #next()} was deleted. */
+	public boolean wasLastRecordDeleted() {
+		return lastRecordDeleted;
 	}
 
 	@Override

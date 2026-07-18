@@ -90,11 +90,17 @@ public class Database {
 		return h2Conn;
 	}
 
-	public synchronized void close() throws SQLException {
+	/** Closes only the project-scoped MySQL connection and forgets its cached password. */
+	public synchronized void resetMysql() throws SQLException {
 		if (mysqlConn != null) {
 			mysqlConn.close();
 			mysqlConn = null;
 		}
+		password = null;
+	}
+
+	public synchronized void close() throws SQLException {
+		resetMysql();
 		if (h2Conn != null) {
 			h2Conn.close();
 			h2Conn = null;

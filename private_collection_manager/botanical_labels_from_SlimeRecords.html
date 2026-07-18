@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: "Times New Roman", serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+            margin: 0;
+            /* Normalize font rendering across browsers */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .no-print {
+            text-align: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px;
+            border-bottom: 2px solid #2E7D32;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .label-grid {
+            display: grid;
+            /* Fixed width to ensure 2 columns fit exactly */
+            grid-template-columns: repeat(2, 9.2cm);
+            justify-content: center;
+            width: 100%;
+            gap: 0;
+        }
+
+        .label-container {
+            width: 9.2cm;
+            /* REDUCED height to 6.4cm to ensure 4 rows fit in Firefox */
+            height: 6.4cm; 
+            border: 1px solid #000;
+            margin-right: -1px;
+            margin-bottom: -1px;
+            padding: 10px; /* Slightly reduced padding */
+            line-height: 1.2; /* Tighter line height for Firefox compatibility */
+            background: white;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Prevents overflow from growing the container */
+        }
+
+        .header { font-weight: bold; font-size: 1.1em; text-align: center; margin-bottom: 4px; border-bottom: 1px solid #000;}
+
+        .species { font-style: italic; font-size: 1.05em; margin-bottom: 2px; }
+
+        .location { font-weight: bold; font-size: 0.95em; }
+
+        .description div {
+            margin-bottom: 1px;
+            font-size: 0.9em;
+        }
+
+        .coordinates {
+            font-size: 0.85em;
+            margin-top: 2px;
+            font-family: monospace;
+        }
+
+        .spacer {
+            flex-grow: 1;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            margin-top: 2px;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 12.7mm;
+            }
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .label-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 9.2cm);
+                justify-content: center;
+                gap: 0;
+            }
+            .label-container {
+                page-break-inside: avoid;
+                /* Force hardware to respect the dimensions */
+                min-height: 6.4cm;
+                max-height: 6.4cm;
+            }
+        }
+
+        /* UI Buttons */
+        .btn-print {
+            background: #2E7D32; color: white; padding: 12px 24px;
+            border: none; cursor: pointer; border-radius: 4px; font-size: 16px;
+        }
+        .btn-save {
+            background: #1976D2; color: white; padding: 12px 24px;
+            border: none; cursor: pointer; border-radius: 4px; font-size: 16px;
+            margin-left: 10px;
+        }
+
+        @media screen {
+            [data-label] {
+                position: relative;
+                min-height: 1.2em;
+                outline: none;
+            }
+            [data-label]:hover::before,
+            [data-label]:focus::before {
+                content: attr(data-label);
+                position: absolute;
+                top: -14px;
+                left: 0;
+                background: #e1f5fe;
+                color: #01579b;
+                font-size: 10px;
+                font-family: sans-serif;
+                padding: 1px 4px;
+                border-radius: 2px;
+                z-index: 10;
+                pointer-events: none;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="no-print">
+    <button class="btn-print" onclick="window.print()">Print Labels</button>
+    <button class="btn-save" onclick="saveEdits()">Save Edited Copy</button>
+    <p>Edit text directly below. 8 labels fit per page.</p>
+</div>
+
+<div class="label-grid" contenteditable="true" id="main-grid">
+    <div class='label-container' data-uid='114'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>Flarlav sp</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>_____</div>    <div class='substrate' data-label='Substrate'>_____</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.63008, 17.98744</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 8</span></span>    <span class='date' data-label='Date'>2026-06-23</span>  </div></div><div class='label-container' data-uid='116'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>bergklipptuss</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>NV Åliden, NE Fäboliden</div>    <div class='substrate' data-label='Substrate'>klippblock</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.62547, 17.99058</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 9</span></span>    <span class='date' data-label='Date'>2026-06-23</span>  </div></div><div class='label-container' data-uid='119'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>Coprinopsis martini?</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>NV Åliden, NE Fäboliden</div>    <div class='substrate' data-label='Substrate'>Sphagnum</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.62509, 17.99200</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 10</span></span>    <span class='date' data-label='Date'>2026-06-23</span>  </div></div><div class='label-container' data-uid='120'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>Lopplummer</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>_____</div>    <div class='substrate' data-label='Substrate'>_____</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.61557, 17.98296</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 11</span></span>    <span class='date' data-label='Date'>2026-06-24</span>  </div></div><div class='label-container' data-uid='122'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>Rost på älggräs</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>bäckmyran NE Fäboliden</div>    <div class='substrate' data-label='Substrate'>Filipendula</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.61058, 17.99420</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 12</span></span>    <span class='date' data-label='Date'>2026-06-24</span>  </div></div><div class='label-container' data-uid='123'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>Rost på Alchemilla</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>Vinliden</div>    <div class='substrate' data-label='Substrate'>Alchemilla sp.</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.64445, 17.86878</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 13</span></span>    <span class='date' data-label='Date'>2026-06-25</span>  </div></div><div class='label-container' data-uid='124'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>Flugrör</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>_____</div>    <div class='substrate' data-label='Substrate'>_____</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.64222, 17.87178</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 14</span></span>    <span class='date' data-label='Date'>2026-06-26</span>  </div></div><div class='label-container' data-uid='125'>  <div class='header'>Flora Suecica</div>  <div class='species' data-label='Species Name'>Flugrör</div>  <div>       <span class='province' data-label='province'>Lycksele lappmark</span>, <span class='district' data-label='district'>Lycksele socken</span>  </div>  <div class='description'>    <div class='locality' data-label='Locality Description'>_____</div>    <div class='substrate' data-label='Substrate'>_____</div>    <div class='habitat' data-label='Habitat'>_____</div>    <div class='coordinates'>wgs84: 64.64141, 17.87167</div>  </div>  <div class='spacer'></div>  <div class='footer'>    <span>Leg. <span class='collector' data-label='Collector'>Nis Ericson</span> <span class='nr' data-label='Collection Nr'>nr 15</span></span>    <span class='date' data-label='Date'>2026-06-26</span>  </div></div>
+</div>
+
+<script>
+    function saveEdits() {
+        if (document.activeElement) document.activeElement.blur();
+        const currentHtml = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
+        const blob = new Blob([currentHtml], { type: 'text/html' });
+        const a = document.createElement('a');
+        const now = new Date();
+        const dateStr = now.getFullYear() + '-' + (now.getMonth()+1) + '-' + now.getDate();
+        a.href = URL.createObjectURL(blob);
+        a.download = 'Labels_Edited_' + dateStr + '.html';
+        document.body.appendChild(a);
+        a.click();
+        const btn = document.querySelector('.btn-save');
+        const originalText = btn.innerText;
+        btn.innerText = "✓ Saved New File";
+        btn.style.background = "#4CAF50";
+        setTimeout(() => {
+            btn.innerText = originalText;
+            btn.style.background = "#1976D2";
+        }, 2000);
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+    }
+</script>
+</body>
+</html>

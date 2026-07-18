@@ -77,6 +77,11 @@ public class LayerManager {
         }
     }
 
+    /** Removes a keyed layer regardless of whether it is an overlay or a normal layer. */
+    public void removeLayer(LayerKey<?> key) {
+        removeOverlay(key);
+    }
+
     public void delLayer(Layer layerToRemove) {
         if (layers.remove(layerToRemove)) {
             // Unbind so a later get() can't return a layer that is no longer on the map
@@ -88,6 +93,27 @@ public class LayerManager {
     public void setLayerOrder(java.util.List<Layer> newOrder) {
         // Atomic swap. No empty state!
         layers = new CopyOnWriteArrayList<>(newOrder);
+        notifyListeners();
+    }
+
+    /**
+     * Atomically replaces both the drawing order and all keyed bindings.
+     * The supplied list is ordered bottom-to-top.
+     */
+    public synchronized void replaceAll(java.util.List<Layer> newLayers,
+                                        Map<LayerKey<?>, Layer> newKeyed) {
+        for (Map.Entry<LayerKey<?>, Layer> entry : newKeyed.entrySet()) {
+            if (!entry.getKey().type().isInstance(entry.getValue())) {
+                throw new IllegalArgumentException("Layer for key " + entry.getKey()
+                        + " is not a " + entry.getKey().type().getSimpleName());
+            }
+            if (!newLayers.contains(entry.getValue())) {
+                throw new IllegalArgumentException("Keyed layer " + entry.getKey() + " is not in layer order");
+            }
+        }
+        layers = new CopyOnWriteArrayList<>(newLayers);
+        keyed.clear();
+        keyed.putAll(newKeyed);
         notifyListeners();
     }
 

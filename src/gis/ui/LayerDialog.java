@@ -12,6 +12,8 @@ import gis.core.MapCanvas;
 import gis.geometry.Extent;
 import gis.core.Layer;
 import gis.layers.CsvPointLayer;
+import gis.layers.GeoPackageLayer;
+import gis.layers.ShapeFileLayer;
 
 public class LayerDialog extends JDialog {
 	@Serial
@@ -54,12 +56,15 @@ public class LayerDialog extends JDialog {
 		JButton zoomBtn = new JButton("Zoom to Selected");
 		zoomBtn.addActionListener(e -> zoomToSelected());
 
-		// Only enabled for layers with an editable table (currently CSV layers)
+		// Only enabled for layers with an editable table (CSV, shapefile, GeoPackage)
 		JButton editBtn = new JButton("Edit Data");
 		editBtn.setEnabled(false);
 		editBtn.addActionListener(e -> editSelected());
-		layerList.addListSelectionListener(
-				e -> editBtn.setEnabled(layerList.getSelectedValue() instanceof CsvPointLayer));
+		layerList.addListSelectionListener(e -> {
+			Layer selected = layerList.getSelectedValue();
+			editBtn.setEnabled(selected instanceof CsvPointLayer
+					|| selected instanceof gis.layers.EditableTableLayer);
+		});
 
 		JButton removeBtn = new JButton("Remove Selected");
 		removeBtn.addActionListener(e -> removeSelected());
@@ -165,8 +170,13 @@ public class LayerDialog extends JDialog {
 	}
 
 	private void editSelected() {
-		if (layerList.getSelectedValue() instanceof CsvPointLayer csvLayer) {
+		Layer selected = layerList.getSelectedValue();
+		if (selected instanceof CsvPointLayer csvLayer) {
 			CsvEditorDialog.open(ownerFrame, mapCanvas, csvLayer);
+		} else if (selected instanceof ShapeFileLayer shapeLayer) {
+			TableEditorDialog.open(ownerFrame, mapCanvas, shapeLayer);
+		} else if (selected instanceof GeoPackageLayer gpkgLayer) {
+			TableEditorDialog.open(ownerFrame, mapCanvas, gpkgLayer);
 		}
 	}
 

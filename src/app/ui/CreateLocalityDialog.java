@@ -14,11 +14,12 @@ import gis.core.MapCanvas;
 import app.MapLayers;
 import app.repo.LocalityRepository;
 import app.repo.PlaceNameRepository;
+import app.plugin.herbarium.HerbariumController;
 
 public class CreateLocalityDialog extends JDialog implements ActionListener {
 	@Serial
 	private static final long serialVersionUID = 5999128550024317489L;
-	private final GUI gui;
+	private final HerbariumController gui;
 	private final MapCanvas mapCanvas;
 	private final SpecimenBridgeDialog bridgeDialog;
 	private final LocalityRepository localities;
@@ -28,8 +29,11 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 	private JTextArea commentsT;
 	private JCheckBox isPlaceT;
 	private JButton cancel, ok;
+	private SwingWorker<Boolean, Void> saveWorker;
+	// Field contents right after opening; unsaved work = any deviation from it
+	private String baseline;
 
-	public CreateLocalityDialog(Frame owner, GUI gui, MapCanvas mapCanvas, SpecimenBridgeDialog bridge, Coordinate c,
+	public CreateLocalityDialog(Frame owner, HerbariumController gui, MapCanvas mapCanvas, SpecimenBridgeDialog bridge, Coordinate c,
 			LocalityRepository localities, PlaceNameRepository placeNames) {
 		super(owner, "Create New Locality", false);
 		this.gui = gui;
@@ -44,6 +48,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		content.setLayout(new SpringLayout());
 
 		initComponents(content);
+		baseline = fieldsSnapshot();
 
 		addComponentListener(new ComponentAdapter() {
 			@Override
@@ -182,7 +187,7 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		gui.setCursorWait();
 
 		// Start Background Worker
-		new SwingWorker<Boolean, Void>() {
+		saveWorker = new SwingWorker<Boolean, Void>() {
 			@Override
 			protected Boolean doInBackground() throws Exception {
 				if (localities.exists(localityName, distr, prov, coun)) {
@@ -220,7 +225,21 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 					gui.setCursorDefault();
 				}
 			}
-		}.execute();
+		};
+		saveWorker.execute();
+	}
+
+	private String fieldsSnapshot() {
+		return String.join("\u0000", localityT.getText(), alternativeT.getText(),
+				coordsourceT.getText(), commentsT.getText(), locSizeT.getText(),
+				categoryT.getText(), zoomLevelT.getText(), continentT.getText(),
+				countryT.getText(), provinceT.getText(), districtT.getText(),
+				Boolean.toString(isPlaceT.isSelected()));
+	}
+
+	/** True when the user has edited any field since the dialog opened. */
+	public boolean hasUnsavedWork() {
+		return baseline != null && !baseline.equals(fieldsSnapshot());
 	}
 
 	private void refreshMapsAndLists() {
@@ -230,6 +249,48 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		}
 
 		MapLayers.refreshLocalities(mapCanvas);
+	}
+
+	/** Synchronous save used only by the guarded project/plugin transition. */
+	public boolean saveForProjectTransition() {
+		String localityName = localityT.getText().trim();
+		if (localityName.isEmpty()) {
+			JOptionPane.showMessageDialog(this, "Locality name is required.");
+			return false;
+		}
+		int size;
+		try {
+			size = Integer.parseInt(locSizeT.getText().trim());
+			if (size < 0) throw new NumberFormatException();
+		} catch (NumberFormatException e) {
+			JOptionPane.showMessageDialog(this, "Size must be a positive integer.");
+			return false;
+		}
+		try {
+			String distr = districtT.getText().trim(), prov = provinceT.getText().trim();
+			String coun = countryT.getText().trim();
+			if (localities.exists(localityName, distr, prov, coun)) {
+				JOptionPane.showMessageDialog(this, "Locality already exists.");
+				return false;
+			}
+			Coordinate wgs84 = mapCanvas.getCRS().toWGS84(c);
+			int zoom;
+			try { zoom = Integer.parseInt(zoomLevelT.getText().trim()); }
+			catch (NumberFormatException e) { zoom = -1; }
+			localities.insert(new LocalityRepository.LocalityDetails(localityName,
+					alternativeT.getText().trim(), distr, prov, coun, continentT.getText().trim(),
+					coordsourceT.getText().trim(), commentsT.getText().trim(), size,
+					categoryT.getText().trim(), zoom, isPlaceT.isSelected()),
+					new LocalityRepository.StoredCoordinates(wgs84,
+							CoordSystem.SWEREF99TM.toProjected(wgs84), CoordSystem.RT90.toProjected(wgs84)),
+					Settings.getValue("user"));
+			refreshMapsAndLists();
+			dispose();
+			return true;
+		} catch (Exception e) {
+			JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+			return false;
+		}
 	}
 
 	@Override

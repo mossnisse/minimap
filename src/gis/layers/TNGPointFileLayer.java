@@ -2,6 +2,7 @@ package gis.layers;
 
 import gis.coords.*;
 import gis.core.Layer;
+import gis.core.MapCanvas;
 import java.awt.*;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
@@ -13,7 +14,9 @@ import gis.shapefile.DataInputStreamSE;
 
 public class TNGPointFileLayer extends Layer {
 	private String fileName;
-	private Locality[] localities;
+	private Locality[] localities = new Locality[0];
+	private Locality[] sourceLocalities;
+	private final MapCanvas mapCanvas;
 	static final Stroke LINE_STROKE = new BasicStroke(2);
 	
 	public static class Locality extends Coordinate {
@@ -47,17 +50,26 @@ public class TNGPointFileLayer extends Layer {
 	public TNGPointFileLayer(String fileName) throws IOException {
 		super(fileName, false, CoordSystem.SWEREF99TM);
 		this.fileName = fileName;
+		this.mapCanvas = null;
 		readFile();
 	}
 	
 	public TNGPointFileLayer(ArrayList<Coordinate> loca, ArrayList<String> names, String name) {
-		super(name, false, CoordSystem.SWEREF99TM);
-		localities = new Locality[loca.size()];
+		this(loca, names, name, null, CoordSystem.SWEREF99TM);
+	}
+
+	/** Creates an in-memory layer whose source coordinates can be reprojected with the canvas. */
+	public TNGPointFileLayer(ArrayList<Coordinate> loca, ArrayList<String> names, String name,
+	                         MapCanvas mapCanvas, CoordSystem sourceCRS) {
+		super(name, false, sourceCRS);
+		this.mapCanvas = mapCanvas;
+		sourceLocalities = new Locality[loca.size()];
 		int i=0;
 		for(Coordinate loci:loca) {
-			localities[i]=new Locality(loci, names.get(i));
+			sourceLocalities[i]=new Locality(loci, names.get(i));
 			i++;
 		}
+		reproject();
 	}
 	
 	private void readFile() throws IOException {
@@ -77,6 +89,21 @@ public class TNGPointFileLayer extends Layer {
 				int x = in.readInt();
 				localities[i] = new Locality(x, y, name);
 			}
+			sourceLocalities = localities;
+		}
+	}
+
+	private void reproject() {
+		if (sourceLocalities == null) return;
+		localities = new Locality[sourceLocalities.length];
+		for (int i = 0; i < sourceLocalities.length; i++) {
+			Locality source = sourceLocalities[i];
+			Coordinate projected = (mapCanvas == null)
+					? new Coordinate(source)
+					: getCRS().convertTo(source, mapCanvas.getCRS());
+			Locality copy = new Locality(projected, source.getName());
+			copy.setId(source.getId());
+			localities[i] = copy;
 		}
 	}
 	
@@ -114,7 +141,7 @@ public class TNGPointFileLayer extends Layer {
 
 	@Override
 	public void invalidateCache() {
-
+		reproject();
 	}
 
 	@Override

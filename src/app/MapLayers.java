@@ -33,9 +33,8 @@ public final class MapLayers {
 	/** The locality search-result markers; a new search replaces the previous results. */
 	public static final LayerKey<TNGPointFileLayer> SEARCH_RESULTS = LayerKey.of("Search Results", TNGPointFileLayer.class);
 
-	/** Installs the default layer stack (bottom to top: TopoWeb, socknar, provinser, ortnamn, LokalDB). */
+	/** Installs the core default stack (bottom to top: TopoWeb, socknar, provinser, ortnamn). */
 	public static void installDefaultLayers(MapCanvas canvas, AppContext ctx) {
-		canvas.getLayerManager().addLayerBottom(LOKAL_DB, lokalDb(canvas, ctx.localities));
 		canvas.getLayerManager().addLayerBottom(ORTNAMN, ortnamn(canvas, ctx.placeNames));
 		canvas.getLayerManager().addLayerBottom(PROVINSER, provinser(canvas));
 		canvas.getLayerManager().addLayerBottom(SOCKNAR, socknar(canvas));

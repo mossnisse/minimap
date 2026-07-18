@@ -92,6 +92,47 @@ public class Extent {
     }
 
     public Extent convertCRS(CoordSystem fromCRS, CoordSystem toCRS) {
-        return new Extent( fromCRS.convertTo(c1, toCRS), fromCRS.convertTo(c2, toCRS) );
+        if (fromCRS == toCRS) {
+            return new Extent(
+                    Math.min(c1.getNorth(), c2.getNorth()),
+                    Math.min(c1.getEast(), c2.getEast()),
+                    Math.max(c1.getNorth(), c2.getNorth()),
+                    Math.max(c1.getEast(), c2.getEast()));
+        }
+
+        // Projection curves can put an edge extremum outside the box formed by
+        // two opposite transformed corners. Sample all four edges and derive a
+        // normalized target-CRS envelope from every finite result.
+        final int edgeSegments = 32;
+        double minN = Double.POSITIVE_INFINITY;
+        double maxN = Double.NEGATIVE_INFINITY;
+        double minE = Double.POSITIVE_INFINITY;
+        double maxE = Double.NEGATIVE_INFINITY;
+
+        double n1 = c1.getNorth(), n2 = c2.getNorth();
+        double e1 = c1.getEast(), e2 = c2.getEast();
+        for (int i = 0; i <= edgeSegments; i++) {
+            double t = i / (double) edgeSegments;
+            double n = n1 + (n2 - n1) * t;
+            double e = e1 + (e2 - e1) * t;
+            Coordinate[] edgePoints = {
+                    fromCRS.convertTo(new Coordinate(n1, e), toCRS),
+                    fromCRS.convertTo(new Coordinate(n2, e), toCRS),
+                    fromCRS.convertTo(new Coordinate(n, e1), toCRS),
+                    fromCRS.convertTo(new Coordinate(n, e2), toCRS)
+            };
+            for (Coordinate point : edgePoints) {
+                if (!Double.isFinite(point.getNorth()) || !Double.isFinite(point.getEast())) continue;
+                minN = Math.min(minN, point.getNorth());
+                maxN = Math.max(maxN, point.getNorth());
+                minE = Math.min(minE, point.getEast());
+                maxE = Math.max(maxE, point.getEast());
+            }
+        }
+
+        if (!Double.isFinite(minN)) {
+            throw new IllegalArgumentException("Extent has no finite representation in " + toCRS);
+        }
+        return new Extent(minN, minE, maxN, maxE);
     }
 }

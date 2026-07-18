@@ -2,7 +2,8 @@ package app.ui;
 
 import gis.coords.CoordSystem;
 import gis.coords.Coordinate;
-import app.AppContext;
+import app.plugin.herbarium.HerbariumController;
+import app.repo.LocalityRepository;
 import gis.core.MapCanvas;
 import gis.core.Settings;
 import app.model.*;
@@ -24,8 +25,8 @@ import java.util.Map;
 public class SpecimenBridgeDialog extends JDialog {
     private final SpecimenService service;
     private final MapCanvas mapCanvas;
-    private final GUI gui;
-    private final AppContext ctx;
+    private final HerbariumController gui;
+    private final LocalityRepository localities;
     private int totalCount;
     private int currentIndex;
     private Specimen targetSpecimen;
@@ -41,6 +42,7 @@ public class SpecimenBridgeDialog extends JDialog {
     private String currentLoadedDistrict = null;
     private String currentLoadedProvince = null;
     private SwingWorker<List<LocalityRecord>, Void> localityWorker;
+    private SwingWorker<Specimen, Void> specimenWorker;
     private long localityRequestGeneration = 0;
 
     private static final Map<String, Integer> ISOF_PROVINCE_MAP = new HashMap<>();
@@ -97,12 +99,13 @@ public class SpecimenBridgeDialog extends JDialog {
     private JButton btnRubin, btnRT90, btnSweref, btnLatLong;
     JPanel coordBar;
 
-    public SpecimenBridgeDialog(Frame owner, GUI gui, SpecimenService service, MapCanvas mapCanvas, AppContext ctx) {
+    public SpecimenBridgeDialog(Frame owner, HerbariumController gui, SpecimenService service,
+                                MapCanvas mapCanvas, LocalityRepository localities) {
         super(owner, "Link Specimen to Locality", false);
         this.service = service;
         this.gui = gui;
         this.mapCanvas = mapCanvas;
-        this.ctx = ctx;
+        this.localities = localities;
         this.totalCount = service.getCacheCount(); // Only get the number, not the data
 
         String cnr = Settings.getValue("cnr");
@@ -538,7 +541,7 @@ public class SpecimenBridgeDialog extends JDialog {
         // Optional: Visual feedback that things are happening
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 
-        new SwingWorker<Specimen, Void>() {
+        specimenWorker = new SwingWorker<Specimen, Void>() {
             @Override
             protected Specimen doInBackground() throws Exception {
                 return service.getSpecimenAt(index);
@@ -563,7 +566,8 @@ public class SpecimenBridgeDialog extends JDialog {
                     setCursor(Cursor.getDefaultCursor());
                 }
             }
-        }.execute();
+        };
+        specimenWorker.execute();
     }
     private void handleNavigation(int nextIndex) {
         if (isNavigating) return;
@@ -976,6 +980,30 @@ public class SpecimenBridgeDialog extends JDialog {
         return !currentUI.equals(originalBridge);
     }
 
+    public boolean hasUnsavedChanges() {
+        return isDirty();
+    }
+
+    public boolean savePendingChanges() {
+        if (!isDirty()) return true;
+        LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
+        boolean wasPreviouslyLinked = targetSpecimen != null && targetSpecimen.getLocalityId() > 0;
+        if (selected != null && selected.getId() > 0) return saveBridge();
+        if (wasPreviouslyLinked) return deleteBridge();
+        return true;
+    }
+
+    public void discardPendingChanges() {
+        originalBridge = getBridgeFromUI();
+    }
+
+    public void closeForProjectTransition() {
+        if (localityWorker != null) localityWorker.cancel(true);
+        if (specimenWorker != null) specimenWorker.cancel(true);
+        saveCurrentIndex();
+        dispose();
+    }
+
     private BridgeData getBridgeFromUI() {
         LocalityRecord sel = (LocalityRecord) localityCombo.getSelectedItem();
         return new BridgeData(
@@ -1043,7 +1071,8 @@ public class SpecimenBridgeDialog extends JDialog {
 
         // Open and Position the Dialog
         SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, gui, mapCanvas, selectedText, province,
-                ctx.localities, ctx.placeNames);
+                localities);
+        gui.trackWindow(d);
 
         d.pack();
         d.setLocationRelativeTo(this);

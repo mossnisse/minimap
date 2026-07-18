@@ -4,6 +4,8 @@ import app.model.Specimen;
 import app.service.SpecimenService;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class SpecimenSearchDialog extends JDialog {
     private final SpecimenService service;
@@ -13,7 +15,8 @@ public class SpecimenSearchDialog extends JDialog {
     private JTextField localityField, genusField, herbariumField, coordSourceField, precisionField;
     private JCheckBox lackBridgeOnly;
     private JLabel statusLabel;
-    private JButton searchButton;
+    private JButton searchButton, closeButton;
+    private SwingWorker<Integer, Void> searchWorker;
 
     private final String[] prov = {"*", "Torne lappmark", "Norrbotten", "Lule lappmark", "Pite lappmark", "Lycksele lappmark", "Åsele lappmark",
             "Ångermanland", "Västerbotten", "Härjedalen", "Medelpad", "Jämtland", "Hälsingland", "Dalarna", "Gästrikland",
@@ -24,6 +27,13 @@ public class SpecimenSearchDialog extends JDialog {
         super(owner, "Search Specimens", false);
         this.service = service;
         initUI();
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                closeIfIdle();
+            }
+        });
         pack();
         setLocationRelativeTo(owner);
     }
@@ -68,8 +78,8 @@ public class SpecimenSearchDialog extends JDialog {
         add(statusLabel, BorderLayout.CENTER);
 
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton closeButton = new JButton("Close");
-        closeButton.addActionListener(e -> dispose());
+        closeButton = new JButton("Close");
+        closeButton.addActionListener(e -> closeIfIdle());
         actionPanel.add(closeButton);
         add(actionPanel, BorderLayout.SOUTH);
 
@@ -87,6 +97,7 @@ public class SpecimenSearchDialog extends JDialog {
     private void performSearch() {
         setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         searchButton.setEnabled(false);
+        closeButton.setEnabled(false);
         statusLabel.setText("Updating H2 cache...");
         statusLabel.setForeground(UIManager.getColor("Label.foreground"));
 
@@ -108,7 +119,7 @@ public class SpecimenSearchDialog extends JDialog {
         final boolean lackBridge = lackBridgeOnly.isSelected();
 
         // The cache refresh copies every hit from MySQL to H2 - keep it off the EDT
-        new SwingWorker<Integer, Void>() {
+        searchWorker = new SwingWorker<>() {
             @Override
             protected Integer doInBackground() throws Exception {
                 return service.refreshCache(province, district, collector, accession, year,
@@ -135,9 +146,18 @@ public class SpecimenSearchDialog extends JDialog {
                     statusLabel.setForeground(Color.RED);
                 } finally {
                     searchButton.setEnabled(true);
+                    closeButton.setEnabled(true);
                     setCursor(Cursor.getDefaultCursor());
+                    searchWorker = null;
                 }
             }
-        }.execute();
+        };
+        searchWorker.execute();
+    }
+
+    private void closeIfIdle() {
+        if (searchWorker == null || searchWorker.isDone()) {
+            dispose();
+        }
     }
 }

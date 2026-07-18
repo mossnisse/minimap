@@ -3,10 +3,24 @@ package gis.core;
 import java.io.*;
 import java.util.HashMap;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public class Settings {
 	private static HashMap<String, String> store;
-	private static final String FILENAME = "settings.txt";
+	private static File activeFile = new File("settings.txt");
+
+	public static synchronized void useFile(File file) {
+		if (file == null) throw new IllegalArgumentException("Settings file cannot be null");
+		activeFile = file;
+		store = null;
+	}
+
+	public static synchronized File activeFile() {
+		return activeFile;
+	}
 
 	public static synchronized String getValue(String key) {
 		try {
@@ -25,17 +39,31 @@ public class Settings {
 	}
 
 	private static void saveStore() throws IOException {
-		try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
-				new FileOutputStream(FILENAME), StandardCharsets.UTF_8))) {
-			for (HashMap.Entry<String, String> entry : store.entrySet()) {
-				writer.println(entry.getKey() + ": " + entry.getValue());
+		Path target = activeFile.toPath().toAbsolutePath();
+		Path parent = target.getParent();
+		if (parent != null) Files.createDirectories(parent);
+		Path temp = Files.createTempFile(parent, target.getFileName().toString(), ".tmp");
+		try {
+			try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
+					Files.newOutputStream(temp), StandardCharsets.UTF_8))) {
+				for (HashMap.Entry<String, String> entry : store.entrySet()) {
+					writer.println(entry.getKey() + ": " + entry.getValue());
+				}
+				if (writer.checkError()) throw new IOException("Could not write settings file " + target);
 			}
+			try {
+				Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+			} catch (AtomicMoveNotSupportedException e) {
+				Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+			}
+		} finally {
+			Files.deleteIfExists(temp);
 		}
 	}
 
 	private static void readStore() throws IOException {
 		store = new HashMap<>();
-		File file = new File(FILENAME);
+		File file = activeFile;
 
 		// If file doesn't exist, just return an empty store
 		if (!file.exists()) {
