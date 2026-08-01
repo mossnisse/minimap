@@ -8,8 +8,6 @@ import app.repo.LocalityRepository;
 import app.plugin.herbarium.HerbariumController;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.sql.SQLException;
@@ -17,7 +15,7 @@ import javax.swing.*;
 
 /* Dialog for viewing and editing already existing Localities in the db */
 
-public class EditLocalityDialog extends JDialog implements ActionListener {
+public class EditLocalityDialog extends JDialog {
 	private final MapCanvas mapCanvas;
 	private final HerbariumController gui;
 	private final int localityID;
@@ -100,14 +98,14 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		move = new JButton("Move on Map");
 
 		// Add to Layout
-		JLabel lName = addField("Name:", name, content, layout, 10, content);
-		JLabel lAlt = addField("Alt Names:", altNames, content, layout, 10, lName);
-		JLabel lDist = addField("District:", district, content, layout, 10, lAlt);
-		JLabel lProv = addField("Province:", province, content, layout, 10, lDist);
-		JLabel lCountry = addField("Country:", country, content, layout, 10, lProv);
-		JLabel lContinent = addField("Continent:", continent, content, layout, 10, lCountry);
-		JLabel lSize = addField("Size:", localitySize, content, layout, 10, lContinent);
-		JLabel lSrc = addField("Source:", coordinateSource, content, layout, 10, lSize);
+		JLabel lName = SpringForm.addRow("Name:", name, content, layout, 10, content);
+		JLabel lAlt = SpringForm.addRow("Alt Names:", altNames, content, layout, 10, lName);
+		JLabel lDist = SpringForm.addRow("District:", district, content, layout, 10, lAlt);
+		JLabel lProv = SpringForm.addRow("Province:", province, content, layout, 10, lDist);
+		JLabel lCountry = SpringForm.addRow("Country:", country, content, layout, 10, lProv);
+		JLabel lContinent = SpringForm.addRow("Continent:", continent, content, layout, 10, lCountry);
+		JLabel lSize = SpringForm.addRow("Size:", localitySize, content, layout, 10, lContinent);
+		JLabel lSrc = SpringForm.addRow("Source:", coordinateSource, content, layout, 10, lSize);
 
 		JLabel lComm = new JLabel("Comments:");
 		content.add(lComm);
@@ -120,8 +118,8 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		layout.putConstraint(SpringLayout.NORTH, scrollPane, 0, SpringLayout.NORTH, lComm);
 
 		// Comments is a JTextArea, so the next field needs a bigger gap (70-80px)
-		JLabel lCat = addField("Category:", category, content, layout, 10, scrollPane);
-		JLabel lZoom = addField("Zoom:", zoomLevel, content, layout, 10, lCat);
+		JLabel lCat = SpringForm.addRow("Category:", category, content, layout, 10, scrollPane);
+		JLabel lZoom = SpringForm.addRow("Zoom:", zoomLevel, content, layout, 10, lCat);
 
 		// Metadata Labels
 		add(labelCreated);
@@ -161,18 +159,20 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		layout.putConstraint(SpringLayout.SOUTH, content, 10, SpringLayout.SOUTH, cancel);
 
 		// Listeners
-		cancel.addActionListener(this);
-		delete.addActionListener(this);
-		ok.addActionListener(this);
-		cancel.setActionCommand("cancel");
-		delete.setActionCommand("delete");
-		ok.setActionCommand("ok");
-		move.addActionListener(this);
-		move.setActionCommand("move");
-	}
-
-	private JLabel addField(String labelText, Component field, Container container, SpringLayout layout, int margin, Component topAnchor) {
-		return SpringForm.addRow(labelText, field, container, layout, margin, topAnchor);
+		ok.addActionListener(e -> updateLocality());
+		cancel.addActionListener(e -> {
+			gui.cancelMoveMode();
+			dispose();
+		});
+		delete.addActionListener(e -> {
+			deleteLocality();
+			mapCanvas.repaint();
+		});
+		move.addActionListener(e -> {
+			this.setTitle("SELECT NEW LOCATION ON MAP...");
+			this.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
+			gui.enterMoveMode(this);
+		});
 	}
 
 	private void loadData() {
@@ -265,58 +265,76 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 		return localities.countSpecimenUses(province.getText(), district.getText(), oldName);
 	}
 
-	private void updateLocality() {
-		// Validate Input First
-		// todo validate continent
+	/**
+	 * Validates the form and builds the record to save, or returns null after
+	 * telling the user what is wrong (or after they declined a risky rename).
+	 * Reads every field and can prompt, so it must run on the EDT.
+	 */
+	// todo validate continent
+	private LocalityRepository.LocalityDetails validatedDetails() {
 		final String newName = name.getText().trim();
 		if (newName.isEmpty()) {
 			JOptionPane.showMessageDialog(this, "Locality name cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
-			return;
+			return null;
 		}
 
+		// Renaming leaves specimen records pointing at a name that no longer
+		// exists, so confirm before it happens - on every save path.
 		if (oldName != null && !oldName.equals(newName)) {
 			int uses = localityUses(); // Since this is a fast count, it's usually okay on EDT
 			if (uses > 0 || uses == -1) {
 				String msg = (uses > 0) ? "\"" + oldName + "\" is used in " + uses + " records. Update anyway?"
 						: "Could not verify usage. Proceed?";
 				if (JOptionPane.showConfirmDialog(this, msg, "Warning", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
-					return;
+					return null;
 				}
 			}
 		}
 
-		final String sizeText = localitySize.getText().trim();
 		final int size;
 		try {
-			size = Integer.parseInt(sizeText);
+			size = Integer.parseInt(localitySize.getText().trim());
 			if (size < 0) {
 				throw new NumberFormatException();
 			}
 		} catch (NumberFormatException nfe) {
 			JOptionPane.showMessageDialog(this, "Size must be a positive integer.", "Error", JOptionPane.ERROR_MESSAGE);
-			return;
+			return null;
 		}
 
-
-		// Capture all fields on the EDT so doInBackground doesn't touch the UI
 		int zl;
 		try { zl = Integer.parseInt(zoomLevel.getText().trim()); } catch (Exception e) { zl = -1; }
-		final LocalityRepository.LocalityDetails details = new LocalityRepository.LocalityDetails(
+		return new LocalityRepository.LocalityDetails(
 				newName, altNames.getText().trim(), district.getText().trim(), province.getText().trim(),
 				country.getText().trim(), continent.getText().trim(), coordinateSource.getText().trim(),
 				comments.getText().trim(), size, category.getText().trim(), zl, isPlace.isSelected());
+	}
 
-		final LocalityRepository.StoredCoordinates moved;
-		if (pendingCoords != null) {
-			// todo only set sweref and rt90 if in Sweden
-			// todo check if moved outside district and province
-			Coordinate wgs84 = mapCanvas.getCRS().toWGS84(pendingCoords);
-			moved = new LocalityRepository.StoredCoordinates(wgs84,
-					CoordSystem.SWEREF99TM.toProjected(wgs84),
-					CoordSystem.RT90.toProjected(wgs84));
-		} else {
-			moved = null;
+	/** The staged map position in the three stored projections, or null if unmoved. */
+	private LocalityRepository.StoredCoordinates movedCoordinates() {
+		if (pendingCoords == null) return null;
+		// todo only set sweref and rt90 if in Sweden
+		// todo check if moved outside district and province
+		Coordinate wgs84 = mapCanvas.getCRS().toWGS84(pendingCoords);
+		return new LocalityRepository.StoredCoordinates(wgs84,
+				CoordSystem.SWEREF99TM.toProjected(wgs84),
+				CoordSystem.RT90.toProjected(wgs84));
+	}
+
+	/** Refreshes whatever showed the old name/position, then closes the dialog. */
+	private void afterSaved(String newName) {
+		if (oldName != null && !oldName.equals(newName) && bridgeDialog != null && bridgeDialog.isVisible()) {
+			bridgeDialog.invalidateLocalityList();
 		}
+		MapLayers.refreshLocalities(mapCanvas);
+		dispose();
+	}
+
+	private void updateLocality() {
+		// Capture all fields on the EDT so doInBackground doesn't touch the UI
+		final LocalityRepository.LocalityDetails details = validatedDetails();
+		if (details == null) return;
+		final LocalityRepository.StoredCoordinates moved = movedCoordinates();
 
 		gui.setCursorWait();
 
@@ -332,14 +350,7 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 			protected void done() {
 				gui.setCursorDefault();
 				try {
-					if (get()) { // If update wasn't aborted
-						if (oldName != null && !oldName.equals(newName) && bridgeDialog != null && bridgeDialog.isVisible()) {
-							bridgeDialog.invalidateLocalityList();
-						}
-
-						MapLayers.refreshLocalities(mapCanvas);
-						dispose();
-					}
+					if (get()) afterSaved(details.locality()); // If update wasn't aborted
 				} catch (Exception e) {
 					e.printStackTrace();
 					JOptionPane.showMessageDialog(EditLocalityDialog.this, "Error updating locality: " + e.getMessage());
@@ -365,39 +376,11 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 	/** Synchronous save used only by the guarded project/plugin transition. */
 	public boolean saveForProjectTransition() {
-		String newName = name.getText().trim();
-		if (newName.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "Locality name cannot be empty.", "Error", JOptionPane.ERROR_MESSAGE);
-			return false;
-		}
-		int size;
+		LocalityRepository.LocalityDetails details = validatedDetails();
+		if (details == null) return false;
 		try {
-			size = Integer.parseInt(localitySize.getText().trim());
-			if (size < 0) throw new NumberFormatException();
-		} catch (NumberFormatException e) {
-			JOptionPane.showMessageDialog(this, "Size must be a positive integer.", "Error", JOptionPane.ERROR_MESSAGE);
-			return false;
-		}
-		try {
-			int zoom;
-			try { zoom = Integer.parseInt(zoomLevel.getText().trim()); }
-			catch (NumberFormatException e) { zoom = -1; }
-			LocalityRepository.LocalityDetails details = new LocalityRepository.LocalityDetails(
-					newName, altNames.getText().trim(), district.getText().trim(), province.getText().trim(),
-					country.getText().trim(), continent.getText().trim(), coordinateSource.getText().trim(),
-					comments.getText().trim(), size, category.getText().trim(), zoom, isPlace.isSelected());
-			LocalityRepository.StoredCoordinates moved = null;
-			if (pendingCoords != null) {
-				Coordinate wgs84 = mapCanvas.getCRS().toWGS84(pendingCoords);
-				moved = new LocalityRepository.StoredCoordinates(wgs84,
-						CoordSystem.SWEREF99TM.toProjected(wgs84), CoordSystem.RT90.toProjected(wgs84));
-			}
-			localities.update(localityID, details, moved, Settings.getValue("user"));
-			if (oldName != null && !oldName.equals(newName) && bridgeDialog != null && bridgeDialog.isVisible()) {
-				bridgeDialog.invalidateLocalityList();
-			}
-			MapLayers.refreshLocalities(mapCanvas);
-			dispose();
+			localities.update(localityID, details, movedCoordinates(), Settings.getValue("user"));
+			afterSaved(details.locality());
 			return true;
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(this, "Error updating locality: " + e.getMessage());
@@ -420,25 +403,5 @@ public class EditLocalityDialog extends JDialog implements ActionListener {
 
 	public String getOldName() {
 		return oldName;
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent ev) {
-		String cmd = ev.getActionCommand();
-		if ("ok".equals(cmd)) {
-			updateLocality();
-		} else if ("cancel".equals(cmd)) {
-			gui.cancelMoveMode();
-			this.dispose();
-		} else if ("delete".equals(cmd)) {
-			deleteLocality();
-			mapCanvas.repaint();
-		} else if ("move".equals(cmd)) {
-			// Minimize dialog or just tell the user to click
-			//this.setState(Frame.ICONIFIED); // Optional: hide dialog so they can see the map
-			this.setTitle("SELECT NEW LOCATION ON MAP...");
-			this.setCursor(Cursor.getPredefinedCursor(Cursor.CROSSHAIR_CURSOR));
-			gui.enterMoveMode(this);
-		}
 	}
 }

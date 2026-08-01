@@ -69,6 +69,11 @@ public abstract class TiledLayer extends Layer {
         return HttpRequest.newBuilder().uri(URI.create(url)).build();
     }
 
+    /** Handle a non-successful HTTP response; subclasses may surface provider-specific UI. */
+    protected void handleHttpError(int statusCode) {
+        System.err.println(getName() + " server returned: " + statusCode);
+    }
+
     // --- Layer ---------------------------------------------------------------
 
     @Override
@@ -228,7 +233,7 @@ public abstract class TiledLayer extends Layer {
                                 e.printStackTrace();
                             }
                         } else {
-                            System.err.println(getName() + " server returned: " + response.statusCode());
+                            handleHttpError(response.statusCode());
                         }
                     })
                     .whenComplete((result, throwable) -> {

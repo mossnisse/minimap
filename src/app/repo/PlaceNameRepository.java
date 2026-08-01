@@ -26,12 +26,20 @@ public final class PlaceNameRepository {
 
 	/** A named place; {@code sweref} is the stored SWEREF99TM position. */
 	public record PlaceName(Coordinate sweref, String name) {}
+	public record NearestPlace(String name, Coordinate sweref, double distanceMeters,
+	                           double bearingDegrees, String direction) {}
 
 	/** A search hit with the place's type and district (socken). */
 	public record PlaceHit(Coordinate sweref, String type, String district) {}
 
 	/** Name of the nearest place within {@code limitMeters} of {@code sweref}, or "". */
 	public String findNearestName(Coordinate sweref, int limitMeters) {
+		NearestPlace place = findNearest(sweref, limitMeters);
+		return place == null ? "" : place.name();
+	}
+
+	/** Full nearest-place result, or {@code null} when nothing is within the limit. */
+	public NearestPlace findNearest(Coordinate sweref, int limitMeters) {
 		int eastVal = (int) sweref.getEast();
 		int northVal = (int) sweref.getNorth();
 
@@ -50,6 +58,7 @@ public final class PlaceNameRepository {
 				try (ResultSet result = pstmt.executeQuery()) {
 					double ndist = Double.MAX_VALUE;
 					String nearest = "";
+					Coordinate nearestCoordinate = null;
 
 					// SWEREF99TM is planar in meters, so Euclidean distance is fine here
 					Point p = new Point(eastVal, northVal);
@@ -62,18 +71,24 @@ public final class PlaceNameRepository {
 						Point pc = new Point(east, north);
 						double dist = p.distance(pc);
 
-						if (dist < ndist) {
+						if (dist <= limitMeters && dist < ndist) {
 							ndist = dist;
 							nearest = name;
+							nearestCoordinate = new Coordinate(north, east);
 						}
 					}
-					return nearest;
+					if (nearestCoordinate == null) return null;
+					// Label directions describe where the locality lies relative to the
+					// named place, not the direction one would travel to reach the place.
+					double bearing = nearestCoordinate.getBearingTM(sweref);
+					return new NearestPlace(nearest, nearestCoordinate, ndist, bearing,
+							Coordinate.getDirectionFromBearing(bearing));
 				}
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		return "";
+		return null;
 	}
 
 	/** All places inside {@code swerefBounds}, for map rendering. */

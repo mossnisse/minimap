@@ -11,12 +11,14 @@ import java.net.URI;
 import java.util.Locale;
 
 import app.AppContext;
+import app.LantmaterietAccount;
 import app.MapLayers;
 import app.plugin.MenuContributions;
 import app.plugin.Plugin;
 import app.plugin.PluginContext;
 import app.plugin.PluginManager;
 import app.plugin.herbarium.HerbariumPlugin;
+import app.plugin.collection.PrivateCollectionPlugin;
 import app.project.ProjectManager;
 import gis.core.*;
 import gis.ui.*;
@@ -52,10 +54,13 @@ public class GUI implements BusyCursor {
 		frame = new JFrame("Minimap");
 		frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
 		mapCanvas = new MapCanvas();
+		mapCanvas.getLayerManager().addLayersChangedListener(this::attachLantmaterietErrorHandlers);
 		MapLayers.installDefaultLayers(mapCanvas, ctx);
-		pluginContext = new PluginContext(frame, mapCanvas, this, ctx);
+		pluginContext = new PluginContext(frame, mapCanvas, this, ctx,
+				() -> projectManager == null ? null : projectManager.activeDirectory());
 		pluginManager = new PluginManager(pluginContext);
 		pluginManager.register(new HerbariumPlugin());
+		pluginManager.register(new PrivateCollectionPlugin());
 		projectManager = new ProjectManager(bootstrap, this, frame, mapCanvas, ctx, pluginManager);
 		pluginManager.setEnabledChangedListener(projectManager::saveEnabledPluginsQuietly);
 
@@ -129,159 +134,72 @@ public class GUI implements BusyCursor {
 	}
 
 	public JMenuBar createMenuBar() {
-		JMenuBar menuBar;
-		JMenu menu, menu2, menu3, menu4;
-		JMenuItem menuItem0, menuItem1, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6, menuItem7, menuItem8, menuItem9, menuItem10, menuItem11, menuItem12;
-		menuBar = new JMenuBar();
+		JMenuBar menuBar = new JMenuBar();
 
-		// Build the first menu.
-		menu = new JMenu("File");
-		// menu.setMnemonic(KeyEvent.VK_A);
-		menu.getAccessibleContext().setAccessibleDescription("The only menu in this program that has menu items");
-		menuBar.add(menu);
+		JMenu fileMenu = new JMenu("File");
+		menuBar.add(fileMenu);
+		fileMenu.add(item("Open File", KeyEvent.VK_O, e -> openFile()));
+		fileMenu.add(item("Set Canvas CRS", e -> setCanvasCRS()));
+		fileMenu.add(item("Exit", KeyEvent.VK_Q, e -> requestApplicationClose()));
 
-		menuItem0 = new JMenuItem("Open File", KeyEvent.VK_O);
-		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem0.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, InputEvent.CTRL_DOWN_MASK));
-		menuItem0.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		menuItem0.addActionListener(e->openFile());
-		menu.add(menuItem0);
+		JMenu viewMenu = new JMenu("View");
+		menuBar.add(viewMenu);
+		viewMenu.add(item("Zoom in", KeyEvent.VK_P, e -> mapCanvas.zoom(0.5)));
+		viewMenu.add(item("Zoom out", KeyEvent.VK_M, e -> mapCanvas.zoom(2)));
+		viewMenu.add(item("Layers", KeyEvent.VK_T, e -> showLayerDialog()));
+		viewMenu.add(item("Mark/Find Coordinate", KeyEvent.VK_U, e -> MarkCoordDialog()));
+		viewMenu.add(item("View Coordinate", KeyEvent.VK_K, e -> showCoordinateInfoAtCoord()));
+		viewMenu.add(item("View Rubin", KeyEvent.VK_R, e -> viewRubin()));
+		viewMenu.add(item("Search place names", KeyEvent.VK_F, e -> searchPlaceNames()));
+		viewMenu.add(item("Distance and Direction", KeyEvent.VK_D, e -> distanceAtCoord()));
 
-		menuItem2 = new JMenuItem("Set Canvas CRS");
-		menuItem2.addActionListener(e->setCanvasCRS());
-		menu.add(menuItem2);
-
-		menuItem3 = new JMenuItem("Exit", KeyEvent.VK_Q);
-		menuItem3.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.CTRL_DOWN_MASK));
-		menuItem3.getAccessibleContext().setAccessibleDescription(
-				"This doesn't really do anything");
-		menuItem3.addActionListener(e->requestApplicationClose());
-		menu.add(menuItem3);
-
-		menu2 = new JMenu("View");
-		menuBar.add(menu2);
-		menuItem4 = new JMenuItem("Zoom in", KeyEvent.VK_P);
-		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem4.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK));
-		menuItem4.addActionListener(e-> mapCanvas.zoom(0.5));
-		menu2.add(menuItem4);
-
-		menuItem5 = new JMenuItem("Zoom out", KeyEvent.VK_M);
-		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem5.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK));
-		menuItem5.addActionListener(e-> mapCanvas.zoom(2));
-		menu2.add(menuItem5);
-
-		menuItem10 = new JMenuItem("Layers", KeyEvent.VK_T);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem10.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK));
-		menuItem10.addActionListener(e->showLayerDialog());
-		menu2.add(menuItem10);
-
-		menuItem12 = new JMenuItem("Mark/Find Coordinate", KeyEvent.VK_U);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem12.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, InputEvent.CTRL_DOWN_MASK));
-		menuItem12.addActionListener(e->MarkCoordDialog());
-		menu2.add(menuItem12);
-
-		menuItem6 = new JMenuItem("View Coordinate", KeyEvent.VK_K);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem6.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_K, InputEvent.CTRL_DOWN_MASK));
-		menuItem6.addActionListener(e->showCoordinateInfoAtCoord());
-		menu2.add(menuItem6);
-
-		menuItem8 = new JMenuItem("View Rubin", KeyEvent.VK_R);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK));
-		menuItem8.addActionListener(e->viewRubin());
-		menu2.add(menuItem8);
-
-		menuItem7 = new JMenuItem("Search place names", KeyEvent.VK_F);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem7.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK));
-		menuItem7.addActionListener(e->searchPlaceNames());
-		menu2.add(menuItem7);
-
-		menuItem8 = new JMenuItem("Distance and Direction", KeyEvent.VK_D);
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem8.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_D, InputEvent.CTRL_DOWN_MASK));
-		menuItem8.addActionListener(e->distanceAtCoord());
-		menu2.add(menuItem8);
-		
-		menu3 = new JMenu("Layers");
-		menuBar.add(menu3);
-
-		menuItem1 = new JMenuItem("Add Topowebkartan");
-		menuItem1.addActionListener(e->addTopowebkartan());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add Open Street Map");
-		menuItem1.addActionListener(e->addOSM());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add Landskap Layer");
-		menuItem1.addActionListener(e->addLandskap());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add Socken Layer");
-		menuItem1.addActionListener(e->addSocknar());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add Lantmäteriet ortnamn Layer");
-		menuItem1.addActionListener(e->addOrtnamn());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add .gpx layer", KeyEvent.VK_G);
-		// menuItem.setMnemonic(KeyEvent.VK_T); //used constructor instead
-		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_G, InputEvent.CTRL_DOWN_MASK));
-		menuItem1.getAccessibleContext().setAccessibleDescription(
-				"This doesn't really do anything");
-		menuItem1.addActionListener(e->openGPXFile());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add shapefile layer (.shp)", KeyEvent.VK_H);
-		menuItem1.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_H, InputEvent.CTRL_DOWN_MASK));
-		menuItem1.addActionListener(e->openShapeFile());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add GeoPackage layer (.gpkg)");
-		menuItem1.addActionListener(e->openGeoPackageFile());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add .csv point layer (table editor)");
-		menuItem1.addActionListener(e->openCsvFile());
-		menu3.add(menuItem1);
-
-		menuItem1 = new JMenuItem("Add raster layer", KeyEvent.VK_G);
-		menuItem1.addActionListener(e->openFile());
-		menu3.add(menuItem1);
+		JMenu layersMenu = new JMenu("Layers");
+		menuBar.add(layersMenu);
+		layersMenu.add(item("Add Topowebkartan (SLU)", e -> addTopowebkartan()));
+		layersMenu.add(item("Add Topowebkartan (Lantmäteriet)", e -> addLantmaterietTopowebkartan()));
+		layersMenu.add(item("Add Open Street Map", e -> addOSM()));
+		layersMenu.add(item("Add Landskap Layer", e -> addLandskap()));
+		layersMenu.add(item("Add Socken Layer", e -> addSocknar()));
+		layersMenu.add(item("Add Lantmäteriet ortnamn Layer", e -> addOrtnamn()));
+		layersMenu.add(item("Add .gpx layer", KeyEvent.VK_G, e -> openGPXFile()));
+		layersMenu.add(item("Add shapefile layer (.shp)", KeyEvent.VK_H, e -> openShapeFile()));
+		layersMenu.add(item("Add GeoPackage layer (.gpkg)", e -> openGeoPackageFile()));
+		layersMenu.add(item("Add .csv point layer (table editor)", e -> openCsvFile()));
+		JMenuItem raster = item("Add raster layer", e -> openFile());
+		raster.setMnemonic(KeyEvent.VK_G); // mnemonic only - Ctrl+G belongs to the .gpx item
+		layersMenu.add(raster);
 
 		for (Plugin plugin : pluginManager.all()) {
 			if (pluginManager.isActive(plugin.id())) {
-				plugin.contributeMenus(new MenuContributions(menu, menu2, menu3));
+				plugin.contributeMenus(new MenuContributions(fileMenu, viewMenu, layersMenu));
 			}
 		}
 
-		JMenu projectMenu = buildProjectMenu();
-		menuBar.add(projectMenu);
-		JMenu pluginsMenu = buildPluginsMenu();
-		menuBar.add(pluginsMenu);
-
+		menuBar.add(buildProjectMenu());
+		menuBar.add(buildPluginsMenu());
 		menuBar.add(Box.createHorizontalGlue());
 
-		menu4 = new JMenu("Help");
-		menuBar.add(menu4);
-
-		menuItem9 = new JMenuItem("About");
-		// menuItem.setMnemonic(KeyEvent.VK_K); //used constructor instead
-		menuItem9.addActionListener(e->JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013"));
-		menu4.add(menuItem9);
-		
-		menuItem11 = new JMenuItem("Shortcuts");
-		menuItem11.addActionListener(e->showShortcuts());
-		menu4.add(menuItem11);
+		JMenu helpMenu = new JMenu("Help");
+		menuBar.add(helpMenu);
+		helpMenu.add(item("About",
+				e -> JOptionPane.showMessageDialog(frame, "Minimap, written by Nils Ericson 2013")));
+		helpMenu.add(item("Shortcuts", e -> showShortcuts()));
 
 		return menuBar;
+	}
+
+	private static JMenuItem item(String text, ActionListener action) {
+		JMenuItem menuItem = new JMenuItem(text);
+		menuItem.addActionListener(action);
+		return menuItem;
+	}
+
+	/** A menu item whose mnemonic key doubles as its Ctrl accelerator. */
+	private static JMenuItem item(String text, int key, ActionListener action) {
+		JMenuItem menuItem = new JMenuItem(text, key);
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(key, InputEvent.CTRL_DOWN_MASK));
+		menuItem.addActionListener(action);
+		return menuItem;
 	}
 
 	public void rebuildMenuBar() {
@@ -538,6 +456,117 @@ public class GUI implements BusyCursor {
 		TopowebLayer tb = MapLayers.topoweb(mapCanvas);
 		mapCanvas.setCRS(tb.getCRS());
 		mapCanvas.getLayerManager().addLayerBottom(tb);
+	}
+
+	public void addLantmaterietTopowebkartan() {
+		if (!LantmaterietAccount.isConfigured()) {
+			String help = "Organizations must use a production system account for WMTS services, "
+					+ "not the personal Geotorget login. Private individuals use their Geotorget login.";
+			if (!promptLantmaterietCredentials("Lantmäteriet WMTS credentials", help, "Connect")) return;
+		}
+		addLantmaterietTopowebLayer(MapLayers.topowebLantmateriet(mapCanvas));
+	}
+
+	private boolean promptLantmaterietCredentials(String title, String message, String acceptLabel) {
+		JTextField username = new JTextField(valueOrEmpty(LantmaterietAccount.username()), 24);
+		// Prefilled so that correcting only the username does not force the whole
+		// password to be retyped; both fields are required below.
+		JPasswordField password = new JPasswordField(valueOrEmpty(LantmaterietAccount.password()), 24);
+		int explanationRows = Math.clamp((message.length() / 55) + 1, 2, 7);
+		JTextArea explanation = new JTextArea(message, explanationRows, 46);
+		explanation.setEditable(false);
+		explanation.setLineWrap(true);
+		explanation.setWrapStyleWord(true);
+		explanation.setOpaque(false);
+		explanation.setFocusable(false);
+
+		JPanel form = new JPanel(new GridBagLayout());
+		GridBagConstraints label = new GridBagConstraints();
+		label.gridx = 0;
+		label.anchor = GridBagConstraints.LINE_END;
+		label.insets = new Insets(3, 0, 3, 8);
+		GridBagConstraints input = new GridBagConstraints();
+		input.gridx = 1;
+		input.weightx = 1;
+		input.fill = GridBagConstraints.HORIZONTAL;
+		input.insets = new Insets(3, 0, 3, 0);
+
+		label.gridy = input.gridy = 0;
+		form.add(new JLabel("Username / system account:"), label);
+		form.add(username, input);
+		label.gridy = input.gridy = 1;
+		form.add(new JLabel("Password:"), label);
+		form.add(password, input);
+
+		JPanel fields = new JPanel(new BorderLayout(0, 8));
+		fields.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		fields.add(explanation, BorderLayout.NORTH);
+		fields.add(form, BorderLayout.CENTER);
+		fields.add(new JLabel("Saved as plain text in " + Settings.activeSharedFile().getName()
+				+ " and reused by every project."), BorderLayout.SOUTH);
+
+		Object[] options = {acceptLabel, "Cancel"};
+		if (JOptionPane.showOptionDialog(frame, fields, title, JOptionPane.OK_CANCEL_OPTION,
+				JOptionPane.PLAIN_MESSAGE, null, options, options[0]) != JOptionPane.OK_OPTION) return false;
+
+		char[] passwordChars = password.getPassword();
+		try {
+			String user = username.getText().trim();
+			String secret = new String(passwordChars);
+			if (user.isBlank() || secret.isBlank()) {
+				JOptionPane.showMessageDialog(frame, "Both username and password are required.",
+						"Missing credentials", JOptionPane.WARNING_MESSAGE);
+				return false;
+			}
+			LantmaterietAccount.save(user, secret);
+			return true;
+		} catch (IOException ex) {
+			JOptionPane.showMessageDialog(frame, "Could not save Lantmäteriet credentials:\n" + ex.getMessage(),
+					"Settings error", JOptionPane.ERROR_MESSAGE);
+			return false;
+		} finally {
+			java.util.Arrays.fill(passwordChars, '\0');
+		}
+	}
+
+	private void addLantmaterietTopowebLayer(TopowebLayer layer) {
+		layer.setHttpErrorHandler(statusCode -> handleLantmaterietHttpError(layer, statusCode));
+		mapCanvas.setCRS(layer.getCRS());
+		mapCanvas.getLayerManager().addLayerBottom(layer);
+	}
+
+	/** Also covers official layers restored from a saved project rather than added through the menu. */
+	private void attachLantmaterietErrorHandlers() {
+		for (Layer candidate : mapCanvas.getLayerManager().getLayers()) {
+			if (candidate instanceof TopowebLayer layer
+					&& layer.getProvider() == TopowebLayer.Provider.LANTMATERIET) {
+				layer.setHttpErrorHandler(statusCode -> handleLantmaterietHttpError(layer, statusCode));
+			}
+		}
+	}
+
+	private void handleLantmaterietHttpError(TopowebLayer layer, int statusCode) {
+		String message = "Lantmäteriet rejected the WMTS request (HTTP " + statusCode + ").\n\n"
+				+ "For an organization, enter the production system account (usually four letters and "
+				+ "four digits, for example abcd0001), not your personal Geotorget login. For a private "
+				+ "account, use the Geotorget login. Also verify that this account has permission for "
+				+ "Topografisk webbkarta Visning, översiktlig under Mitt konto > Behörigheter.\n\n"
+				+ "Enter credentials to retry. Cancel removes the failed layer.";
+		if (!promptLantmaterietCredentials("Lantmäteriet authentication failed", message, "Save and retry")) {
+			layer.setHttpErrorHandler(null);
+			mapCanvas.getLayerManager().delLayer(layer);
+			return;
+		}
+		try {
+			layer.setCredentials(LantmaterietAccount.username(), LantmaterietAccount.password());
+			mapCanvas.repaint();
+		} catch (IllegalArgumentException ex) {
+			JOptionPane.showMessageDialog(frame, ex.getMessage(), "Credential error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	private static String valueOrEmpty(String value) {
+		return value == null ? "" : value;
 	}
 
 	public void addOSM() {

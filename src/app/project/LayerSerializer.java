@@ -4,6 +4,7 @@ import app.AppContext;
 import app.MapLayers;
 import app.plugin.PluginManager;
 import app.plugin.herbarium.HerbariumPlugin;
+import app.plugin.collection.PrivateCollectionPlugin;
 import gis.coords.CoordSystem;
 import gis.core.Layer;
 import gis.core.LayerKey;
@@ -16,10 +17,8 @@ import java.awt.Color;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -37,7 +36,7 @@ public final class LayerSerializer {
             Record record = describe(manager, layer);
             if (record != null) lines.add(record.encode());
         }
-        writeAtomic(file, lines);
+        ProjectManager.writeAtomic(file, lines);
     }
 
     public static void writeDefault(Path file, boolean herbarium) throws IOException {
@@ -55,7 +54,7 @@ public final class LayerSerializer {
             lines.add(new Record("LOKAL_DB", "LokalDB", Color.BLACK.getRGB(), false,
                     CoordSystem.WGS84, 0, 40, "", "", "", "").encode());
         }
-        writeAtomic(file, lines);
+        ProjectManager.writeAtomic(file, lines);
     }
 
     public static List<String> rebuild(Path file, MapCanvas canvas, AppContext core,
@@ -99,6 +98,7 @@ public final class LayerSerializer {
         LayerKey<?> key = null;
         switch (r.type) {
             case "TOPOWEB" -> layer = MapLayers.topoweb(canvas);
+            case "TOPOWEB_LANTMATERIET" -> layer = MapLayers.topowebLantmateriet(canvas);
             case "OSM" -> layer = MapLayers.osm(canvas);
             case "SOCKNAR" -> { layer = MapLayers.socknar(canvas); key = MapLayers.SOCKNAR; }
             case "PROVINSER" -> { layer = MapLayers.provinser(canvas); key = MapLayers.PROVINSER; }
@@ -107,6 +107,11 @@ public final class LayerSerializer {
                 if (!plugins.isActive(HerbariumPlugin.ID)) return;
                 layer = plugins.get(HerbariumPlugin.ID, HerbariumPlugin.class).createLocalityLayer();
                 key = MapLayers.LOKAL_DB;
+            }
+            case "COLLECTION_EVENTS" -> {
+                if (!plugins.isActive(PrivateCollectionPlugin.ID)) return;
+                layer = plugins.get(PrivateCollectionPlugin.ID, PrivateCollectionPlugin.class).createEventLayer();
+                key = MapLayers.COLLECTION_EVENTS;
             }
             case "SHAPEFILE" -> {
                 requireFile(r.source);
@@ -174,10 +179,14 @@ public final class LayerSerializer {
         String type;
         String source = "", e1 = "", e2 = "", e3 = "";
         if (is(manager, MapLayers.LOKAL_DB, layer)) type = "LOKAL_DB";
+        else if (is(manager, MapLayers.COLLECTION_EVENTS, layer)) type = "COLLECTION_EVENTS";
         else if (is(manager, MapLayers.ORTNAMN, layer)) type = "ORTNAMN";
         else if (is(manager, MapLayers.PROVINSER, layer)) type = "PROVINSER";
         else if (is(manager, MapLayers.SOCKNAR, layer)) type = "SOCKNAR";
-        else if (layer instanceof TopowebLayer) type = "TOPOWEB";
+        else if (layer instanceof TopowebLayer value) {
+            type = value.getProvider() == TopowebLayer.Provider.LANTMATERIET
+                    ? "TOPOWEB_LANTMATERIET" : "TOPOWEB";
+        }
         else if (layer instanceof OSMLayer) type = "OSM";
         else if (layer instanceof ShapeFileLayer value) { type = "SHAPEFILE"; source = value.getSourcePath(); }
         else if (layer instanceof GeoPackageLayer value) {
@@ -200,22 +209,6 @@ public final class LayerSerializer {
     }
 
     private static String nullToEmpty(String value) { return value == null ? "" : value; }
-
-    private static void writeAtomic(Path file, List<String> lines) throws IOException {
-        Path target = file.toAbsolutePath();
-        Files.createDirectories(target.getParent());
-        Path temp = Files.createTempFile(target.getParent(), target.getFileName().toString(), ".tmp");
-        try {
-            Files.write(temp, lines, StandardCharsets.UTF_8);
-            try {
-                Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException e) {
-                Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            Files.deleteIfExists(temp);
-        }
-    }
 
     private record Record(String type, String name, int rgb, boolean hidden, CoordSystem crs,
                           int minZoom, int maxZoom, String source,

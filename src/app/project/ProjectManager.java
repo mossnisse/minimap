@@ -1,6 +1,7 @@
 package app.project;
 
 import app.AppContext;
+import app.LantmaterietAccount;
 import app.plugin.PluginManager;
 import app.ui.GUI;
 import gis.coords.CoordSystem;
@@ -53,6 +54,7 @@ public final class ProjectManager {
 
     public static Bootstrap bootstrap() throws IOException {
         Files.createDirectories(ROOT);
+        Settings.useSharedFile(ROOT.resolve("shared.txt").toFile());
         Path defaultDir = projectDir(DEFAULT);
         Files.createDirectories(defaultDir);
         Path defaultSettings = defaultDir.resolve("settings.txt");
@@ -71,11 +73,12 @@ public final class ProjectManager {
         String requested = readLastProject();
         String start = projectExists(requested) ? requested : DEFAULT;
         ensureProjectFiles(start);
-        Settings.useFile(settingsFile(start).toFile());
+        activateSettings(start);
         return new Bootstrap(start);
     }
 
     public String activeName() { return activeName; }
+    public Path activeDirectory() { return projectDir(activeName).toAbsolutePath().normalize(); }
 
     public List<String> listProjects() {
         try (var stream = Files.list(ROOT)) {
@@ -122,17 +125,39 @@ public final class ProjectManager {
     }
 
     public boolean saveAs(String name) {
+        String sourceName = activeName;
+        boolean targetCreated = false;
+        boolean leftSource = false;
         try {
             createDirectory(name);
+            targetCreated = true;
             if (!prepareToLeave()) {
-                Files.deleteIfExists(projectDir(name));
+                deleteProjectTree(projectDir(name));
                 return false;
             }
             saveCurrent();
-            Files.copy(settingsFile(activeName), settingsFile(name));
-            Files.copy(layersFile(activeName), layersFile(name));
-            return switchPrepared(name);
+            closeOwnedWindows();
+            plugins.deactivateAllPrepared();
+            core.db.resetMysql();
+            leftSource = true;
+            copyProjectTree(projectDir(sourceName), projectDir(name));
+            return openPrepared(name);
         } catch (Exception e) {
+            if (leftSource) {
+                try {
+                    restoreAfterFailedTransition(sourceName);
+                } catch (Exception restoreError) {
+                    e.addSuppressed(restoreError);
+                }
+            }
+            try {
+                // Never remove a project that merely caused createDirectory to
+                // fail because it already existed. Only this invocation's new
+                // (possibly partial) destination is eligible for cleanup.
+                if (targetCreated && !name.equals(activeName)) deleteProjectTree(projectDir(name));
+            } catch (Exception cleanupError) {
+                e.addSuppressed(cleanupError);
+            }
             showError("Could not save project as " + name, e);
             return false;
         }
@@ -181,7 +206,11 @@ public final class ProjectManager {
         closeOwnedWindows();
         plugins.deactivateAllPrepared();
         core.db.resetMysql();
-        Settings.useFile(settingsFile(name).toFile());
+        return openPrepared(name);
+    }
+
+    private boolean openPrepared(String name) throws Exception {
+        activateSettings(name);
         activeName = name;
         plugins.restoreEnabledSet(readEnabledPlugins());
         showWarnings(LayerSerializer.rebuild(layersFile(name), canvas, core, plugins));
@@ -189,6 +218,17 @@ public final class ProjectManager {
         gui.rebuildMenuBar();
         writeLastProject();
         return true;
+    }
+
+    private void restoreAfterFailedTransition(String name) throws Exception {
+        plugins.deactivateAllPrepared();
+        core.db.resetMysql();
+        activateSettings(name);
+        activeName = name;
+        plugins.restoreEnabledSet(readEnabledPlugins());
+        showWarnings(LayerSerializer.rebuild(layersFile(name), canvas, core, plugins));
+        restoreViewAndWindow();
+        gui.rebuildMenuBar();
     }
 
     private boolean prepareToLeave() {
@@ -290,6 +330,12 @@ public final class ProjectManager {
         }
     }
 
+    /** Points the settings store at a project and lifts any project-local credentials to the shared store. */
+    private static void activateSettings(String name) {
+        Settings.useFile(settingsFile(name).toFile());
+        LantmaterietAccount.migrateProjectLocal();
+    }
+
     private static void ensureProjectFiles(String name) throws IOException {
         Path dir = projectDir(name);
         Files.createDirectories(dir);
@@ -307,6 +353,35 @@ public final class ProjectManager {
         Path dir = projectDir(name);
         if (Files.exists(dir)) throw new IOException("A project named '" + name + "' already exists");
         Files.createDirectory(dir);
+    }
+
+    static void copyProjectTree(Path source, Path target) throws IOException {
+        Path sourceRoot = source.toAbsolutePath().normalize();
+        Path targetRoot = target.toAbsolutePath().normalize();
+        try (var paths = Files.walk(sourceRoot)) {
+            for (Path path : paths.toList()) {
+                if (Files.isSymbolicLink(path)) {
+                    throw new IOException("Project contains an unsupported symbolic link: " + path);
+                }
+                Path destination = targetRoot.resolve(sourceRoot.relativize(path));
+                if (Files.isDirectory(path)) Files.createDirectories(destination);
+                else Files.copy(path, destination, StandardCopyOption.COPY_ATTRIBUTES);
+            }
+        }
+    }
+
+    private static void deleteProjectTree(Path directory) throws IOException {
+        Path root = ROOT.toAbsolutePath().normalize();
+        Path target = directory.toAbsolutePath().normalize();
+        if (target.equals(root) || !target.startsWith(root)) {
+            throw new IOException("Refusing to remove a path outside the projects folder: " + target);
+        }
+        if (!Files.exists(target)) return;
+        try (var paths = Files.walk(target)) {
+            for (Path path : paths.sorted(java.util.Comparator.reverseOrder()).toList()) {
+                Files.deleteIfExists(path);
+            }
+        }
     }
 
     public static void validateName(String name) {
@@ -352,7 +427,8 @@ public final class ProjectManager {
         writeAtomic(ROOT.resolve("last.txt"), List.of(activeName));
     }
 
-    private static void writeAtomic(Path target, List<String> lines) throws IOException {
+    /** Writes {@code lines} as UTF-8 via a temp file, so a crash can't truncate the target. */
+    static void writeAtomic(Path target, List<String> lines) throws IOException {
         Path absolute = target.toAbsolutePath();
         Files.createDirectories(absolute.getParent());
         Path temp = Files.createTempFile(absolute.getParent(), absolute.getFileName().toString(), ".tmp");

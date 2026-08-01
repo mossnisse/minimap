@@ -103,7 +103,7 @@ public class SpecimenService {
         Connection h2Conn = db.h2();
 
         synchronized (cacheLock) {
-            ensureH2Table(h2Conn, CACHE_TABLE);
+            ensureCacheTable(h2Conn);
 
             try (PreparedStatement selectStmt = mysqlConn.prepareStatement(mysqlSql.toString())) {
 
@@ -160,20 +160,16 @@ public class SpecimenService {
      */
     public void clearCache() {
         synchronized (cacheLock) {
-            try {
-                dropH2TableQuietly(db.h2(), CACHE_TABLE);
+            try (Statement drop = db.h2().createStatement()) {
+                drop.executeUpdate("DROP TABLE IF EXISTS " + CACHE_TABLE);
             } catch (SQLException e) {
                 System.err.println("Couldn't clear the specimen cache: " + e.getMessage());
             }
         }
     }
 
-    private void ensureH2Table(Connection h2Conn, String table) throws SQLException {
-        createH2Table(h2Conn, table, true);
-    }
-
-    private void createH2Table(Connection h2Conn, String table, boolean ifNotExists) throws SQLException {
-        String createSql = "CREATE TABLE " + (ifNotExists ? "IF NOT EXISTS " : "") + table + " ("
+    private void ensureCacheTable(Connection h2Conn) throws SQLException {
+        String createSql = "CREATE TABLE IF NOT EXISTS " + CACHE_TABLE + " ("
                 + "cache_id INT AUTO_INCREMENT PRIMARY KEY, "
                 + "AccessionNo VARCHAR(16), "
                 + "\"Year\" SMALLINT, "   // Quoted
@@ -210,14 +206,6 @@ public class SpecimenService {
 
         try (Statement create = h2Conn.createStatement()) {
             create.executeUpdate(createSql);
-        }
-    }
-
-    private void dropH2TableQuietly(Connection h2Conn, String table) {
-        try (Statement drop = h2Conn.createStatement()) {
-            drop.executeUpdate("DROP TABLE IF EXISTS " + table);
-        } catch (SQLException e) {
-            System.err.println("Couldn't remove specimen-cache table: " + e.getMessage());
         }
     }
 

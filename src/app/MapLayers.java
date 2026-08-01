@@ -11,6 +11,7 @@ import gis.layers.*;
 import gis.core.MapCanvas;
 import app.repo.LocalityRepository;
 import app.repo.PlaceNameRepository;
+import app.plugin.collection.CollectionRepository;
 
 /**
  * App-wide registry of the well-known layers and transient overlays, and the
@@ -25,6 +26,7 @@ public final class MapLayers {
 	public static final LayerKey<PointTableLayer> ORTNAMN = LayerKey.of("Ortnamnsdb", PointTableLayer.class);
 	public static final LayerKey<TNGPolygonFileLayer> PROVINSER = LayerKey.of("provinser", TNGPolygonFileLayer.class);
 	public static final LayerKey<TNGPolygonFileLayer> SOCKNAR = LayerKey.of("socknar", TNGPolygonFileLayer.class);
+	public static final LayerKey<PointTableLayer> COLLECTION_EVENTS = LayerKey.of("private-collection-events", PointTableLayer.class);
 
 	/** The single RUBIN grid-square marker; marking a new square replaces the old one. */
 	public static final LayerKey<RubinLayer> RUBIN_MARKER = LayerKey.of("Rubin", RubinLayer.class);
@@ -55,6 +57,14 @@ public final class MapLayers {
 		l.setColor(Color.BLACK);
 		l.setMaxZoomL(40);
 		return l;
+	}
+
+	public static PointTableLayer collectionEvents(MapCanvas canvas, CollectionRepository collection) {
+		PointTableLayer layer = new PointTableLayer("Private Collection events", CoordSystem.WGS84, canvas,
+				collection::eventPoints, 0.5, true);
+		layer.setColor(new Color(128, 0, 128));
+		layer.setMaxZoomL(40);
+		return layer;
 	}
 
 	/** The Lantmäteriet place-name layer: SWEREF99TM points from the embedded H2 db. */
@@ -91,6 +101,18 @@ public final class MapLayers {
 		TopowebLayer tb = new TopowebLayer(canvas);
 		tb.setName("TopoWeb");
 		return tb;
+	}
+
+	/**
+	 * Official Lantmäteriet WMTS variant, authenticated with the shared Geotorget
+	 * account. Builds even when no account is configured; the layer then prompts
+	 * for credentials on its first 401.
+	 */
+	public static TopowebLayer topowebLantmateriet(MapCanvas canvas) {
+		TopowebLayer layer = new TopowebLayer(canvas, TopowebLayer.Provider.LANTMATERIET,
+				LantmaterietAccount.username(), LantmaterietAccount.password());
+		layer.setName("TopoWeb (Lantmäteriet)");
+		return layer;
 	}
 
 	public static OSMLayer osm(MapCanvas canvas) {

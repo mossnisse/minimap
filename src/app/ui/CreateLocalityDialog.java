@@ -1,8 +1,6 @@
 package app.ui;
 
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.io.Serial;
@@ -16,7 +14,7 @@ import app.repo.LocalityRepository;
 import app.repo.PlaceNameRepository;
 import app.plugin.herbarium.HerbariumController;
 
-public class CreateLocalityDialog extends JDialog implements ActionListener {
+public class CreateLocalityDialog extends JDialog {
 	@Serial
 	private static final long serialVersionUID = 5999128550024317489L;
 	private final HerbariumController gui;
@@ -104,9 +102,9 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		ok = new JButton("OK");
 
 		// Layout Flow using the addField helper
-		JLabel lLoc = addField("Locality:", localityT, content, layout, 10, content);
-		JLabel lAlt = addField("Alt Names:", alternativeT, content, layout, 10, lLoc);
-		JLabel lSrc = addField("Coord Source:", coordsourceT, content, layout, 10, lAlt);
+		JLabel lLoc = SpringForm.addRow("Locality:", localityT, content, layout, 10, content);
+		JLabel lAlt = SpringForm.addRow("Alt Names:", alternativeT, content, layout, 10, lLoc);
+		JLabel lSrc = SpringForm.addRow("Coord Source:", coordsourceT, content, layout, 10, lAlt);
 
 		// Comments Manual Layout
 		JLabel lComm = new JLabel("Comments:");
@@ -117,18 +115,18 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		layout.putConstraint(SpringLayout.WEST, commentScroll, 120, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, commentScroll, 0, SpringLayout.NORTH, lComm);
 
-		JLabel lSize = addField("Size:", locSizeT, content, layout, 10, commentScroll);
-		JLabel lCat = addField("Category:", categoryT, content, layout, 10, lSize);
-		JLabel lZoom = addField("Zoom Level:", zoomLevelT, content, layout, 10, lCat);
+		JLabel lSize = SpringForm.addRow("Size:", locSizeT, content, layout, 10, commentScroll);
+		JLabel lCat = SpringForm.addRow("Category:", categoryT, content, layout, 10, lSize);
+		JLabel lZoom = SpringForm.addRow("Zoom Level:", zoomLevelT, content, layout, 10, lCat);
 
 		content.add(isPlaceT);
 		layout.putConstraint(SpringLayout.WEST, isPlaceT, 120, SpringLayout.WEST, content);
 		layout.putConstraint(SpringLayout.NORTH, isPlaceT, 10, SpringLayout.SOUTH, lZoom);
 
-		JLabel lCont = addField("Continent:", continentT, content, layout, 10, isPlaceT);
-		JLabel lCoun = addField("Country:", countryT, content, layout, 10, lCont);
-		JLabel lProv = addField("Province:", provinceT, content, layout, 10, lCoun);
-		JLabel lDist = addField("District:", districtT, content, layout, 10, lProv);
+		JLabel lCont = SpringForm.addRow("Continent:", continentT, content, layout, 10, isPlaceT);
+		JLabel lCoun = SpringForm.addRow("Country:", countryT, content, layout, 10, lCont);
+		JLabel lProv = SpringForm.addRow("Province:", provinceT, content, layout, 10, lCoun);
+		JLabel lDist = SpringForm.addRow("District:", districtT, content, layout, 10, lProv);
 
 		// Buttons
 		content.add(cancel);
@@ -143,46 +141,51 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		layout.putConstraint(SpringLayout.SOUTH, content, 10, SpringLayout.SOUTH, cancel);
 
 		// Listeners
-		cancel.addActionListener(this);
-		ok.addActionListener(this);
-		cancel.setActionCommand("cancel");
-		ok.setActionCommand("ok");
+		cancel.addActionListener(e -> dispose());
+		ok.addActionListener(e -> createLocality());
 	}
 
-	private JLabel addField(String labelText, JComponent field, Container container, SpringLayout layout, int margin, Component topAnchor) {
-		return SpringForm.addRow(labelText, field, container, layout, margin, topAnchor);
-	}
-
-	private void createLocality() {
-		// Immediate UI Validation (No DB needed)
-		// todo validate continent
+	/**
+	 * Validates the form and builds the record to insert, or returns null after
+	 * telling the user what is wrong. Reads every field, so it must run on the EDT.
+	 */
+	// todo validate continent
+	private LocalityRepository.LocalityDetails validatedDetails() {
 		String localityName = localityT.getText().trim();
 		if (localityName.isEmpty()) {
 			JOptionPane.showMessageDialog(this, "Locality name is required.");
-			return;
+			return null;
 		}
 
-		final String sizeText = locSizeT.getText().trim();
 		final int size;
 		try {
-			size = Integer.parseInt(sizeText);
+			size = Integer.parseInt(locSizeT.getText().trim());
 			if (size < 0) throw new NumberFormatException();
 		} catch (NumberFormatException nfe) {
 			JOptionPane.showMessageDialog(this, "Size must be a positive integer.");
-			return;
+			return null;
 		}
 
-		// Capture all other fields so doInBackground doesn't touch the UI
-		final String distr = districtT.getText().trim();
-		final String prov = provinceT.getText().trim();
-		final String coun = countryT.getText().trim();
-		final String cont = continentT.getText().trim();
-		final String alt = alternativeT.getText().trim();
-		final String src = coordsourceT.getText().trim();
-		final String comm = commentsT.getText().trim();
-		final String cat = categoryT.getText().trim();
-		final String zlStr = zoomLevelT.getText().trim();
-		final boolean isPlace = isPlaceT.isSelected();
+		int zoom;
+		try { zoom = Integer.parseInt(zoomLevelT.getText().trim()); }
+		catch (NumberFormatException e) { zoom = -1; }
+
+		return new LocalityRepository.LocalityDetails(localityName, alternativeT.getText().trim(),
+				districtT.getText().trim(), provinceT.getText().trim(), countryT.getText().trim(),
+				continentT.getText().trim(), coordsourceT.getText().trim(), commentsT.getText().trim(),
+				size, categoryT.getText().trim(), zoom, isPlaceT.isSelected());
+	}
+
+	/** The dialog's map position in the three projections the locality table stores. */
+	private LocalityRepository.StoredCoordinates coordinates() {
+		Coordinate wgs84 = mapCanvas.getCRS().toWGS84(c);
+		return new LocalityRepository.StoredCoordinates(wgs84,
+				CoordSystem.SWEREF99TM.toProjected(wgs84), CoordSystem.RT90.toProjected(wgs84));
+	}
+
+	private void createLocality() {
+		final LocalityRepository.LocalityDetails details = validatedDetails();
+		if (details == null) return;
 
 		gui.setCursorWait();
 
@@ -190,23 +193,11 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 		saveWorker = new SwingWorker<Boolean, Void>() {
 			@Override
 			protected Boolean doInBackground() throws Exception {
-				if (localities.exists(localityName, distr, prov, coun)) {
+				if (localities.exists(details.locality(), details.district(),
+						details.province(), details.country())) {
 					return false;
 				}
-
-				// Perform transformations in background
-				Coordinate wgs84c = mapCanvas.getCRS().toWGS84(c);
-				Coordinate swerefc = CoordSystem.SWEREF99TM.toProjected(wgs84c);
-				Coordinate rt90c = CoordSystem.RT90.toProjected(wgs84c);
-
-				int zli;
-				try { zli = Integer.parseInt(zlStr); } catch (NumberFormatException e) { zli = -1; }
-
-				localities.insert(
-						new LocalityRepository.LocalityDetails(localityName, alt, distr, prov, coun, cont,
-								src, comm, size, cat, zli, isPlace),
-						new LocalityRepository.StoredCoordinates(wgs84c, swerefc, rt90c),
-						Settings.getValue("user"));
+				localities.insert(details, coordinates(), Settings.getValue("user"));
 				return true;
 			}
 
@@ -253,52 +244,21 @@ public class CreateLocalityDialog extends JDialog implements ActionListener {
 
 	/** Synchronous save used only by the guarded project/plugin transition. */
 	public boolean saveForProjectTransition() {
-		String localityName = localityT.getText().trim();
-		if (localityName.isEmpty()) {
-			JOptionPane.showMessageDialog(this, "Locality name is required.");
-			return false;
-		}
-		int size;
+		LocalityRepository.LocalityDetails details = validatedDetails();
+		if (details == null) return false;
 		try {
-			size = Integer.parseInt(locSizeT.getText().trim());
-			if (size < 0) throw new NumberFormatException();
-		} catch (NumberFormatException e) {
-			JOptionPane.showMessageDialog(this, "Size must be a positive integer.");
-			return false;
-		}
-		try {
-			String distr = districtT.getText().trim(), prov = provinceT.getText().trim();
-			String coun = countryT.getText().trim();
-			if (localities.exists(localityName, distr, prov, coun)) {
+			if (localities.exists(details.locality(), details.district(),
+					details.province(), details.country())) {
 				JOptionPane.showMessageDialog(this, "Locality already exists.");
 				return false;
 			}
-			Coordinate wgs84 = mapCanvas.getCRS().toWGS84(c);
-			int zoom;
-			try { zoom = Integer.parseInt(zoomLevelT.getText().trim()); }
-			catch (NumberFormatException e) { zoom = -1; }
-			localities.insert(new LocalityRepository.LocalityDetails(localityName,
-					alternativeT.getText().trim(), distr, prov, coun, continentT.getText().trim(),
-					coordsourceT.getText().trim(), commentsT.getText().trim(), size,
-					categoryT.getText().trim(), zoom, isPlaceT.isSelected()),
-					new LocalityRepository.StoredCoordinates(wgs84,
-							CoordSystem.SWEREF99TM.toProjected(wgs84), CoordSystem.RT90.toProjected(wgs84)),
-					Settings.getValue("user"));
+			localities.insert(details, coordinates(), Settings.getValue("user"));
 			refreshMapsAndLists();
 			dispose();
 			return true;
 		} catch (Exception e) {
 			JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
 			return false;
-		}
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent ev) {
-		if ("ok".equals(ev.getActionCommand())) {
-			createLocality();
-		} else if ("cancel".equals(ev.getActionCommand())) {
-			this.dispose();
 		}
 	}
 }

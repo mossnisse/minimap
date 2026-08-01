@@ -7,9 +7,12 @@ import gis.core.MapCanvas;
 
 import javax.swing.JFrame;
 import java.awt.event.MouseEvent;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Supplier;
 
 public final class PluginContext {
     public interface Registration extends AutoCloseable {
@@ -22,14 +25,24 @@ public final class PluginContext {
     public final MapCanvas mapCanvas;
     public final GUI gui;
     public final AppContext core;
+    private final Supplier<Path> activeProjectDirectory;
     private final List<HandlerRegistration> clickHandlers = new ArrayList<>();
     private long nextSequence;
 
-    public PluginContext(JFrame frame, MapCanvas mapCanvas, GUI gui, AppContext core) {
+    public PluginContext(JFrame frame, MapCanvas mapCanvas, GUI gui, AppContext core,
+                         Supplier<Path> activeProjectDirectory) {
         this.frame = frame;
         this.mapCanvas = mapCanvas;
         this.gui = gui;
         this.core = core;
+        this.activeProjectDirectory = Objects.requireNonNull(activeProjectDirectory);
+    }
+
+    /** The directory owned by the project whose plugins are currently active. */
+    public Path activeProjectDirectory() {
+        Path path = activeProjectDirectory.get();
+        if (path == null) throw new IllegalStateException("No active project");
+        return path.toAbsolutePath().normalize();
     }
 
     public Registration registerClickHandler(int priority, MapClickHandler handler) {

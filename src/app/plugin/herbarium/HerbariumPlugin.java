@@ -179,7 +179,7 @@ public final class HerbariumPlugin implements Plugin, HerbariumController {
             SpecimenBridgeDialog dialog = bridgeDialog;
             participants.add(new ProjectCloseParticipant() {
                 @Override public String description() { return "Specimen bridge"; }
-                @Override public boolean isDirty() { return dialog.hasUnsavedChanges(); }
+                @Override public boolean isDirty() { return dialog.isDirty(); }
                 @Override public boolean save() { return dialog.savePendingChanges(); }
                 @Override public void discard() { dialog.discardPendingChanges(); }
                 @Override public void close() {

@@ -37,7 +37,6 @@ public class SpecimenBridgeDialog extends JDialog {
             "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"
     };
     private JTextField indexField; // For jumping to specific records
-    private int pendingIndex = -1;
     private boolean isNavigating = false;
     private String currentLoadedDistrict = null;
     private String currentLoadedProvince = null;
@@ -94,10 +93,8 @@ public class SpecimenBridgeDialog extends JDialog {
     private JComboBox<String> directionCombo;
 
     private JButton prevBtn, nextBtn, linkBtn, deleteBtn;
-    JButton openSearchBtn = new JButton("Search & Cache...");
     private boolean isAdjusting = false;
     private JButton btnRubin, btnRT90, btnSweref, btnLatLong;
-    JPanel coordBar;
 
     public SpecimenBridgeDialog(Frame owner, HerbariumController gui, SpecimenService service,
                                 MapCanvas mapCanvas, LocalityRepository localities) {
@@ -295,13 +292,13 @@ public class SpecimenBridgeDialog extends JDialog {
         coordWrapper.setMinimumSize(new Dimension(10, 32));
 
         // Use a FlowLayout with very tight gaps for the bar itself
-        coordBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JPanel coordBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         coordBar.setOpaque(false);
 
-        coordBar.add(createFocusRow(rubinField, "Rubin", this::focusRubin, "RUBIN"));
-        coordBar.add(createFocusRow(rt90Field, "RT90", this::focusRT90, "RT90"));
-        coordBar.add(createFocusRow(swerefField, "SWEREF", this::focusSweref, "SWEREF"));
-        coordBar.add(createFocusRow(latLongField, "DMS", this::focusLatLong, "DMS"));
+        btnRubin = addFocusRow(coordBar, rubinField, "Rubin", this::focusRubin);
+        btnRT90 = addFocusRow(coordBar, rt90Field, "RT90", this::focusRT90);
+        btnSweref = addFocusRow(coordBar, swerefField, "SWEREF", this::focusSweref);
+        btnLatLong = addFocusRow(coordBar, latLongField, "DMS", this::focusLatLong);
 
         coordWrapper.add(coordBar);
 
@@ -397,6 +394,7 @@ public class SpecimenBridgeDialog extends JDialog {
         actionPanel.add(closeBtn);
         add(actionPanel, BorderLayout.SOUTH);
 
+        JButton openSearchBtn = new JButton("Search & Cache...");
         openSearchBtn.addActionListener(e -> {
             SpecimenSearchDialog searchDlg = new SpecimenSearchDialog(this, service);
             searchDlg.setModal(true); // Make it modal so we wait for it to finish
@@ -408,14 +406,8 @@ public class SpecimenBridgeDialog extends JDialog {
         navPanel.add(openSearchBtn);
 
         // Navigation Actions
-        prevBtn.addActionListener(e -> {
-            pendingIndex = currentIndex - 1;
-            handleNavigation(pendingIndex);
-        });
-        nextBtn.addActionListener(e -> {
-            pendingIndex = currentIndex + 1;
-            handleNavigation(pendingIndex);
-        });
+        prevBtn.addActionListener(e -> handleNavigation(currentIndex - 1));
+        nextBtn.addActionListener(e -> handleNavigation(currentIndex + 1));
 
         javax.swing.event.DocumentListener overrideListener = new javax.swing.event.DocumentListener() {
             public void insertUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
@@ -448,8 +440,8 @@ public class SpecimenBridgeDialog extends JDialog {
         return f;
     }
 
-    // Helper to keep UI creation clean
-    private JPanel createFocusRow(JTextField field, String btnText, Runnable action, String type) {
+    /** Adds a "value + focus button" row to {@code bar} and returns the button. */
+    private JButton addFocusRow(JPanel bar, JTextField field, String btnText, Runnable action) {
         // 5px gap between the text and its specific button
         JPanel p = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         p.setOpaque(false);
@@ -468,15 +460,10 @@ public class SpecimenBridgeDialog extends JDialog {
         btn.setFocusable(false);
         btn.addActionListener(e -> action.run());
 
-        // Link buttons to your class variables
-        if (type.equals("RUBIN")) btnRubin = btn;
-        else if (type.equals("RT90")) btnRT90 = btn;
-        else if (type.equals("SWEREF")) btnSweref = btn;
-        else if (type.equals("DMS")) btnLatLong = btn;
-
         p.add(field);
         p.add(btn);
-        return p;
+        bar.add(p);
+        return btn;
     }
 
     private void refreshFromCache() {
@@ -975,13 +962,9 @@ public class SpecimenBridgeDialog extends JDialog {
         }
     }
 
-    private boolean isDirty() {
+    public boolean isDirty() {
         BridgeData currentUI = getBridgeFromUI();
         return !currentUI.equals(originalBridge);
-    }
-
-    public boolean hasUnsavedChanges() {
-        return isDirty();
     }
 
     public boolean savePendingChanges() {
