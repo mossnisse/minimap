@@ -15,6 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +81,7 @@ public final class CollectionRepository {
     }
 
     private final CollectionDatabase database;
+    private Map<String, String> settingCache;
 
     public CollectionRepository(CollectionDatabase database) { this.database = database; }
     CollectionDatabase database() { return database; }
@@ -102,6 +104,9 @@ public final class CollectionRepository {
             return result;
         } catch (Exception e) {
             c.rollback();
+            // A read inside the transaction may have cached a value that the
+            // rollback just undid.
+            settingCache = null;
             if (e instanceof SQLException sql) throw sql;
             throw new SQLException(e);
         } finally {
@@ -110,11 +115,8 @@ public final class CollectionRepository {
     }
 
     public synchronized String setting(String key, String fallback) throws SQLException {
-        try (PreparedStatement ps = database.connection().prepareStatement(
-                "SELECT setting_value FROM collection_setting WHERE setting_key=?")) {
-            ps.setString(1, key);
-            try (ResultSet rs = ps.executeQuery()) { return rs.next() ? rs.getString(1) : fallback; }
-        }
+        String value = settings().get(key);
+        return value != null ? value : fallback;
     }
 
     public synchronized void setSetting(String key, String value) throws SQLException {
@@ -122,15 +124,23 @@ public final class CollectionRepository {
                 "MERGE INTO collection_setting(setting_key,setting_value) KEY(setting_key) VALUES (?,?)")) {
             ps.setString(1, key); ps.setString(2, value == null ? "" : value); ps.executeUpdate();
         }
+        settingCache = null;
     }
 
+    /**
+     * The whole settings table, held until the next write. Label and export
+     * rendering asks for a handful of keys per specimen, so a dashboard over a
+     * few thousand specimens issued thousands of identical single-key queries.
+     */
     public synchronized Map<String, String> settings() throws SQLException {
+        if (settingCache != null) return settingCache;
         Map<String, String> result = new LinkedHashMap<>();
         try (Statement s = database.connection().createStatement();
              ResultSet rs = s.executeQuery("SELECT setting_key,setting_value FROM collection_setting ORDER BY setting_key")) {
             while (rs.next()) result.put(rs.getString(1), rs.getString(2));
         }
-        return result;
+        settingCache = Collections.unmodifiableMap(result);
+        return settingCache;
     }
 
     public synchronized long ensurePerson(String fullName, String shortName) throws SQLException {
@@ -229,6 +239,36 @@ public final class CollectionRepository {
             try (ResultSet rs = ps.executeQuery()) { while (rs.next()) result.add(readLocality(rs)); }
         }
         return result;
+    }
+
+    /** When the row was last written, or null if it no longer exists; lets an open editor notice it is stale. */
+    public synchronized Timestamp localityModifiedAt(long id) throws SQLException { return modifiedAt("locality", id); }
+
+    public synchronized Timestamp eventModifiedAt(long id) throws SQLException { return modifiedAt("collection_event", id); }
+
+    private Timestamp modifiedAt(String table, long id) throws SQLException {
+        try (PreparedStatement ps = database.connection().prepareStatement("SELECT modified_at FROM " + table + " WHERE id=?")) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() ? rs.getTimestamp(1) : null; }
+        }
+    }
+
+    /** How many collection events are recorded at this locality. */
+    public synchronized int localityEventCount(long id) throws SQLException {
+        try (PreparedStatement ps = database.connection().prepareStatement("SELECT COUNT(*) FROM collection_event WHERE locality_id=?")) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) { rs.next(); return rs.getInt(1); }
+        }
+    }
+
+    /** Removes a locality nothing refers to; events keep the place they were collected at. */
+    public synchronized void deleteLocality(long id) throws SQLException {
+        int events = localityEventCount(id);
+        if (events > 0) throw new SQLException("The locality is used by " + events + " collection event" + (events == 1 ? "" : "s"));
+        try (PreparedStatement ps = database.connection().prepareStatement("DELETE FROM locality WHERE id=?")) {
+            ps.setLong(1, id);
+            if (ps.executeUpdate() != 1) throw new SQLException("Unknown locality: " + id);
+        }
     }
 
     public synchronized List<PointTableLayer.LabeledPoint> eventPoints(Extent bounds) throws SQLException {

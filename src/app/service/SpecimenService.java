@@ -247,56 +247,28 @@ public class SpecimenService {
         return 0;
     }
 
+    /** Argument order must match the component order of {@link Specimen}. */
     private Specimen mapResultSetToSpecimen(ResultSet rs) throws SQLException {
-        Specimen s = new Specimen();
-
-        // Identifiers
-        s.setId(rs.getInt("specimens_ID"));
-
-
-        // Strings & Taxonomic Info
-        s.setAccessionNo(rs.getString("AccessionNo"));
-        s.setInstitutionCode(rs.getString("InstitutionCode"));
-        s.setCollectionCode(rs.getString("CollectionCode"));
-        s.setGenus(rs.getString("Genus"));
-        s.setSpecies(rs.getString("Species"));
-        s.setCollector(rs.getString("Collector"));
-        s.setOriginalText(rs.getString("original_text"));
-        s.setSpecimenLocality(rs.getString("specimen_locality"));
-        s.setDistrict(rs.getString("district"));
-        s.setProvince(rs.getString("province"));
-
-        // Date (Using the quoted "Year", "Month", "Day" logic from H2)
-        s.setYear(rs.getInt("Year"));
-        s.setMonth(rs.getInt("Month"));
-        s.setDay(rs.getInt("Day"));
-
-        // Grid & Coordinates
-        s.setRubin(rs.getString("RUBIN"));
-        s.setRiketsN(rs.getString("RiketsN"));
-        s.setRiketsO(rs.getString("RiketsO"));
-        s.setSwerefN(rs.getInt("SwerefN"));
-        s.setSwerefE(rs.getInt("SwerefE"));
-
-        // DMS (Degrees, Minutes, Seconds)
-        s.setLatDir(rs.getString("Lat_dir"));
-        s.setLatDeg(rs.getString("Lat_deg"));
-        s.setLatMin(rs.getString("Lat_min"));
-        s.setLatSec(rs.getString("Lat_sec"));
-
-        s.setLongDir(rs.getString("Long_dir"));
-        s.setLongDeg(rs.getString("Long_deg"));
-        s.setLongMin(rs.getString("Long_min"));
-        s.setLongSec(rs.getString("Long_sec"));
-
-        // Bridge / Override Data
-        s.setLocalityId(rs.getInt("locality_ID"));
-        s.setDistance(rs.getInt("distance"));
-        s.setDirection(rs.getString("direction"));
-        s.setODistrict(rs.getString("oDistrict"));
-        s.setOProvince(rs.getString("oProvince"));
-
-        return s;
+        return new Specimen(
+                rs.getInt("specimens_ID"),
+                // Taxonomic info
+                rs.getString("AccessionNo"), rs.getString("Genus"), rs.getString("Species"),
+                rs.getString("InstitutionCode"), rs.getString("CollectionCode"),
+                // Date (using the quoted "Year", "Month", "Day" logic from H2)
+                rs.getInt("Year"), rs.getInt("Month"), rs.getInt("Day"),
+                rs.getString("Collector"), rs.getString("original_text"), rs.getString("specimen_locality"),
+                rs.getString("district"), rs.getString("province"),
+                // Grid & coordinates
+                rs.getString("RUBIN"), rs.getString("RiketsN"), rs.getString("RiketsO"),
+                rs.getInt("SwerefN"), rs.getInt("SwerefE"),
+                // DMS (degrees, minutes, seconds)
+                rs.getString("Lat_dir"), rs.getString("Lat_deg"),
+                rs.getString("Lat_min"), rs.getString("Lat_sec"),
+                rs.getString("Long_dir"), rs.getString("Long_deg"),
+                rs.getString("Long_min"), rs.getString("Long_sec"),
+                // Bridge / override data
+                rs.getInt("locality_ID"), rs.getInt("distance"), rs.getString("direction"),
+                rs.getString("oDistrict"), rs.getString("oProvince"));
     }
 
     public List<LocalityRecord> getLocalitiesInDistrict(String district, String province) {
@@ -335,8 +307,6 @@ public class SpecimenService {
 
     // Handles the bridging and coordinate calculation
     public boolean linkSpecimenToLocality(Specimen s, int localityId, String oDist, String oProv, int dist, String dir) {
-        System.out.println("linkSpecimenToLocality() method called");
-
         // Assuming core.Settings.getValue("user") is available in your scope
         String raw = Settings.getValue("user");
         String user = (raw != null && !raw.isBlank()) ? raw : "unknown";
@@ -359,11 +329,11 @@ public class SpecimenService {
             Connection conn = db.mysql();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-                ps.setInt(1, s.getId());
+                ps.setInt(1, s.id());
                 ps.setInt(2, localityId);
-                ps.setString(3, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
-                ps.setString(4, s.getCollectionCode() != null ? s.getCollectionCode() : "");
-                ps.setString(5, s.getAccessionNo() != null ? s.getAccessionNo() : "");
+                ps.setString(3, s.institutionCode() != null ? s.institutionCode() : "");
+                ps.setString(4, s.collectionCode() != null ? s.collectionCode() : "");
+                ps.setString(5, s.accessionNo() != null ? s.accessionNo() : "");
 
                 // Handle NULL for distance
                 if (dist > 0) ps.setInt(6, dist);
@@ -380,75 +350,89 @@ public class SpecimenService {
 
                 boolean mysqlSuccess = ps.executeUpdate() > 0;
 
-                // If MySQL updated successfully, update the local H2 Cache!
-                if (mysqlSuccess) {
+                // MySQL is authoritative. A cache failure must not turn a
+                // committed remote write into a reported save failure.
+                if (mysqlSuccess) try {
                     updateH2CacheLink(s, localityId, oDist, oProv, dist, dir);
+                } catch (SQLException cacheError) {
+                    reportCacheSyncFailure(s.id(), cacheError);
                 }
 
                 return mysqlSuccess;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Could not link specimen " + s.id() + " to locality " + localityId
+                    + ": " + e.getMessage());
             return false;
         }
     }
 
     public boolean deleteSpecimenLink(Specimen s) {
-        System.out.println("deleteSpecimenLink() method called");
-
-        String sql = "DELETE FROM specimen_locality "
-                + "WHERE InstitutionCode = ? AND CollectionCode = ? AND AccessionNo = ?";
+        // Keyed on specimen_ID, matching the cache update and the refreshCache
+        // join. Accession numbers repeat across institutions, so the old
+        // (InstitutionCode, CollectionCode, AccessionNo) key could delete a
+        // sibling specimen's link and leave its cache row untouched.
+        String sql = "DELETE FROM specimen_locality WHERE specimen_ID = ?";
 
         try {
             Connection conn = db.mysql();
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-                ps.setString(1, s.getInstitutionCode() != null ? s.getInstitutionCode() : "");
-                ps.setString(2, s.getCollectionCode() != null ? s.getCollectionCode() : "");
-                ps.setString(3, s.getAccessionNo() != null ? s.getAccessionNo() : "");
+                ps.setInt(1, s.id());
 
                 boolean mysqlSuccess = ps.executeUpdate() > 0;
 
-                // Clear it from the local H2 Cache as well
-                if (mysqlSuccess) {
+                if (mysqlSuccess) try {
                     updateH2CacheLink(s, -1, "", "", 0, "");
+                } catch (SQLException cacheError) {
+                    reportCacheSyncFailure(s.id(), cacheError);
                 }
                 return mysqlSuccess;
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Could not delete the locality link for specimen " + s.id()
+                    + ": " + e.getMessage());
             return false;
         }
     }
 
-    private void updateH2CacheLink(Specimen specimen, int locId, String oDist, String oProv, int dist, String dir) {
+    /**
+     * Mirrors a bridge write into the local H2 cache. Throws rather than
+     * swallowing: the caller reports success to the UI, and a cache that
+     * silently missed the update would serve stale rows to getSpecimenAt.
+     */
+    private void updateH2CacheLink(Specimen specimen, int locId, String oDist, String oProv, int dist, String dir)
+            throws SQLException {
         String h2Update = "UPDATE tempspecimens SET "
                 + "locality_ID = ?, distance = ?, direction = ?, oDistrict = ?, oProvince = ? "
                 + "WHERE specimens_ID = ?";
         synchronized (cacheLock) {
-            try {
-                Connection h2Conn = db.h2();
-                try (PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
+            Connection h2Conn = db.h2();
+            try (PreparedStatement ps = h2Conn.prepareStatement(h2Update)) {
 
-                    if (locId > 0) ps.setInt(1, locId);
-                    else ps.setNull(1, java.sql.Types.INTEGER);
+                if (locId > 0) ps.setInt(1, locId);
+                else ps.setNull(1, java.sql.Types.INTEGER);
 
-                    if (dist > 0) ps.setInt(2, dist);
-                    else ps.setNull(2, java.sql.Types.INTEGER);
+                if (dist > 0) ps.setInt(2, dist);
+                else ps.setNull(2, java.sql.Types.INTEGER);
 
-                    if (dir != null && !dir.isEmpty()) ps.setString(3, dir);
-                    else ps.setNull(3, java.sql.Types.VARCHAR);
+                if (dir != null && !dir.isEmpty()) ps.setString(3, dir);
+                else ps.setNull(3, java.sql.Types.VARCHAR);
 
-                    ps.setString(4, oDist);
-                    ps.setString(5, oProv);
-                    ps.setInt(6, specimen.getId());
+                ps.setString(4, oDist);
+                ps.setString(5, oProv);
+                ps.setInt(6, specimen.id());
 
-                    ps.executeUpdate();
+                if (ps.executeUpdate() != 1) {
+                    throw new SQLException("Specimen " + specimen.id() + " is no longer present in the local cache");
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
         }
+    }
+
+    private static void reportCacheSyncFailure(int specimenId, SQLException error) {
+        System.err.println("The bridge change for specimen " + specimenId + " was committed in MySQL, but the local cache could not be updated; "
+                + "refresh Search & Cache before revisiting it: " + error.getMessage());
     }
 
     public Coordinate getLocalityPoint(int localityID) {

@@ -1,0 +1,7 @@
+[mcp_servers.repowise]
+command = "C:\\Users\\NissE\\AppData\\Roaming\\Python\\Python314\\Scripts\\repowise.exe"
+args = ["mcp", "C:/code/minimap-slop", "--transport", "stdio"]
+cwd = "C:/code/minimap-slop"
+startup_timeout_sec = 30
+tool_timeout_sec = 120
+enabled = true

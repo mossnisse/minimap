@@ -1,0 +1,4 @@
+distill:
+  commands:
+    enabled: true
+embedder: mock

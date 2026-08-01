@@ -14,13 +14,8 @@ import gis.layers.RubinLayer;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.datatransfer.Clipboard;
-import java.awt.datatransfer.StringSelection;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class SpecimenBridgeDialog extends JDialog {
     private final SpecimenService service;
@@ -44,39 +39,6 @@ public class SpecimenBridgeDialog extends JDialog {
     private SwingWorker<Specimen, Void> specimenWorker;
     private long localityRequestGeneration = 0;
 
-    private static final Map<String, Integer> ISOF_PROVINCE_MAP = new HashMap<>();
-    static {
-        ISOF_PROVINCE_MAP.put("Skåne", 1);
-        ISOF_PROVINCE_MAP.put("Blekinge", 2);
-        ISOF_PROVINCE_MAP.put("Öland", 3);
-        ISOF_PROVINCE_MAP.put("Halland", 4);
-        ISOF_PROVINCE_MAP.put("Småland", 5);
-        ISOF_PROVINCE_MAP.put("Gotland", 6);
-        ISOF_PROVINCE_MAP.put("Västergötland", 7);
-        ISOF_PROVINCE_MAP.put("Östergötland", 8);
-        ISOF_PROVINCE_MAP.put("Bohuslän", 9);
-        ISOF_PROVINCE_MAP.put("Dalsland", 10);
-        ISOF_PROVINCE_MAP.put("Närke", 11);
-        ISOF_PROVINCE_MAP.put("Södermanland", 12);
-        ISOF_PROVINCE_MAP.put("Värmland", 13);
-        ISOF_PROVINCE_MAP.put("Västmanland", 14);
-        ISOF_PROVINCE_MAP.put("Uppland", 15);
-        ISOF_PROVINCE_MAP.put("Gästrikland", 16);
-        ISOF_PROVINCE_MAP.put("Dalarna", 17);
-        ISOF_PROVINCE_MAP.put("Hälsingland", 18);
-        ISOF_PROVINCE_MAP.put("Härjedalen", 19);
-        ISOF_PROVINCE_MAP.put("Medelpad", 20);
-        ISOF_PROVINCE_MAP.put("Ångermanland", 21);
-        ISOF_PROVINCE_MAP.put("Jämtland", 22);
-        ISOF_PROVINCE_MAP.put("Västerbotten", 23);
-        ISOF_PROVINCE_MAP.put("Norrbotten", 25);
-        ISOF_PROVINCE_MAP.put("Lappland", 24); // Note: Isof often groups Lappmarken under 'Lappland' ID 24
-        ISOF_PROVINCE_MAP.put("Torne lappmark", 24);
-        ISOF_PROVINCE_MAP.put("Lule lappmark", 24);
-        ISOF_PROVINCE_MAP.put("Pite lappmark", 24);
-        ISOF_PROVINCE_MAP.put("Lycksele lappmark", 24);
-        ISOF_PROVINCE_MAP.put("Åsele lappmark", 24);
-    }
 
     private JLabel totalLabel;
 
@@ -121,39 +83,50 @@ public class SpecimenBridgeDialog extends JDialog {
 
     private void initUI() {
         setLayout(new BorderLayout(10, 10));
+        installKeyBindings();
 
+        add(buildTopPanel(), BorderLayout.NORTH);
+        add(buildBridgePanel(), BorderLayout.CENTER);
+        add(buildActionPanel(), BorderLayout.SOUTH);
+
+        // enter button to create link and advance
+        getRootPane().setDefaultButton(linkBtn);
+
+        javax.swing.event.DocumentListener overrideListener = new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
+
+            private void checkUpdate() {
+                // Only trigger if the user is typing, not when loadSpecimen() is running
+                if (!isAdjusting && targetSpecimen != null) {
+                    SwingUtilities.invokeLater(() -> updateLocalityList(-1));
+                }
+            }
+        };
+        overrideDistField.getDocument().addDocumentListener(overrideListener);
+        overrideProvField.getDocument().addDocumentListener(overrideListener);
+    }
+
+    private void installKeyBindings() {
         JRootPane rootPane = this.getRootPane();
         InputMap inputMap = rootPane.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW);
         ActionMap actionMap = rootPane.getActionMap();
 
-        // --- RIGHT ARROW: NEXT ---
-        inputMap.put(KeyStroke.getKeyStroke("RIGHT"), "nextSpecimen");
-        actionMap.put("nextSpecimen", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                if (currentIndex < totalCount - 1) {
-                    handleNavigation(currentIndex + 1);
-                }
-            }
-        });
+        bindKey(inputMap, actionMap, "nextSpecimen", () -> {
+            if (currentIndex < totalCount - 1) handleNavigation(currentIndex + 1);
+        }, "RIGHT");
 
-        // --- LEFT ARROW: PREVIOUS ---
-        inputMap.put(KeyStroke.getKeyStroke("LEFT"), "prevSpecimen");
-        actionMap.put("prevSpecimen", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                if (currentIndex > 0) {
-                    handleNavigation(currentIndex - 1);
-                }
-            }
-        });
+        bindKey(inputMap, actionMap, "prevSpecimen", () -> {
+            if (currentIndex > 0) handleNavigation(currentIndex - 1);
+        }, "LEFT");
 
         this.addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
             public void windowClosing(java.awt.event.WindowEvent e) {
                 if (isDirty()) {
                     LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
-                    boolean wasPreviouslyLinked = (targetSpecimen != null && targetSpecimen.getLocalityId() > 0);
+                    boolean wasPreviouslyLinked = (targetSpecimen != null && targetSpecimen.localityId() > 0);
 
                     if (selected != null && selected.getId() > 0) {
                         if (!saveBridge()) {
@@ -171,39 +144,26 @@ public class SpecimenBridgeDialog extends JDialog {
         });
 
         // --- F1 & Ctrl + L: COPY LAST SAVED DATA ---
-        inputMap.put(KeyStroke.getKeyStroke("F1"), "copyLast");
-        inputMap.put(KeyStroke.getKeyStroke("control L"), "copyLast");
+        bindKey(inputMap, actionMap, "copyLast", () -> {
+            if (lastSavedBridge != null) applyBridgeToUI(lastSavedBridge);
+        }, "F1", "control L");
 
-        actionMap.put("copyLast", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                if (lastSavedBridge != null) {
-                    applyBridgeToUI(lastSavedBridge);
-                }
-            }
-        });
-
-        inputMap.put(KeyStroke.getKeyStroke("control F"), "searchLoc");
-        actionMap.put("searchLoc", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                searchLocality();
-            }
-        });
+        bindKey(inputMap, actionMap, "searchLoc", this::searchLocality, "control F");
 
         // --- Ctrl + B: SEARCH ORTNAMNSREGISTRET ---
-        inputMap.put(KeyStroke.getKeyStroke("control B"), "searchOrt");
-        actionMap.put("searchOrt", new AbstractAction() {
-            @Override
-            public void actionPerformed(java.awt.event.ActionEvent e) {
-                searchOrtReg();
-            }
-        });
+        bindKey(inputMap, actionMap, "searchOrt", this::searchOrtReg, "control B");
+    }
 
-        // --- TOP: NAVIGATION & SPECIMEN INFO ---
+    /** Navigation row plus the read-only specimen info card. */
+    private JPanel buildTopPanel() {
         JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(buildNavPanel(), BorderLayout.NORTH);
+        topPanel.add(buildInfoPanel(), BorderLayout.CENTER);
+        return topPanel;
+    }
 
-        // Row 1: Detailed Navigation
+    /** Prev/next, the jump-to-index box and the search-and-cache entry point. */
+    private JPanel buildNavPanel() {
         JPanel navPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 5));
 
         prevBtn = new JButton("<< Previous");
@@ -229,15 +189,30 @@ public class SpecimenBridgeDialog extends JDialog {
             }
         });
 
+        JButton openSearchBtn = new JButton("Search & Cache...");
+        openSearchBtn.addActionListener(e -> {
+            SpecimenSearchDialog searchDlg = new SpecimenSearchDialog(this, service);
+            searchDlg.setModal(true); // Make it modal so we wait for it to finish
+            searchDlg.setVisible(true);
+
+            // After searchDlg is closed, refresh this dialog
+            refreshFromCache();
+        });
+
+        prevBtn.addActionListener(e -> handleNavigation(currentIndex - 1));
+        nextBtn.addActionListener(e -> handleNavigation(currentIndex + 1));
+
         navPanel.add(prevBtn);
         navPanel.add(new JLabel("Specimen:"));
         navPanel.add(indexField);
         navPanel.add(totalLabel);
         navPanel.add(nextBtn);
+        navPanel.add(openSearchBtn);
+        return navPanel;
+    }
 
-        topPanel.add(navPanel, BorderLayout.NORTH); // Combined with infoPanel later
-
-        // dialogs.Specimen Data Display
+    /** Read-only specimen card: identity, original text, and the coordinate bar. */
+    private JPanel buildInfoPanel() {
         JPanel infoPanel = new JPanel(new GridBagLayout());
         infoPanel.setBackground(Color.WHITE);
         infoPanel.setBorder(BorderFactory.createTitledBorder("Specimen Info"));
@@ -306,10 +281,11 @@ public class SpecimenBridgeDialog extends JDialog {
         c.weighty = 0; // Ensure this row doesn't grow
         infoPanel.add(coordWrapper, c);
 
-        topPanel.add(infoPanel, BorderLayout.CENTER);
-        add(topPanel, BorderLayout.NORTH);
+        return infoPanel;
+    }
 
-        // --- CENTER: BRIDGE / EDITABLE FIELDS ---
+    /** The editable half: locality picker, district/province overrides, offset. */
+    private JPanel buildBridgePanel() {
         JPanel bridgePanel = new JPanel(new GridBagLayout());
         bridgePanel.setBorder(BorderFactory.createTitledBorder("Create Bridge to Locality"));
         GridBagConstraints gbc = new GridBagConstraints();
@@ -373,9 +349,10 @@ public class SpecimenBridgeDialog extends JDialog {
         gbc.anchor = GridBagConstraints.WEST; // Keep it aligned to the left
         bridgePanel.add(distDirPanel, gbc);
 
-        add(bridgePanel, BorderLayout.CENTER);
+        return bridgePanel;
+    }
 
-        // --- BOTTOM: ACTION BUTTONS ---
+    private JPanel buildActionPanel() {
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         linkBtn = new JButton("Create Link (Save to MySQL)");
         linkBtn.addActionListener(e -> saveBridge());
@@ -392,41 +369,16 @@ public class SpecimenBridgeDialog extends JDialog {
 
         actionPanel.add(linkBtn);
         actionPanel.add(closeBtn);
-        add(actionPanel, BorderLayout.SOUTH);
+        return actionPanel;
+    }
 
-        JButton openSearchBtn = new JButton("Search & Cache...");
-        openSearchBtn.addActionListener(e -> {
-            SpecimenSearchDialog searchDlg = new SpecimenSearchDialog(this, service);
-            searchDlg.setModal(true); // Make it modal so we wait for it to finish
-            searchDlg.setVisible(true);
-
-            // After searchDlg is closed, refresh this dialog
-            refreshFromCache();
+    /** Binds one or more keystrokes to a named action running {@code body}. */
+    private static void bindKey(InputMap inputMap, ActionMap actionMap, String name,
+                                Runnable body, String... keyStrokes) {
+        for (String keyStroke : keyStrokes) inputMap.put(KeyStroke.getKeyStroke(keyStroke), name);
+        actionMap.put(name, new AbstractAction() {
+            @Override public void actionPerformed(java.awt.event.ActionEvent e) { body.run(); }
         });
-        navPanel.add(openSearchBtn);
-
-        // Navigation Actions
-        prevBtn.addActionListener(e -> handleNavigation(currentIndex - 1));
-        nextBtn.addActionListener(e -> handleNavigation(currentIndex + 1));
-
-        javax.swing.event.DocumentListener overrideListener = new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
-            public void removeUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
-            public void changedUpdate(javax.swing.event.DocumentEvent e) { checkUpdate(); }
-
-            private void checkUpdate() {
-                // Only trigger if the user is typing, not when loadSpecimen() is running
-                if (!isAdjusting && targetSpecimen != null) {
-                    SwingUtilities.invokeLater(() -> updateLocalityList(-1));
-                }
-            }
-        };
-
-        // enter button to create link and advance
-        this.getRootPane().setDefaultButton(linkBtn);
-
-        overrideDistField.getDocument().addDocumentListener(overrideListener);
-        overrideProvField.getDocument().addDocumentListener(overrideListener);
     }
 
     private JTextField createPlainField() {
@@ -563,7 +515,7 @@ public class SpecimenBridgeDialog extends JDialog {
         try {
             LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
             boolean hasSelectedLocality = (selected != null && selected.getId() > 0);
-            boolean wasPreviouslyLinked = (targetSpecimen != null && targetSpecimen.getLocalityId() > 0);
+            boolean wasPreviouslyLinked = (targetSpecimen != null && targetSpecimen.localityId() > 0);
 
             if (isDirty()) {
                 if (hasSelectedLocality) {
@@ -600,28 +552,28 @@ public class SpecimenBridgeDialog extends JDialog {
     private void updateUIFields(Specimen s) {
         isAdjusting = true;
 
-        idField.setText(s.getInstitutionCode() + " " + s.getAccessionNo());
-        nameField.setText(s.getGenus() + " " + s.getSpecies());
-        origTextField.setText(s.getOriginalText());
-        collectorField.setText(s.getCollector() + " (" + s.getCollectionCode() + ")      " + String.format("%d-%02d-%02d", s.getYear(), s.getMonth(), s.getDay()));
-        provinceDistrField.setText(s.getProvince() + ", " + s.getDistrict() + ", " + s.getSpecimenLocality());
-        rubinField.setText(s.getRubin());
-        rt90Field.setText("N: " + s.getRiketsN() + " O: " + s.getRiketsO());
-        swerefField.setText(s.getSweref());
-        latLongField.setText(Coordinate.formatDMS(s.getLatDeg(), s.getLatMin(), s.getLatSec(), s.getLatDir(), s.getLongDeg(), s.getLongMin(), s.getLongSec(), s.getLongDir()));
+        idField.setText(s.institutionCode() + " " + s.accessionNo());
+        nameField.setText(s.genus() + " " + s.species());
+        origTextField.setText(s.originalText());
+        collectorField.setText(s.collector() + " (" + s.collectionCode() + ")      " + String.format("%d-%02d-%02d", s.year(), s.month(), s.day()));
+        provinceDistrField.setText(s.province() + ", " + s.district() + ", " + s.specimenLocality());
+        rubinField.setText(s.rubin());
+        rt90Field.setText("N: " + s.riketsN() + " O: " + s.riketsO());
+        swerefField.setText(s.sweref());
+        latLongField.setText(Coordinate.formatDMS(s.latDeg(), s.latMin(), s.latSec(), s.latDir(), s.longDeg(), s.longMin(), s.longSec(), s.longDir()));
 
         // Clear/Update Bridge fields
-        overrideDistField.setText(s.getODistrict() != null ? s.getODistrict() : "");
-        overrideProvField.setText(s.getOProvince() != null ? s.getOProvince() : "");
-        distanceField.setText(s.getDistance() > 0 ? String.valueOf(s.getDistance()) : "");
-        directionCombo.setSelectedItem(s.getDirection() != null ? s.getDirection() : "");
+        overrideDistField.setText(s.oDistrict() != null ? s.oDistrict() : "");
+        overrideProvField.setText(s.oProvince() != null ? s.oProvince() : "");
+        distanceField.setText(s.distance() > 0 ? String.valueOf(s.distance()) : "");
+        directionCombo.setSelectedItem(s.direction() != null ? s.direction() : "");
 
         originalBridge = new BridgeData(
-                s.getLocalityId() > 0 ? s.getLocalityId() : -1, // normalize 0 -> -1
-                s.getDistance() > 0 ? String.valueOf(s.getDistance()) : "",
-                s.getDirection() != null ? s.getDirection() : "",
-                s.getODistrict() != null ? s.getODistrict() : "",
-                s.getOProvince() != null ? s.getOProvince() : ""
+                s.localityId() > 0 ? s.localityId() : -1, // normalize 0 -> -1
+                s.distance() > 0 ? String.valueOf(s.distance()) : "",
+                s.direction() != null ? s.direction() : "",
+                s.oDistrict() != null ? s.oDistrict() : "",
+                s.oProvince() != null ? s.oProvince() : ""
         );
 
         // Apply to UI
@@ -637,18 +589,18 @@ public class SpecimenBridgeDialog extends JDialog {
         prevBtn.setEnabled(currentIndex > 0);
         nextBtn.setEnabled(currentIndex < totalCount - 1);
 
-        deleteBtn.setEnabled(s.getLocalityId() > 0);
-        btnRubin.setEnabled(s.getRubin() != null && !s.getRubin().isEmpty());
-        btnRT90.setEnabled(s.getRiketsN() != null && !s.getRiketsN().equals("0") && !s.getRiketsN().isEmpty());
-        btnSweref.setEnabled(s.getSwerefN() > 0);
-        btnLatLong.setEnabled(s.getLatDeg() != null && !s.getLatDeg().equals("0") && !s.getLatDeg().isEmpty());
+        deleteBtn.setEnabled(s.localityId() > 0);
+        btnRubin.setEnabled(s.rubin() != null && !s.rubin().isEmpty());
+        btnRT90.setEnabled(s.riketsN() != null && !s.riketsN().equals("0") && !s.riketsN().isEmpty());
+        btnSweref.setEnabled(s.swerefN() > 0);
+        btnLatLong.setEnabled(s.latDeg() != null && !s.latDeg().equals("0") && !s.latDeg().isEmpty());
 
-        toggleComponentVisibility(btnRubin, s.getRubin());
-        toggleComponentVisibility(btnRT90, s.getRiketsN()); // Checks if RT90 N exists
-        toggleComponentVisibility(btnSweref, s.getSwerefN() > 0 ? "exists" : "");
+        toggleComponentVisibility(btnRubin, s.rubin());
+        toggleComponentVisibility(btnRT90, s.riketsN()); // Checks if RT90 N exists
+        toggleComponentVisibility(btnSweref, s.swerefN() > 0 ? "exists" : "");
 
         // For DMS, check if LatDeg has a value
-        String dmsValue = (s.getLatDeg() != null && !s.getLatDeg().isEmpty()) ? "exists" : "";
+        String dmsValue = (s.latDeg() != null && !s.latDeg().isEmpty()) ? "exists" : "";
         toggleComponentVisibility(btnLatLong, dmsValue);
 
         setTitle("Link Specimen " + (currentIndex + 1) + " of " + totalCount);
@@ -666,12 +618,12 @@ public class SpecimenBridgeDialog extends JDialog {
         // Determine which District/Province to filter by
         String targetDistrict = overrideDistField.getText().trim();
         if (targetDistrict.isEmpty()) {
-            targetDistrict = targetSpecimen.getDistrict() != null ? targetSpecimen.getDistrict() : "";
+            targetDistrict = targetSpecimen.district() != null ? targetSpecimen.district() : "";
         }
 
         String targetProvince = overrideProvField.getText().trim();
         if (targetProvince.isEmpty()) {
-            targetProvince = targetSpecimen.getProvince() != null ? targetSpecimen.getProvince() : "";
+            targetProvince = targetSpecimen.province() != null ? targetSpecimen.province() : "";
         }
 
         final String finalDist = targetDistrict;
@@ -813,11 +765,7 @@ public class SpecimenBridgeDialog extends JDialog {
             originalBridge = currentUI;
 
             // Update the actual specimen object so the UI stays consistent if we don't move
-            targetSpecimen.setLocalityId(localityId);
-            targetSpecimen.setDistance(dist);
-            targetSpecimen.setDirection(dir);
-            targetSpecimen.setODistrict(oDist);
-            targetSpecimen.setOProvince(oProv);
+            targetSpecimen = targetSpecimen.withBridge(localityId, dist, dir, oDist, oProv);
 
             return true;
         } else {
@@ -837,11 +785,7 @@ public class SpecimenBridgeDialog extends JDialog {
             boolean success = service.deleteSpecimenLink(targetSpecimen);
             if (success) {
                 // Update the local object state so the UI reflects the change
-                targetSpecimen.setLocalityId(0);
-                targetSpecimen.setODistrict("");
-                targetSpecimen.setOProvince("");
-                targetSpecimen.setDistance(0);
-                targetSpecimen.setDirection("");
+                targetSpecimen = targetSpecimen.withBridge(0, 0, "", "", "");
 
                 updateUIFields(targetSpecimen);
                 return true;
@@ -893,7 +837,7 @@ public class SpecimenBridgeDialog extends JDialog {
 
     public void focusRubin() {
         if (targetSpecimen == null) return;
-        String rubin = targetSpecimen.getRubin();
+        String rubin = targetSpecimen.rubin();
         if (rubin != null && !rubin.isEmpty()) {
             RubinLayer r = new RubinLayer(rubin, mapCanvas, "Rubin", Color.GREEN);
             mapCanvas.getLayerManager().setOverlay(MapLayers.RUBIN_MARKER, r);
@@ -903,8 +847,8 @@ public class SpecimenBridgeDialog extends JDialog {
 
     public void focusRT90() {
         if (targetSpecimen == null) return;
-        String nStr = targetSpecimen.getRiketsN();
-        String oStr = targetSpecimen.getRiketsO();
+        String nStr = targetSpecimen.riketsN();
+        String oStr = targetSpecimen.riketsO();
         // Validate that we have strings, and they aren't just "0" or empty
         if (nStr != null && oStr != null && !nStr.equals("0") && !nStr.isEmpty()) {
             try {
@@ -928,8 +872,8 @@ public class SpecimenBridgeDialog extends JDialog {
 
     public void focusSweref() {
         if (targetSpecimen == null) return;
-        int n = targetSpecimen.getSwerefN();
-        int e = targetSpecimen.getSwerefE();
+        int n = targetSpecimen.swerefN();
+        int e = targetSpecimen.swerefE();
         // Basic validation for SWEREF99 TM range (approximate Sweden bounds)
         if (n > 6000000 && e > 200000) {
             Coordinate c = CoordSystem.SWEREF99TM.convertTo(new Coordinate(n, e), mapCanvas.getCRS());
@@ -942,15 +886,15 @@ public class SpecimenBridgeDialog extends JDialog {
         if (targetSpecimen == null) return;
 
         // Check if we actually have degrees set (not just empty or 0)
-        String lat = targetSpecimen.getLatDeg();
-        String lon = targetSpecimen.getLongDeg();
+        String lat = targetSpecimen.latDeg();
+        String lon = targetSpecimen.longDeg();
         if (lat == null || lat.isEmpty() || lat.equals("0")) return;
 
         try {
             Coordinate c = new Coordinate(0, 0);
             c.setFromDMS(
-                    targetSpecimen.getLatDeg(), targetSpecimen.getLatMin(), targetSpecimen.getLatSec(), targetSpecimen.getLatDir(),
-                    targetSpecimen.getLongDeg(), targetSpecimen.getLongMin(), targetSpecimen.getLongSec(), targetSpecimen.getLongDir()
+                    targetSpecimen.latDeg(), targetSpecimen.latMin(), targetSpecimen.latSec(), targetSpecimen.latDir(),
+                    targetSpecimen.longDeg(), targetSpecimen.longMin(), targetSpecimen.longSec(), targetSpecimen.longDir()
             );
 
             Coordinate canvasCoord = mapCanvas.getCRS().toProjected(c);
@@ -970,7 +914,7 @@ public class SpecimenBridgeDialog extends JDialog {
     public boolean savePendingChanges() {
         if (!isDirty()) return true;
         LocalityRecord selected = (LocalityRecord) localityCombo.getSelectedItem();
-        boolean wasPreviouslyLinked = targetSpecimen != null && targetSpecimen.getLocalityId() > 0;
+        boolean wasPreviouslyLinked = targetSpecimen != null && targetSpecimen.localityId() > 0;
         if (selected != null && selected.getId() > 0) return saveBridge();
         if (wasPreviouslyLinked) return deleteBridge();
         return true;
@@ -1016,44 +960,15 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     public void searchLocality() {
-        String selectedText = "";
-        String province = "";
+        String province = targetSpecimen != null ? targetSpecimen.province() : "";
+        String placeName = PlaceNameLookup.selectionOr(
+                targetSpecimen != null ? targetSpecimen.specimenLocality() : "");
+        PlaceNameLookup.copyToClipboard(placeName);
 
-        // Capture Province from the target specimen
-        if (targetSpecimen != null) {
-            // Assuming your dialogs.Specimen object has a getProvince method
-            province = targetSpecimen.getProvince();
-        }
-
-        // Get text selection using Java 21 Pattern Matching
-        Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-        if (focusOwner instanceof javax.swing.text.JTextComponent textComp) {
-            String selection = textComp.getSelectedText();
-            if (selection != null && !selection.isBlank()) {
-                selectedText = selection.trim();
-            }
-        }
-
-        if (selectedText.isEmpty() && targetSpecimen != null) {
-            selectedText = targetSpecimen.getSpecimenLocality();
-        }
-
-        // Clipboard handling
-        if (!selectedText.isEmpty()) {
-            try {
-                Toolkit.getDefaultToolkit().getSystemClipboard()
-                        .setContents(new StringSelection(selectedText), null);
-            } catch (Exception e) {
-                System.err.println("Clipboard error: " + e.getMessage());
-            }
-        }
-
-        // Resolve the Parent Frame
-        // We look for the top-level Window (the core.GUI Frame) that contains this dialog
+        // The top-level Window (the GUI Frame) that contains this dialog
         Frame parentFrame = (Frame) javax.swing.SwingUtilities.getWindowAncestor(this);
 
-        // Open and Position the Dialog
-        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, gui, mapCanvas, selectedText, province,
+        SearchLocalityDialog d = new SearchLocalityDialog(parentFrame, gui, mapCanvas, placeName, province,
                 localities);
         gui.trackWindow(d);
 
@@ -1063,59 +978,12 @@ public class SpecimenBridgeDialog extends JDialog {
     }
 
     private void searchOrtReg() {
-        if (!Desktop.isDesktopSupported() || !Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-            System.out.println("Browser not supported on this system.");
-            return;
-        }
-
         if (targetSpecimen == null) return;
+        String placeName = PlaceNameLookup.selectionOr(targetSpecimen.specimenLocality());
+        if (placeName.isEmpty()) return;
 
-        String placeName = "";
-        String provinceName = targetSpecimen.getProvince();
-
-        Component focusOwner = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusOwner();
-
-        // Get selected text from the focused component
-        if (focusOwner instanceof javax.swing.text.JTextComponent) {
-            String selection = ((javax.swing.text.JTextComponent) focusOwner).getSelectedText();
-            if (selection != null && !selection.trim().isEmpty()) {
-                placeName = selection.trim();
-            }
-        }
-
-        // Fallback to the specimen's locality field if nothing is highlighted
-        if (placeName.isEmpty() && targetSpecimen != null) {
-            placeName = targetSpecimen.getSpecimenLocality();
-        }
-
-        if (placeName == null || placeName.isEmpty()) return;
-
-        try {
-            StringSelection stringSelection = new StringSelection(placeName);
-            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-            clipboard.setContents(stringSelection, null);
-        } catch (Exception e) {
-            System.err.println("Clipboard copy failed: " + e.getMessage());
-        }
-
-        Integer provinceId = ISOF_PROVINCE_MAP.get(provinceName);
-
-        try {
-            // Encode the string for a URL (handles spaces and Swedish characters)
-            String encodedName = java.net.URLEncoder.encode(placeName, StandardCharsets.UTF_8);
-
-            // Build URL dynamically
-            StringBuilder urlBuilder = new StringBuilder("https://ortnamnsregistret.isof.se/place-names?place-name=");
-            urlBuilder.append(encodedName);
-
-            if (provinceId != null) {
-                urlBuilder.append("&province-id=").append(provinceId);
-            }
-
-            Desktop.getDesktop().browse(new java.net.URI(urlBuilder.toString()));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        PlaceNameLookup.copyToClipboard(placeName);
+        PlaceNameLookup.browseOrtnamnsregistret(placeName, targetSpecimen.province());
     }
 
     private void saveCurrentIndex() {

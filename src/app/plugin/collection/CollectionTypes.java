@@ -10,6 +10,5 @@ public final class CollectionTypes {
     public enum ReportIntent { INCLUDE, EXCLUDE }
     public enum ReportStatus { EXCLUDED, INCOMPLETE, READY, EXPORTED, REPORTED, UPDATE_NEEDED }
     public enum LabelType { EVENT, DETERMINATION, ACCESSION, BOTANICAL }
-    public enum AccessionState { RESERVED, ASSIGNED, VOID }
     public enum LabelStatus { NOT_PRINTED, PRINTED, CHANGED }
 }

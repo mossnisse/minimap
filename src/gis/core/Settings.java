@@ -1,7 +1,11 @@
 package gis.core;
 
-import java.io.*;
-import java.util.HashMap;
+import java.io.File;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -43,7 +47,7 @@ public class Settings {
 
 	/** One settings file, loaded lazily and rewritten in full on every change. */
 	private static final class Store {
-		private HashMap<String, String> entries;
+		private Map<String, String> entries;
 		private File file;
 
 		Store(File file) {
@@ -80,12 +84,13 @@ public class Settings {
 			if (parent != null) Files.createDirectories(parent);
 			Path temp = Files.createTempFile(parent, target.getFileName().toString(), ".tmp");
 			try {
-				try (PrintWriter writer = new PrintWriter(new OutputStreamWriter(
-						Files.newOutputStream(temp), StandardCharsets.UTF_8))) {
-					for (HashMap.Entry<String, String> entry : entries.entrySet()) {
-						writer.println(entry.getKey() + ": " + entry.getValue());
+				try (BufferedWriter writer = Files.newBufferedWriter(temp, StandardCharsets.UTF_8)) {
+					for (Map.Entry<String, String> entry : entries.entrySet()) {
+						writer.write(entry.getKey());
+						writer.write(": ");
+						writer.write(entry.getValue());
+						writer.newLine();
 					}
-					if (writer.checkError()) throw new IOException("Could not write settings file " + target);
 				}
 				try {
 					Files.move(temp, target, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
@@ -98,25 +103,19 @@ public class Settings {
 		}
 
 		private void read() throws IOException {
-			entries = new HashMap<>();
+			entries = new LinkedHashMap<>();
 
 			// If file doesn't exist, just keep an empty store
 			if (!file.exists()) return;
 
-			try (BufferedReader br = new BufferedReader(
-					new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-
+			// Keep the legacy format literal. java.util.Properties would treat
+			// backslashes in existing passwords as escapes or line continuations.
+			try (BufferedReader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
 				String line;
-				while ((line = br.readLine()) != null) {
+				while ((line = reader.readLine()) != null) {
 					if (line.trim().isEmpty()) continue;
-
-					// Use limit=2 to ensure values containing ": " don't get split up
 					String[] parts = line.split(": ", 2);
-					if (parts.length == 2) {
-						entries.put(parts[0], parts[1]);
-					} else if (parts.length == 1) {
-						entries.put(parts[0], "");
-					}
+					entries.put(parts[0], parts.length == 2 ? parts[1] : "");
 				}
 			}
 		}

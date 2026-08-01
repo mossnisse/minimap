@@ -10,3 +10,7 @@
 tile_cache/*
 settings.txt
 *.txt
+/projects/*/private_collection/collection.mv.db
+
+# repowise API keys (local)
+.repowise/.env

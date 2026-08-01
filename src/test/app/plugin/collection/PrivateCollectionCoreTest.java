@@ -2,6 +2,7 @@ package app.plugin.collection;
 
 import app.db.Database;
 import app.repo.PlaceNameRepository;
+import app.ui.CoordinateEntry;
 import gis.coords.Coordinate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,32 @@ class PrivateCollectionCoreTest {
         CollectionRepository.Locality saved = repository.locality(id);
         assertFalse(saved.hasCoordinate());
         assertEquals(CoordinateSource.TEXT_ONLY, saved.coordinateSource());
+    }
+
+    @Test void deletesUnusedLocalitiesAndKeepsTheOnesEventsPointAt() throws Exception {
+        long unused = repository.saveLocality(new CollectionRepository.Locality(0, "Typo in the name", null,
+                "SE", "Sweden", null, null, null, null, null, null, CoordinateSource.TEXT_ONLY, null, null, null));
+        long used = localityWithCoordinate();
+        event(used, CollectionKind.INSECT);
+
+        repository.deleteLocality(unused);
+        assertEquals(List.of("Carlshemsskogen"), repository.localities().stream().map(CollectionRepository.Locality::name).toList());
+        assertThrows(SQLException.class, () -> repository.locality(unused));
+
+        assertEquals(1, repository.localityEventCount(used));
+        assertTrue(assertThrows(SQLException.class, () -> repository.deleteLocality(used)).getMessage().contains("1 collection event"));
+        assertEquals(1, repository.localities().size());
+    }
+
+    @Test void enteredCoordinateSourceTracksHowTheCoordinateWasEntered() {
+        assertEquals(CoordinateSource.MAP,
+                PrivateCollectionManager.enteredCoordinateSource(CoordinateEntry.Origin.PICKED, null));
+        assertEquals(CoordinateSource.MANUAL,
+                PrivateCollectionManager.enteredCoordinateSource(CoordinateEntry.Origin.TYPED, CoordinateSource.PHONE));
+        assertEquals(CoordinateSource.PHONE,
+                PrivateCollectionManager.enteredCoordinateSource(CoordinateEntry.Origin.LOADED, CoordinateSource.PHONE));
+        assertEquals(CoordinateSource.MANUAL,
+                PrivateCollectionManager.enteredCoordinateSource(CoordinateEntry.Origin.LOADED, null));
     }
 
     @Test void fileDatabaseIsProjectScopedAndPortable() throws Exception {

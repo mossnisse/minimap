@@ -28,6 +28,8 @@ import java.util.List;
 /** All MySQL-backed locality and specimen behavior. */
 public final class HerbariumPlugin implements Plugin, HerbariumController {
     public static final String ID = "herbarium";
+    private static final String SPECIMEN_DIALOG_SETTING = "specimen.dialog";
+    private static final String LEGACY_SPECIMEN_DIALOG_SETTING = "specimen dialog";
 
     private PluginContext context;
     private LocalityRepository localities;
@@ -51,7 +53,12 @@ public final class HerbariumPlugin implements Plugin, HerbariumController {
         specimens.clearCache();
         this.clickRegistration = context.registerClickHandler(100, this::handleMapClick);
         this.programmaticBridgeClose = false;
-        if ("open".equals(Settings.getValue("specimen dialog"))) {
+        String dialogState = Settings.getValue(SPECIMEN_DIALOG_SETTING);
+        if (dialogState == null) {
+            dialogState = Settings.getValue(LEGACY_SPECIMEN_DIALOG_SETTING);
+            if (dialogState != null) setSetting(SPECIMEN_DIALOG_SETTING, dialogState);
+        }
+        if ("open".equals(dialogState)) {
             SwingUtilities.invokeLater(this::searchSpecimens);
         }
     }
@@ -163,12 +170,12 @@ public final class HerbariumPlugin implements Plugin, HerbariumController {
         track(bridgeDialog);
         bridgeDialog.addWindowListener(new WindowAdapter() {
             @Override public void windowClosed(WindowEvent e) {
-                if (!programmaticBridgeClose) setSetting("specimen dialog", "closed");
+                if (!programmaticBridgeClose) setSetting(SPECIMEN_DIALOG_SETTING, "closed");
                 windows.remove(bridgeDialog);
                 bridgeDialog = null;
             }
         });
-        setSetting("specimen dialog", "open");
+        setSetting(SPECIMEN_DIALOG_SETTING, "open");
         bridgeDialog.setVisible(true);
     }
 
