@@ -1,8 +1,8 @@
-package test.app.service;
+package test.app.plugin.herbarium;
 
 import app.db.Database;
-import app.model.Specimen;
-import app.service.SpecimenService;
+import app.plugin.herbarium.Specimen;
+import app.plugin.herbarium.SpecimenService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

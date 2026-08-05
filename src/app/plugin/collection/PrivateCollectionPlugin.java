@@ -4,9 +4,11 @@ import app.MapLayers;
 import app.plugin.MenuContributions;
 import app.plugin.Plugin;
 import app.plugin.PluginContext;
-import app.project.ProjectCloseParticipant;
+import app.ProjectCloseParticipant;
+import gis.coords.CoordSystem;
 import gis.layers.PointTableLayer;
 
+import java.awt.Color;
 import javax.swing.JMenuItem;
 import java.util.List;
 
@@ -50,7 +52,11 @@ public final class PrivateCollectionPlugin implements Plugin {
 
     public PointTableLayer createEventLayer() {
         if (repository == null) throw new IllegalStateException("Private Collection is not active");
-        return MapLayers.collectionEvents(context.mapCanvas, repository);
+        PointTableLayer layer = new PointTableLayer("Private Collection events", CoordSystem.WGS84,
+                context.mapCanvas, repository::eventPoints, 0.5, true);
+        layer.setColor(new Color(128, 0, 128));
+        layer.setMaxZoomL(40);
+        return layer;
     }
 
     private void openManager() {

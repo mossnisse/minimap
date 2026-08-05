@@ -1,10 +1,8 @@
-package app.service;
+package app.plugin.herbarium;
 
 import gis.coords.Coordinate;
 import app.db.Database;
 import gis.core.Settings;
-import app.model.LocalityRecord;
-import app.model.Specimen;
 
 import java.awt.*;
 import java.sql.Connection;

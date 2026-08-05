@@ -14,3 +14,10 @@ settings.txt
 
 # repowise API keys (local)
 .repowise/.env
+/projects/Samlingen/private_collection/photos
+/.repowise
+/.repowise
+/.repowise
+/.repowise
+.repowise/.augment-session.json
+/import_data

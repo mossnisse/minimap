@@ -397,6 +397,14 @@ public final class CollectionRepository {
         }
     }
 
+    /** Whether {@link #claimAccession} would accept this number: unknown, or reserved but not yet assigned. */
+    public synchronized boolean accessionAvailable(String number) throws SQLException {
+        try (PreparedStatement ps = database.connection().prepareStatement("SELECT state FROM accession_number WHERE number=?")) {
+            ps.setString(1, number);
+            try (ResultSet rs = ps.executeQuery()) { return !rs.next() || "RESERVED".equals(rs.getString(1)); }
+        }
+    }
+
     public synchronized long saveSpecimen(Specimen v) throws SQLException {
         String requestedAccession = blankToNull(v.accessionNumber());
         if (v.id() == 0 && requestedAccession == null) requestedAccession = reserveNumbers(1).getFirst();

@@ -1,4 +1,4 @@
-package app.project;
+package app;
 
 /** A project-owned editor or dialog that may contain unsaved work. */
 public interface ProjectCloseParticipant {

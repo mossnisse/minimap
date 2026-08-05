@@ -1,7 +1,7 @@
 package app.plugin;
 
-import app.project.CloseCoordinator;
-import app.project.ProjectCloseParticipant;
+import app.CloseCoordinator;
+import app.ProjectCloseParticipant;
 
 import javax.swing.JOptionPane;
 import java.util.ArrayList;

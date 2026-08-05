@@ -9,9 +9,7 @@ import gis.coords.CoordSystem;
 import gis.core.LayerKey;
 import gis.layers.*;
 import gis.core.MapCanvas;
-import app.repo.LocalityRepository;
 import app.repo.PlaceNameRepository;
-import app.plugin.collection.CollectionRepository;
 
 /**
  * App-wide registry of the well-known layers and transient overlays, and the
@@ -41,30 +39,6 @@ public final class MapLayers {
 		canvas.getLayerManager().addLayerBottom(PROVINSER, provinser(canvas));
 		canvas.getLayerManager().addLayerBottom(SOCKNAR, socknar(canvas));
 		canvas.getLayerManager().addLayerBottom(topoweb(canvas));
-	}
-
-	/** The editable locality layer: WGS84 points with precision circles and big labels. */
-	public static PointTableLayer lokalDb(MapCanvas canvas, LocalityRepository localities) {
-		PointTableLayer l = new PointTableLayer("LokalDB", CoordSystem.WGS84, canvas,
-				wgs84Bounds -> {
-					List<PointTableLayer.LabeledPoint> points = new ArrayList<>();
-					for (LocalityRepository.LocalityPoint p : localities.findInBounds(wgs84Bounds)) {
-						points.add(new PointTableLayer.LabeledPoint(p.wgs84(), p.name(), p.precisionMeters()));
-					}
-					return points;
-				},
-				0.5, true);
-		l.setColor(Color.BLACK);
-		l.setMaxZoomL(40);
-		return l;
-	}
-
-	public static PointTableLayer collectionEvents(MapCanvas canvas, CollectionRepository collection) {
-		PointTableLayer layer = new PointTableLayer("Private Collection events", CoordSystem.WGS84, canvas,
-				collection::eventPoints, 0.5, true);
-		layer.setColor(new Color(128, 0, 128));
-		layer.setMaxZoomL(40);
-		return layer;
 	}
 
 	/** The Lantmäteriet place-name layer: SWEREF99TM points from the embedded H2 db. */

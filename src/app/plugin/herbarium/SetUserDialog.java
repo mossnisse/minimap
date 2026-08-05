@@ -1,4 +1,4 @@
-package app.ui;
+package app.plugin.herbarium;
 
 import gis.core.Settings;
 

@@ -1,8 +1,9 @@
 package app;
 
 import app.db.Database;
-import app.ui.PasswDialog;
 import app.repo.PlaceNameRepository;
+
+import java.util.function.Supplier;
 
 /**
  * Composition root: wires the databases, repositories and services the app
@@ -19,11 +20,13 @@ public final class AppContext {
 		this.placeNames = new PlaceNameRepository(db);
 	}
 
-	public static AppContext create() {
-		Database db = new Database(() -> {
-			String input = new PasswDialog().open();
-			return "codeCancel".equals(input) ? null : input;
-		});
-		return new AppContext(db);
+	/**
+	 * @param passwordPrompt asks the user for the database password, or returns
+	 *                       null if they cancelled. The caller supplies it so
+	 *                       that this root stays free of any {@code app.ui}
+	 *                       dependency.
+	 */
+	public static AppContext create(Supplier<String> passwordPrompt) {
+		return new AppContext(new Database(passwordPrompt));
 	}
 }

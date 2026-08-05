@@ -1,4 +1,4 @@
-package app.model;
+package app.plugin.herbarium;
 
 public class LocalityRecord {
     private final int id;

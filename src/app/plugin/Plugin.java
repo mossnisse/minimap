@@ -1,6 +1,6 @@
 package app.plugin;
 
-import app.project.ProjectCloseParticipant;
+import app.ProjectCloseParticipant;
 import java.util.List;
 
 public interface Plugin {

@@ -1,11 +1,9 @@
-package app.ui;
+package app.plugin.herbarium;
 
 import gis.coords.*;
 import gis.core.*;
 import gis.core.MapCanvas;
 import app.MapLayers;
-import app.repo.LocalityRepository;
-import app.plugin.herbarium.HerbariumController;
 
 import java.awt.*;
 import java.awt.event.ComponentAdapter;

@@ -39,7 +39,8 @@ import static app.plugin.collection.CollectionTypes.*;
 public final class SlimeRecordsImporter {
     private static final long MAX_CSV = 10L * 1024 * 1024;
     private static final long MAX_PHOTO = 25L * 1024 * 1024;
-    private static final long MAX_EXTRACTED = 250L * 1024 * 1024;
+    /** Zip-bomb guard: expansion ratio, not absolute size — photo archives are already-compressed JPEGs (~1:1). */
+    private static final int MAX_EXPANSION = 10;
     private static final int MAX_ENTRIES = 5_000;
 
     public record ImportRow(int sourceRow, CollectionKind kind, String sourceId, String fingerprint,
@@ -136,8 +137,8 @@ public final class SlimeRecordsImporter {
                     if (groupKey != null) botanicalEvents.put(groupKey, eventId);
                 }
                 Long specimenId = null;
-                if (row.kind() == CollectionKind.BOTANICAL) {
-                    String accession = normalizeBotanicalNumber(row.value("specimennr"));
+                if (row.kind() == CollectionKind.BOTANICAL && isSpecimen(row)) {
+                    String accession = normalizeBotanicalNumber(row.value("specimennr"), row.sourceRow(), warnings);
                     Specimen specimen = new Specimen(0, eventId, accession, null,
                             emptyToNull(row.value("taxonname")), Math.max(1, optionalInt(row.value("organismquantity")) == null ? 1 : optionalInt(row.value("organismquantity"))),
                             emptyToNull(row.value("sex")), emptyToNull(row.value("lifestage")),
@@ -184,18 +185,25 @@ public final class SlimeRecordsImporter {
         return copied;
     }
 
-    private String normalizeBotanicalNumber(String raw) throws SQLException {
+    /** Only an explicit "false" marks a field observation; exports without the column stay all-specimen as before. */
+    private static boolean isSpecimen(ImportRow row) { return !row.value("isspecimen").equalsIgnoreCase("false"); }
+
+    /**
+     * The source app does not guarantee unique collection numbers, so a taken number
+     * yields a freshly reserved one instead of failing the whole import.
+     */
+    private String normalizeBotanicalNumber(String raw, int sourceRow, List<String> warnings) throws SQLException {
         String value = emptyToNull(raw); if (value == null) return null;
         String prefix = repository.setting("accession.prefix", "NE");
-        if (value.chars().allMatch(Character::isDigit)) {
-            advanceCounter(Long.parseLong(value));
-            return prefix + value;
-        }
-        if (value.startsWith(prefix)) {
-            String suffix = value.substring(prefix.length());
+        String number = value.chars().allMatch(Character::isDigit) ? prefix + value : value;
+        if (number.startsWith(prefix)) {
+            String suffix = number.substring(prefix.length());
             if (!suffix.isBlank() && suffix.chars().allMatch(Character::isDigit)) advanceCounter(Long.parseLong(suffix));
         }
-        return value;
+        if (repository.accessionAvailable(number)) return number;
+        String fresh = repository.reserveNumbers(1).getFirst();
+        warnings.add("Row " + sourceRow + ": collection number " + number + " was already used, assigned " + fresh + " instead");
+        return fresh;
     }
 
     private void advanceCounter(long importedNumber) throws SQLException {
@@ -241,6 +249,7 @@ public final class SlimeRecordsImporter {
     private record Archive(String csv, Map<String, Path> photos) {}
     private static Archive extractArchive(Path source, Path staging) throws IOException {
         String csv = null; Map<String, Path> photos = new HashMap<>(); long total = 0; int entries = 0;
+        long maxExtracted = Math.max(MAX_CSV, Files.size(source) * MAX_EXPANSION);
         try (ZipInputStream zip = new ZipInputStream(Files.newInputStream(source), StandardCharsets.UTF_8)) {
             ZipEntry entry;
             while ((entry = zip.getNextEntry()) != null) {
@@ -252,7 +261,7 @@ public final class SlimeRecordsImporter {
                     byte[] bytes = readLimited(zip, MAX_CSV); total += bytes.length; csv = new String(bytes, StandardCharsets.UTF_8);
                 } else if (name.startsWith("photos/")) {
                     String safe = Path.of(name).getFileName().toString(); if (safe.isBlank()) continue;
-                    byte[] bytes = readLimited(zip, MAX_PHOTO); total += bytes.length; if (total > MAX_EXTRACTED) throw new IOException("ZIP expands beyond 250 MB");
+                    byte[] bytes = readLimited(zip, MAX_PHOTO); total += bytes.length; if (total > maxExtracted) throw new IOException("ZIP expands beyond " + (maxExtracted >> 20) + " MB - looks like a zip bomb");
                     Path target = unique(staging.resolve(safe)); Files.write(target, bytes); photos.put(safe, target);
                 }
             }

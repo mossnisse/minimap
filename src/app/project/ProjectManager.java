@@ -1,9 +1,11 @@
 package app.project;
 
 import app.AppContext;
+import app.CloseCoordinator;
+import app.ProjectCloseParticipant;
 import app.LantmaterietAccount;
 import app.plugin.PluginManager;
-import app.ui.GUI;
+
 import gis.coords.CoordSystem;
 import gis.core.Layer;
 import gis.core.MapCanvas;
@@ -35,17 +37,17 @@ public final class ProjectManager {
 
     public record Bootstrap(String activeName) {}
 
-    private final GUI gui;
+    private final Runnable rebuildMenuBar;
     private final JFrame frame;
     private final MapCanvas canvas;
     private final AppContext core;
     private final PluginManager plugins;
     private String activeName;
 
-    public ProjectManager(Bootstrap bootstrap, GUI gui, JFrame frame, MapCanvas canvas,
+    public ProjectManager(Bootstrap bootstrap, Runnable rebuildMenuBar, JFrame frame, MapCanvas canvas,
                           AppContext core, PluginManager plugins) {
         this.activeName = bootstrap.activeName();
-        this.gui = gui;
+        this.rebuildMenuBar = rebuildMenuBar;
         this.frame = frame;
         this.canvas = canvas;
         this.core = core;
@@ -215,7 +217,7 @@ public final class ProjectManager {
         plugins.restoreEnabledSet(readEnabledPlugins());
         showWarnings(LayerSerializer.rebuild(layersFile(name), canvas, core, plugins));
         restoreViewAndWindow();
-        gui.rebuildMenuBar();
+        rebuildMenuBar.run();
         writeLastProject();
         return true;
     }
@@ -228,7 +230,7 @@ public final class ProjectManager {
         plugins.restoreEnabledSet(readEnabledPlugins());
         showWarnings(LayerSerializer.rebuild(layersFile(name), canvas, core, plugins));
         restoreViewAndWindow();
-        gui.rebuildMenuBar();
+        rebuildMenuBar.run();
     }
 
     private boolean prepareToLeave() {

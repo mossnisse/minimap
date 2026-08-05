@@ -1,7 +1,5 @@
-package app.ui;
+package app.plugin.herbarium;
 
-import app.model.Specimen;
-import app.service.SpecimenService;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;

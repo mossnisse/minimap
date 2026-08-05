@@ -4,10 +4,8 @@ import app.MapLayers;
 import app.plugin.MenuContributions;
 import app.plugin.Plugin;
 import app.plugin.PluginContext;
-import app.project.ProjectCloseParticipant;
-import app.repo.LocalityRepository;
-import app.service.SpecimenService;
-import app.ui.*;
+import app.ProjectCloseParticipant;
+import gis.coords.CoordSystem;
 import gis.coords.Coordinate;
 import gis.core.Keyboard;
 import gis.core.Settings;
@@ -70,9 +68,22 @@ public final class HerbariumPlugin implements Plugin, HerbariumController {
         }
     }
 
+    /** The editable locality layer: WGS84 points with precision circles and big labels. */
     public PointTableLayer createLocalityLayer() {
         if (context == null || localities == null) throw new IllegalStateException("Herbarium is not active");
-        return MapLayers.lokalDb(context.mapCanvas, localities);
+        LocalityRepository source = localities;
+        PointTableLayer layer = new PointTableLayer("LokalDB", CoordSystem.WGS84, context.mapCanvas,
+                wgs84Bounds -> {
+                    List<PointTableLayer.LabeledPoint> points = new ArrayList<>();
+                    for (LocalityRepository.LocalityPoint p : source.findInBounds(wgs84Bounds)) {
+                        points.add(new PointTableLayer.LabeledPoint(p.wgs84(), p.name(), p.precisionMeters()));
+                    }
+                    return points;
+                },
+                0.5, true);
+        layer.setColor(Color.BLACK);
+        layer.setMaxZoomL(40);
+        return layer;
     }
 
     @Override

@@ -1,4 +1,4 @@
-package app.model;
+package app.plugin.herbarium;
 
 /**
  * One row of the herbarium specimen view, including the bridge overrides that

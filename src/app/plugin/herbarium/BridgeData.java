@@ -1,4 +1,4 @@
-package app.model;
+package app.plugin.herbarium;
 
 public class BridgeData {
     public int localityId;

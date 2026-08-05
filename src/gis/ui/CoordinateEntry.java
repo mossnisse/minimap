@@ -1,4 +1,4 @@
-package app.ui;
+package gis.ui;
 
 import gis.coords.CoordSystem;
 import gis.coords.Coordinate;

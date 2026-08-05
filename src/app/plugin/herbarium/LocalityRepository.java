@@ -1,4 +1,4 @@
-package app.repo;
+package app.plugin.herbarium;
 
 import gis.coords.Coordinate;
 import app.db.Database;

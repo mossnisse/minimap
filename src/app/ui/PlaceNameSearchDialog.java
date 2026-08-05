@@ -1,5 +1,6 @@
 package app.ui;
 
+import app.BusyCursor;
 import app.MapLayers;
 import app.repo.PlaceNameRepository;
 import gis.coords.CoordSystem;

@@ -1,6 +1,6 @@
-package test.app.ui;
+package test.gis.ui;
 
-import app.ui.CoordinateEntry;
+import gis.ui.CoordinateEntry;
 import gis.coords.CoordSystem;
 import gis.coords.Coordinate;
 import org.junit.jupiter.api.Test;

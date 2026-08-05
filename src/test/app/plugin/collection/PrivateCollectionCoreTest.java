@@ -2,7 +2,7 @@ package app.plugin.collection;
 
 import app.db.Database;
 import app.repo.PlaceNameRepository;
-import app.ui.CoordinateEntry;
+import gis.ui.CoordinateEntry;
 import gis.coords.Coordinate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -287,6 +287,52 @@ class PrivateCollectionCoreTest {
         }
         assertThrows(Exception.class, () -> importer.preview(unsafe, CollectionKind.INSECT));
         assertFalse(Files.exists(temp.resolve("evil.jpg")));
+    }
+
+    /** The phone app reuses collection numbers and marks observations, so neither may break a whole import. */
+    @Test void reusedCollectionNumberGetsAFreshOneAndObservationsGetNone() throws Exception {
+        String header = "ID,decimalLatitude,decimalLongitude,eventDate,taxonName,recordedBy,locality,isSpecimen,SpecimenNr\n";
+        Path plants = temp.resolve("reused.csv");
+        Files.writeString(plants, header
+                + "110,64.63008,17.98744,2026-06-23 09:00:00,Citronticka,Nils Ericson,Grössjön,true,6\n"
+                + "111,64.61014,17.99316,2026-06-22 16:19:17,Klubbmurkling,Nils Ericson,Bäckmyran,true,6\n"
+                + "112,64.60000,17.90000,2026-06-21 08:00:00,Bergabrant,Nils Ericson,Stensele,false,\n");
+
+        SlimeRecordsImporter importer = new SlimeRecordsImporter(repository);
+        SlimeRecordsImporter.ImportResult result = importer.commit(importer.preview(plants, CollectionKind.BOTANICAL));
+        assertEquals(3, result.addedEvents());
+        assertEquals(2, result.addedSpecimens(), "the isSpecimen=false row must not consume a collection number");
+        assertEquals(1, result.warnings().size(), () -> "expected one reuse warning, got " + result.warnings());
+
+        List<String> numbers = repository.specimens("").stream().map(CollectionRepository.SpecimenRow::accessionNumber).sorted().toList();
+        assertEquals(2, numbers.size());
+        assertTrue(numbers.contains("NE6"), () -> "first row keeps its number: " + numbers);
+        assertEquals(2, numbers.stream().distinct().count(), () -> "the reused number must not be handed out twice: " + numbers);
+    }
+
+    /** The extraction guard is a ratio, not an absolute size: same payload, only the bomb is rejected. */
+    @Test void archiveGuardRejectsHighExpansionButAllowsIncompressiblePhotos() throws Exception {
+        String header = "ID,decimalLatitude,decimalLongitude,eventDate,taxonName,locality\n";
+        String row = "30,63.79881,20.33348,2026-07-01,Chyliza vittata,Carlshemsskogen\n";
+        byte[] incompressible = new byte[12 * 1024 * 1024];
+        new java.util.Random(7).nextBytes(incompressible);
+        byte[] zeros = new byte[incompressible.length];
+
+        SlimeRecordsImporter importer = new SlimeRecordsImporter(repository);
+        try (var preview = importer.preview(photoArchive(temp.resolve("real.zip"), header + row, incompressible), CollectionKind.INSECT)) {
+            assertEquals(1, preview.rows().size());
+        }
+        Path bomb = photoArchive(temp.resolve("bomb.zip"), header + row, zeros);
+        assertTrue(Files.size(bomb) < zeros.length / 10, "zeros must compress far past the ratio limit");
+        assertThrows(Exception.class, () -> importer.preview(bomb, CollectionKind.INSECT));
+    }
+
+    private static Path photoArchive(Path target, String csv, byte[] photo) throws Exception {
+        try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(target))) {
+            zip.putNextEntry(new ZipEntry("data.csv")); zip.write(csv.getBytes(StandardCharsets.UTF_8)); zip.closeEntry();
+            zip.putNextEntry(new ZipEntry("photos/voucher.jpg")); zip.write(photo); zip.closeEntry();
+        }
+        return target;
     }
 
     @Test void malformedArchiveCsvCleansItsStagingDirectory() throws Exception {

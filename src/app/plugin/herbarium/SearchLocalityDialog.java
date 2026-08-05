@@ -1,8 +1,6 @@
-package app.ui;
+package app.plugin.herbarium;
 
 import app.MapLayers;
-import app.plugin.herbarium.HerbariumController;
-import app.repo.LocalityRepository;
 import gis.coords.CoordSystem;
 import gis.coords.Coordinate;
 import gis.core.MapCanvas;

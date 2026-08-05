@@ -2,9 +2,9 @@ package app.plugin.collection;
 
 import app.MapLayers;
 import app.plugin.PluginContext;
-import app.project.ProjectCloseParticipant;
+import app.ProjectCloseParticipant;
 import app.repo.PlaceNameRepository;
-import app.ui.CoordinateEntry;
+import gis.ui.CoordinateEntry;
 import gis.coords.CoordSystem;
 import gis.coords.Coordinate;
 import gis.geometry.Extent;
@@ -135,7 +135,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         JPanel panel = new JPanel(new BorderLayout(6, 6)); JPanel top = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JComboBox<CollectionKind> kind = new JComboBox<>(CollectionKind.values()); top.add(new JLabel("Default type:")); top.add(kind);
         JButton choose = new JButton("Choose CSV/ZIP…"); choose.addActionListener(e -> chooseImport((CollectionKind)kind.getSelectedItem())); top.add(choose);
-        JButton commit = new JButton("Import preview"); commit.addActionListener(e -> commitImport()); top.add(commit); top.add(importSummary);
+        JButton commit = new JButton("Write rows to database…"); commit.addActionListener(e -> commitImport()); top.add(commit); top.add(importSummary);
         importTable.getColumnModel().getColumn(1).setCellEditor(new DefaultCellEditor(new JComboBox<>(CollectionKind.values())));
         panel.add(top, BorderLayout.NORTH); panel.add(new JScrollPane(importTable), BorderLayout.CENTER); return panel;
     }
@@ -507,8 +507,17 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
 
     private void commitImport() {
         if (preview == null) { JOptionPane.showMessageDialog(this, "Choose an import file first."); return; }
-        try { for (int i = 0; i < preview.rows().size(); i++) preview.setKind(i, CollectionKind.valueOf(importModel.getValueAt(i, 1).toString())); var result = importer.commit(preview); preview = null; importModel.setRowCount(0); importSummary.setText("Imported " + result.addedEvents() + " events, " + result.addedSpecimens() + " specimens and " + result.photosCopied() + " photos; skipped " + result.skipped()); refreshAll(); }
+        if (JOptionPane.showConfirmDialog(this, "Write these " + preview.rows().size() + " rows into the collection database?\nThe table above is only a preview until you confirm.",
+                "Confirm import", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) return;
+        try { for (int i = 0; i < preview.rows().size(); i++) preview.setKind(i, CollectionKind.valueOf(importModel.getValueAt(i, 1).toString())); var result = importer.commit(preview); preview = null; importModel.setRowCount(0); importSummary.setText("Imported " + result.addedEvents() + " events, " + result.addedSpecimens() + " specimens and " + result.photosCopied() + " photos; skipped " + result.skipped()); showWarnings(result.warnings()); refreshAll(); }
         catch (Exception e) { showError("Import failed", e); }
+    }
+
+    private void showWarnings(List<String> warnings) {
+        if (warnings.isEmpty()) return;
+        String more = warnings.size() > 20 ? "\n… and " + (warnings.size() - 20) + " more" : "";
+        JOptionPane.showMessageDialog(this, "The import finished with warnings:\n\n" + String.join("\n", warnings.stream().limit(20).toList()) + more,
+                "Import warnings", JOptionPane.WARNING_MESSAGE);
     }
 
     private void exportReady() {
@@ -551,7 +560,23 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
     private static long selectedId(JTable table) { int row = table.getSelectedRow(); if (row < 0) return 0; Object value = table.getValueAt(table.convertRowIndexToModel(row), 0); return ((Number)value).longValue(); }
     private static void selectId(JComboBox<NamedId> combo, long id) { for (int i=0;i<combo.getItemCount();i++) if (combo.getItemAt(i).id()==id) { combo.setSelectedIndex(i); return; } }
     // A label may be given as a component when the caller needs to change its text later.
-    private static JPanel form(Object... pairs) { JPanel p = new JPanel(new GridLayout(0,2,7,7)); p.setBorder(BorderFactory.createEmptyBorder(8,8,8,8)); for (int i=0;i<pairs.length;i+=2) { p.add(pairs[i] instanceof Component c ? c : new JLabel(pairs[i].toString())); p.add((Component)pairs[i+1]); } return p; }
+    // GridBagLayout, not GridLayout: every row keeps its own height, so one tall Notes area
+    // does not stretch the single-line fields above it.
+    private static JPanel form(Object... pairs) {
+        JPanel p = new JPanel(new GridBagLayout()); p.setBorder(BorderFactory.createEmptyBorder(8,8,8,8));
+        GridBagConstraints label = new GridBagConstraints(), field = new GridBagConstraints();
+        label.insets = new Insets(3,0,3,7); field.insets = new Insets(3,0,3,0);
+        field.gridwidth = GridBagConstraints.REMAINDER; field.weightx = 1;
+        for (int i=0;i<pairs.length;i+=2) {
+            Component c = (Component)pairs[i+1];
+            boolean tall = c instanceof JScrollPane;                 // only the text areas want the leftover height
+            field.fill = tall ? GridBagConstraints.BOTH : GridBagConstraints.HORIZONTAL; field.weighty = tall ? 1 : 0;
+            label.anchor = tall ? GridBagConstraints.FIRST_LINE_START : GridBagConstraints.LINE_START;
+            p.add(pairs[i] instanceof Component lc ? lc : new JLabel(pairs[i].toString()), label);
+            p.add(c, field);
+        }
+        return p;
+    }
     private static String text(Object value) { return value == null ? "" : value.toString(); }
     private static Double decimal(String value) { return value == null || value.isBlank() ? null : Double.parseDouble(value.trim().replace(',','.')); }
     private static Integer integer(String value) { return value == null || value.isBlank() ? null : Integer.parseInt(value.trim()); }

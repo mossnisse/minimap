@@ -1,7 +1,7 @@
 package app.plugin;
 
 import app.AppContext;
-import app.ui.GUI;
+import app.BusyCursor;
 import gis.coords.Coordinate;
 import gis.core.MapCanvas;
 
@@ -23,17 +23,19 @@ public final class PluginContext {
 
     public final JFrame frame;
     public final MapCanvas mapCanvas;
-    public final GUI gui;
     public final AppContext core;
+    private final BusyCursor busy;
+    private final Runnable rebuildMenuBar;
     private final Supplier<Path> activeProjectDirectory;
     private final List<HandlerRegistration> clickHandlers = new ArrayList<>();
     private long nextSequence;
 
-    public PluginContext(JFrame frame, MapCanvas mapCanvas, GUI gui, AppContext core,
-                         Supplier<Path> activeProjectDirectory) {
+    public PluginContext(JFrame frame, MapCanvas mapCanvas, BusyCursor busy, Runnable rebuildMenuBar,
+                         AppContext core, Supplier<Path> activeProjectDirectory) {
         this.frame = frame;
         this.mapCanvas = mapCanvas;
-        this.gui = gui;
+        this.busy = Objects.requireNonNull(busy);
+        this.rebuildMenuBar = Objects.requireNonNull(rebuildMenuBar);
         this.core = core;
         this.activeProjectDirectory = Objects.requireNonNull(activeProjectDirectory);
     }
@@ -60,7 +62,7 @@ public final class PluginContext {
         return false;
     }
 
-    public void rebuildMenuBar() { gui.rebuildMenuBar(); }
-    public void setCursorWait() { gui.setCursorWait(); }
-    public void setCursorDefault() { gui.setCursorDefault(); }
+    public void rebuildMenuBar() { rebuildMenuBar.run(); }
+    public void setCursorWait() { busy.setCursorWait(); }
+    public void setCursorDefault() { busy.setCursorDefault(); }
 }

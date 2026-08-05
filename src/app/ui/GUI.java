@@ -11,6 +11,7 @@ import java.net.URI;
 import java.util.Locale;
 
 import app.AppContext;
+import app.BusyCursor;
 import app.LantmaterietAccount;
 import app.MapLayers;
 import app.plugin.MenuContributions;
@@ -48,7 +49,10 @@ public class GUI implements BusyCursor {
 					"Startup error", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
-		ctx = AppContext.create();
+		ctx = AppContext.create(() -> {
+			String input = new PasswDialog().open();
+			return "codeCancel".equals(input) ? null : input;
+		});
 
 		// Set up the frame and canvas
 		frame = new JFrame("Minimap");
@@ -56,12 +60,12 @@ public class GUI implements BusyCursor {
 		mapCanvas = new MapCanvas();
 		mapCanvas.getLayerManager().addLayersChangedListener(this::attachLantmaterietErrorHandlers);
 		MapLayers.installDefaultLayers(mapCanvas, ctx);
-		pluginContext = new PluginContext(frame, mapCanvas, this, ctx,
+		pluginContext = new PluginContext(frame, mapCanvas, this, this::rebuildMenuBar, ctx,
 				() -> projectManager == null ? null : projectManager.activeDirectory());
 		pluginManager = new PluginManager(pluginContext);
 		pluginManager.register(new HerbariumPlugin());
 		pluginManager.register(new PrivateCollectionPlugin());
-		projectManager = new ProjectManager(bootstrap, this, frame, mapCanvas, ctx, pluginManager);
+		projectManager = new ProjectManager(bootstrap, this::rebuildMenuBar, frame, mapCanvas, ctx, pluginManager);
 		pluginManager.setEnabledChangedListener(projectManager::saveEnabledPluginsQuietly);
 
 		// Setup Menus and Content

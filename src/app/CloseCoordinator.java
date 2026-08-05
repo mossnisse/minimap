@@ -1,4 +1,4 @@
-package app.project;
+package app;
 
 import gis.layers.EditableTableLayer;
 

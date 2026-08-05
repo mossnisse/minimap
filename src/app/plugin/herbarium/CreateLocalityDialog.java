@@ -1,4 +1,4 @@
-package app.ui;
+package app.plugin.herbarium;
 
 import java.awt.*;
 import java.awt.event.ComponentAdapter;
@@ -10,9 +10,7 @@ import gis.coords.*;
 import gis.core.*;
 import gis.core.MapCanvas;
 import app.MapLayers;
-import app.repo.LocalityRepository;
 import app.repo.PlaceNameRepository;
-import app.plugin.herbarium.HerbariumController;
 
 public class CreateLocalityDialog extends JDialog {
 	@Serial
