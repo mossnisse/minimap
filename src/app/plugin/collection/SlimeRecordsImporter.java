@@ -107,6 +107,16 @@ public final class SlimeRecordsImporter {
         Connection c = repository.database().connection(); boolean auto = c.getAutoCommit(); c.setAutoCommit(false);
         Path photoBatch = null;
         try {
+            // Replacement numbers must live beyond every number in this source. Otherwise replacing an old
+            // envelope 6 with NE7 makes the later, genuinely distinct source envelope 7 join that event.
+            Set<String> sourceEnvelopes = new HashSet<>();
+            for (ImportRow row : preview.rows()) {
+                if (row.kind() == CollectionKind.BOTANICAL) {
+                    String envelope = repository.withPrefix(row.value("specimennr"));
+                    if (envelope != null) sourceEnvelopes.add(envelope);
+                }
+            }
+            repository.protectCollectionNumbers(sourceEnvelopes);
             long batchId = repository.createImportBatch(preview.source().toString(), preview.sourceHash(), projectedAdded, skipped, 0);
             photoBatch = repository.database().photosDirectory().resolve("import-" + batchId); Files.createDirectories(photoBatch);
             int addedEvents = 0, addedSpecimens = 0, copied = 0; List<String> warnings = new ArrayList<>();
@@ -116,30 +126,50 @@ public final class SlimeRecordsImporter {
                 DateParts when = parseDate(row.value("eventdate"));
                 double lat = parseDouble(row.value("decimallatitude"), "decimalLatitude");
                 double lon = parseDouble(row.value("decimallongitude"), "decimalLongitude");
-                long localityId = findOrCreateLocality(row, lat, lon);
                 List<String> collectors = splitCollectors(row.value("recordedby"));
                 long eventId;
-                String groupKey = row.kind() == CollectionKind.BOTANICAL ? botanicalGroupKey(row, lat, lon) : null;
+                // The number written on the envelope identifies the collection, not one species: two species
+                // from envelope 6 are two rows that must land on one event. Phone GPS and clock differ between
+                // those rows, so the number - not the coordinate - is what ties them together, and looking it
+                // up in the database also joins rows that arrived in an earlier import.
+                String envelope = row.kind() == CollectionKind.BOTANICAL ? repository.withPrefix(row.value("specimennr")) : null;
+                String groupKey = row.kind() != CollectionKind.BOTANICAL ? null
+                        : envelope == null ? botanicalGroupKey(row, lat, lon)
+                        : "number|" + envelope + "|" + when.date();
                 if (groupKey != null && botanicalEvents.containsKey(groupKey)) {
                     eventId = botanicalEvents.get(groupKey);
                 } else {
-                    Integer quantity = optionalInt(row.value("organismquantity"));
-                    Event event = new Event(0, localityId, row.kind(),
-                            row.kind() == CollectionKind.INSECT ? emptyToNull(row.value("specimennr")) : null,
-                            when.date(), null, when.time(), null,
-                            repository.setting("timezone", "Europe/Stockholm"), lat, lon,
-                            optionalInt(row.value("coordinateuncertaintyinmeters")), optionalDouble(row.value("verbatimelevation")),
-                            CoordinateSource.PHONE, emptyToNull(row.value("samplingprotocol")), null,
-                            row.kind() == CollectionKind.INSECT && quantity != null ? quantity : 0,
-                            emptyToNull(row.value("habitat")), emptyToNull(row.value("occurrenceremarks")),
-                            emptyToNull(row.value("taxonname")));
-                    eventId = repository.saveEvent(event, collectors); addedEvents++;
-                    if (groupKey != null) botanicalEvents.put(groupKey, eventId);
+                    Event sameNumber = envelope == null ? null : repository.eventByFieldOrLegacyAccession(envelope);
+                    if (sameNumber != null && when.date().equals(sameNumber.startDate())) {
+                        eventId = sameNumber.id();
+                        botanicalEvents.put(groupKey, eventId);
+                    } else {
+                        if (sameNumber != null) {
+                            // The phone app does not keep numbers unique across seasons. A different day means a
+                            // different collection, so it gets its own number rather than merging into that one.
+                            String fresh = repository.reserveNumbers(1).getFirst();
+                            warnings.add("Row " + row.sourceRow() + ": collection number " + envelope + " is already used by a collection on "
+                                    + sameNumber.startDate() + ", used " + fresh + " instead");
+                            envelope = fresh;
+                        }
+                        Integer quantity = optionalInt(row.value("organismquantity"));
+                        Event event = new Event(0, findOrCreateLocality(row, lat, lon), row.kind(),
+                                row.kind() == CollectionKind.INSECT ? emptyToNull(row.value("specimennr")) : envelope,
+                                when.date(), null, when.time(), null,
+                                repository.setting("timezone", "Europe/Stockholm"), lat, lon,
+                                optionalInt(row.value("coordinateuncertaintyinmeters")), optionalDouble(row.value("verbatimelevation")),
+                                CoordinateSource.PHONE, emptyToNull(row.value("samplingprotocol")), null,
+                                row.kind() == CollectionKind.INSECT && quantity != null ? quantity : 0,
+                                emptyToNull(row.value("habitat")), emptyToNull(row.value("occurrenceremarks")),
+                                emptyToNull(row.value("taxonname")));
+                        eventId = repository.saveEvent(event, collectors); addedEvents++;
+                        if (groupKey != null) botanicalEvents.put(groupKey, eventId);
+                    }
                 }
                 Long specimenId = null;
                 if (row.kind() == CollectionKind.BOTANICAL && isSpecimen(row)) {
-                    String accession = normalizeBotanicalNumber(row.value("specimennr"), row.sourceRow(), warnings);
-                    Specimen specimen = new Specimen(0, eventId, accession, null,
+                    // Null number: the repository derives it from the event - NE6, then NE6-2, NE6-3.
+                    Specimen specimen = new Specimen(0, eventId, null, null,
                             emptyToNull(row.value("taxonname")), Math.max(1, optionalInt(row.value("organismquantity")) == null ? 1 : optionalInt(row.value("organismquantity"))),
                             emptyToNull(row.value("sex")), emptyToNull(row.value("lifestage")),
                             emptyToNull(row.value("substrate")), emptyToNull(row.value("occurrenceremarks")),
@@ -187,29 +217,6 @@ public final class SlimeRecordsImporter {
 
     /** Only an explicit "false" marks a field observation; exports without the column stay all-specimen as before. */
     private static boolean isSpecimen(ImportRow row) { return !row.value("isspecimen").equalsIgnoreCase("false"); }
-
-    /**
-     * The source app does not guarantee unique collection numbers, so a taken number
-     * yields a freshly reserved one instead of failing the whole import.
-     */
-    private String normalizeBotanicalNumber(String raw, int sourceRow, List<String> warnings) throws SQLException {
-        String value = emptyToNull(raw); if (value == null) return null;
-        String prefix = repository.setting("accession.prefix", "NE");
-        String number = value.chars().allMatch(Character::isDigit) ? prefix + value : value;
-        if (number.startsWith(prefix)) {
-            String suffix = number.substring(prefix.length());
-            if (!suffix.isBlank() && suffix.chars().allMatch(Character::isDigit)) advanceCounter(Long.parseLong(suffix));
-        }
-        if (repository.accessionAvailable(number)) return number;
-        String fresh = repository.reserveNumbers(1).getFirst();
-        warnings.add("Row " + sourceRow + ": collection number " + number + " was already used, assigned " + fresh + " instead");
-        return fresh;
-    }
-
-    private void advanceCounter(long importedNumber) throws SQLException {
-        long next = Long.parseLong(repository.setting("accession.next", "1"));
-        if (next <= importedNumber) repository.setSetting("accession.next", Long.toString(importedNumber + 1));
-    }
 
     private static List<ImportRow> parseRows(String csv, CollectionKind defaultKind) throws IOException {
         if (csv.startsWith("\uFEFF")) csv = csv.substring(1);

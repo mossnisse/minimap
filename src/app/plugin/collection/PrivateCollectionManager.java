@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 
 import static app.plugin.collection.CollectionTypes.*;
 
@@ -46,7 +47,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
     private boolean closed;
 
     private final JLabel overview = new JLabel();
-    private final DefaultTableModel eventModel = tableModel("ID", "Type", "Field/tube", "Date", "Locality", "Expected", "Items");
+    private final DefaultTableModel eventModel = tableModel("ID", "Type", "Number", "Date", "Locality", "Expected", "Species");
     private final DefaultTableModel specimenModel = tableModel("ID", "Collection no.", "Taxon", "Locality", "Date", "Determined", "Report");
     private final DefaultTableModel localityModel = tableModel("ID", "Name", "Country", "Province", "District", "Coordinate");
     private final JTable eventTable = new JTable(eventModel), specimenTable = new JTable(specimenModel), localityTable = new JTable(localityModel);
@@ -78,6 +79,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         JToolBar bar = new JToolBar(); bar.setFloatable(false);
         JButton refresh = new JButton("Refresh"); refresh.addActionListener(e -> refreshAll()); bar.add(refresh);
         JButton settings = new JButton("Settings"); settings.addActionListener(e -> editSettings()); bar.add(settings);
+        JButton taxonomy = new JButton("Update species list…"); taxonomy.addActionListener(e -> updateTaxonomy(taxonomy)); bar.add(taxonomy);
         bar.addSeparator(); bar.add(new JLabel("Project: " + context.activeProjectDirectory().getFileName()));
         return bar;
     }
@@ -103,6 +105,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         JButton print = new JButton("Print event labels"); print.addActionListener(e -> printEventLabels()); actions.add(print);
         JButton photo = new JButton("Attach photos"); photo.addActionListener(e -> attachPhotos()); actions.add(photo);
         JButton openPhotos = new JButton("Open photos"); openPhotos.addActionListener(e -> openEventPhotos()); actions.add(openPhotos);
+        JButton delete = new JButton("Delete"); delete.addActionListener(e -> deleteSelected(eventTable, "event", repository::deleteEvent)); actions.add(delete);
         panel.add(actions, BorderLayout.NORTH); panel.add(new JScrollPane(eventTable), BorderLayout.CENTER); return panel;
     }
 
@@ -116,6 +119,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         JButton printDet = new JButton("Print determination"); printDet.addActionListener(e -> printSpecimenLabel(LabelType.DETERMINATION)); actions.add(printDet);
         JButton printNo = new JButton("Print number"); printNo.addActionListener(e -> printSpecimenLabel(LabelType.ACCESSION)); actions.add(printNo);
         JButton printBot = new JButton("Print botanical"); printBot.addActionListener(e -> printSpecimenLabel(LabelType.BOTANICAL)); actions.add(printBot);
+        JButton delete = new JButton("Delete"); delete.addActionListener(e -> deleteSelected(specimenTable, "specimen", repository::deleteSpecimen)); actions.add(delete);
         panel.add(actions, BorderLayout.NORTH); panel.add(new JScrollPane(specimenTable), BorderLayout.CENTER); return panel;
     }
 
@@ -123,10 +127,9 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         JPanel panel = new JPanel(new BorderLayout(6, 6)); JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT));
         JButton add = new JButton("New from map marker"); add.addActionListener(e -> editLocality(0)); actions.add(add);
         JButton edit = new JButton("Edit"); edit.addActionListener(e -> editLocality(selectedId(localityTable))); actions.add(edit);
-        JButton show = new JButton("Show on map"); show.addActionListener(e -> showOnMap(selectedId(localityTable))); actions.add(show);
-        JButton delete = new JButton("Delete"); delete.addActionListener(e -> deleteLocality(selectedId(localityTable))); actions.add(delete);
+        JButton delete = new JButton("Delete"); delete.addActionListener(e -> deleteSelected(localityTable, "locality", repository::deleteLocality)); actions.add(delete);
         localityTable.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent e) { if (e.getClickCount() == 2) showOnMap(selectedId(localityTable)); }
+            @Override public void mouseClicked(MouseEvent e) { if (e.getClickCount() == 2) showLocalityOnMap(selectedId(localityTable)); }
         });
         panel.add(actions, BorderLayout.NORTH); panel.add(new JScrollPane(localityTable), BorderLayout.CENTER); return panel;
     }
@@ -154,7 +157,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
 
     /** Everything the three tables and the overview need, gathered off the EDT. */
     private record Snapshot(List<Object[]> events, List<Object[]> specimens, List<Object[]> localities,
-                            CollectionRepository.Dashboard dashboard) {}
+                            CollectionRepository.Dashboard dashboard, String taxonomy) {}
 
     /**
      * Reloads every panel. The queries run on a worker thread: a dashboard over
@@ -195,7 +198,13 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
             localities.add(new Object[]{l.id(), l.name(), l.countryCode(), l.province(), l.district(),
                     l.hasCoordinate() ? String.format(java.util.Locale.US, "%.5f, %.5f", l.latitude(), l.longitude()) : "Text only"});
         }
-        return new Snapshot(events, specimens, localities, repository.dashboard(exporter, labels));
+        return new Snapshot(events, specimens, localities, repository.dashboard(exporter, labels), taxonomyLine());
+    }
+
+    private String taxonomyLine() throws Exception {
+        String count = repository.setting("taxonomy.count", "");
+        if (count.isBlank() || "0".equals(count)) return "not imported";
+        return count + " names, updated " + repository.setting("taxonomy.updatedAt", "?");
     }
 
     private void apply(Snapshot snapshot) {
@@ -207,7 +216,8 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
                 + row("Insect tubes awaiting specimens", d.tubesAwaitingSpecimens()) + row("Undetermined specimens", d.undetermined())
                 + row("Pending or changed labels", d.unprinted()) + row("Ready for Artportalen", d.ready())
                 + row("Exported, awaiting confirmation", d.exported()) + row("Reported", d.reported())
-                + row("Reported records needing correction", d.updateNeeded()) + "</table></html>");
+                + row("Reported records needing correction", d.updateNeeded())
+                + "<tr><td>Species list</td><td><b>" + snapshot.taxonomy() + "</b></td></tr></table></html>");
     }
 
     private static void fill(DefaultTableModel model, List<Object[]> rows) {
@@ -220,12 +230,63 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
             JTextField full = new JTextField(repository.setting("owner.fullName", "Nils Ericson")); JTextField shortName = new JTextField(repository.setting("owner.shortName", "N. Ericson"));
             JTextField collection = new JTextField(repository.setting("artportalen.privateCollection", "Nils Ericson")); JTextField prefix = new JTextField(repository.setting("accession.prefix", "NE"));
             JTextField next = new JTextField(repository.setting("accession.next", "1")); JTextField timezone = new JTextField(repository.setting("timezone", "Europe/Stockholm"));
-            JPanel form = form("Owner full name", full, "Owner label name", shortName, "Artportalen private collection", collection, "Collection number prefix", prefix, "Next number", next, "Timezone", timezone);
+            JTextField dyntaxaKey = new JTextField(repository.setting("dyntaxa.subscriptionKey", ""));
+            dyntaxaKey.setToolTipText("Your own free key from api-portal.artdatabanken.se; leave blank to load the checklist from a downloaded file instead");
+            JPanel form = form("Owner full name", full, "Owner label name", shortName, "Artportalen private collection", collection, "Collection number prefix", prefix, "Next number", next, "Timezone", timezone, "Artdatabanken subscription key", dyntaxaKey);
             if (JOptionPane.showConfirmDialog(this, form, "Private Collection settings", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) return;
             Long.parseLong(next.getText().trim()); repository.setSetting("owner.fullName", full.getText().trim()); repository.setSetting("owner.shortName", shortName.getText().trim());
             repository.setSetting("artportalen.privateCollection", collection.getText().trim()); repository.setSetting("accession.prefix", prefix.getText().trim()); repository.setSetting("accession.next", next.getText().trim()); repository.setSetting("timezone", timezone.getText().trim());
+            repository.setSetting("dyntaxa.subscriptionKey", dyntaxaKey.getText().trim());
             repository.setSetting("setup.complete", "true"); repository.ensurePerson(full.getText().trim(), shortName.getText().trim()); refreshAll();
         } catch (Exception e) { showError("Could not save settings", e); }
+    }
+
+    /**
+     * Loads the Dyntaxa checklist from a Darwin Core Archive the user downloaded from artfakta.se.
+     * On a worker thread because it writes a few hundred thousand rows.
+     */
+    // ponytail: the import holds the single shared JDBC connection for its whole run, so anything else in
+    // this window stalls until it finishes. Disabled button plus wait cursor is the whole mitigation;
+    // open a second H2 connection for the import if that ever becomes annoying.
+    private void updateTaxonomy(JButton button) {
+        String key;
+        try { key = repository.setting("dyntaxa.subscriptionKey", ""); }
+        catch (Exception e) { showError("Could not read the settings", e); return; }
+        String[] choices = { "Download from Artdatabanken", "Choose a downloaded file…", "Cancel" };
+        int choice = JOptionPane.showOptionDialog(this,
+                key.isBlank() ? "Downloading needs your own free subscription key from api-portal.artdatabanken.se,\n"
+                        + "entered under Settings. Without one, choose an archive you downloaded yourself."
+                        : "Fetch the current checklist from Artdatabanken, or read an archive already on disk?",
+                "Update species list", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null,
+                choices, choices[key.isBlank() ? 1 : 0]);
+        if (choice != 0 && choice != 1) return;
+        Path archive = null;
+        if (choice == 1) {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setDialogTitle("Choose the Dyntaxa Darwin Core Archive");
+            chooser.setFileFilter(new FileNameExtensionFilter("Dyntaxa Darwin Core Archive", "zip"));
+            if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+            archive = chooser.getSelectedFile().toPath();
+        }
+        Path chosen = archive;
+        button.setEnabled(false); context.setCursorWait();
+        new SwingWorker<DyntaxaImporter.Result, Void>() {
+            @Override protected DyntaxaImporter.Result doInBackground() throws Exception {
+                DyntaxaImporter importer = new DyntaxaImporter(repository);
+                return chosen == null ? importer.importFromArtdatabanken(key) : importer.importFrom(chosen);
+            }
+            @Override protected void done() {
+                context.setCursorDefault(); button.setEnabled(true);
+                if (closed) return;
+                try {
+                    DyntaxaImporter.Result r = get();
+                    JOptionPane.showMessageDialog(PrivateCollectionManager.this, "Species list updated from " + r.archiveName() + ":\n"
+                            + r.scientificNames() + " scientific names and " + r.vernacularNames() + " vernacular names."
+                            + (r.skippedRows() == 0 ? "" : "\n" + r.skippedRows() + " rows carried no usable name and were skipped."));
+                    refreshAll();
+                } catch (Exception e) { showError("Could not update the species list", e); }
+            }
+        }.execute();
     }
 
     private void offerFirstRunSettings() {
@@ -265,7 +326,8 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
                     repository.saveLocality(value); refreshAll(); return true;
                 } catch (IllegalArgumentException e) { JOptionPane.showMessageDialog(this, e.getMessage(), "Check the coordinate", JOptionPane.WARNING_MESSAGE); return false; }
                 catch (Exception e) { showError("Could not save locality", e); return false; }
-            }, markerButton(coordinates, picked -> describeMarker(picked, province, district, nearest, distance, direction)));
+            }, showOnMapButton(() -> showOnMap(coordinates.valueWGS84(), integer(uncertainty.getText()))),
+                    markerButton(coordinates, picked -> describeMarker(picked, province, district, nearest, distance, direction)));
         } catch (Exception e) { showError("Could not open locality", e); }
     }
 
@@ -318,8 +380,14 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         if (open != null) { open.setVisible(true); open.toFront(); open.requestFocus(); return; }
         Editor editor = new Editor(title, content, save, extras);
         editors.put(key, editor);
-        editor.addWindowListener(new WindowAdapter() { @Override public void windowClosed(WindowEvent e) { editors.remove(key); } });
+        // Remove by value, not by key: a new record's editor is re-keyed once it gets its id.
+        editor.addWindowListener(new WindowAdapter() { @Override public void windowClosed(WindowEvent e) { editors.values().remove(editor); } });
         editor.setVisible(true);
+    }
+
+    /** A new record just got its id, so its editor moves off the "…:0" key that a second New would collide with. */
+    private void rekeyEditor(String oldKey, String newKey) {
+        Editor editor = editors.remove(oldKey); if (editor != null) editors.put(newKey, editor);
     }
 
     /** Takes the marker's current position - the point of keeping the map usable while an editor is open. */
@@ -348,38 +416,68 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
                 "Changed elsewhere", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
     }
 
-    private void deleteLocality(long id) {
-        if (id == 0) { JOptionPane.showMessageDialog(this, "Select a locality first."); return; }
-        if (editors.containsKey("locality:" + id)) { JOptionPane.showMessageDialog(this, "This locality is open in an editor. Close that window first."); return; }
-        try {
-            CollectionRepository.Locality l = repository.locality(id);
-            int events = repository.localityEventCount(id);
-            if (events > 0) {
-                JOptionPane.showMessageDialog(this, "\"" + l.name() + "\" is used by " + events + " collection event" + (events == 1 ? "" : "s")
-                        + ".\nMove those events to another locality before deleting it.", "Locality is in use", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
-            if (JOptionPane.showConfirmDialog(this, "Delete the locality \"" + l.name() + "\"? This cannot be undone.",
-                    "Delete locality", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return;
-            repository.deleteLocality(id); refreshAll();
-        } catch (Exception e) { showError("Could not delete locality", e); }
+    private interface Delete { void run(long id) throws Exception; }
+
+    /**
+     * Deletes every selected row, one transaction each, and stops at the first one the
+     * repository refuses - a locality still carrying events, an event still holding
+     * specimens, a reported specimen. The rows before it are already gone, so the tables
+     * are reloaded either way.
+     */
+    private void deleteSelected(JTable table, String what, Delete delete) {
+        List<Long> ids = selectedIds(table);
+        if (ids.isEmpty()) { JOptionPane.showMessageDialog(this, "Select one or more " + plural(what) + " first."); return; }
+        for (long id : ids) if (editors.containsKey(what + ":" + id)) { JOptionPane.showMessageDialog(this, "The " + what + " " + id + " is open in an editor. Close that window first."); return; }
+        if (JOptionPane.showConfirmDialog(this, "Delete " + ids.size() + " " + (ids.size() == 1 ? what : plural(what)) + "? This cannot be undone.",
+                "Delete " + plural(what), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) != JOptionPane.YES_OPTION) return;
+        long current = 0;
+        try { for (long id : ids) { current = id; delete.run(id); } }
+        catch (Exception e) { showError("Could not delete " + what + " " + current, e); }
+        finally { refreshAll(); }
     }
 
-    /** Centres the map on a locality and zooms to a window that shows its uncertainty. */
-    private void showOnMap(long id) {
-        if (id == 0) { JOptionPane.showMessageDialog(this, "Select a locality first."); return; }
+    private static String plural(String what) { return what.endsWith("y") ? what.substring(0, what.length() - 1) + "ies" : what + "s"; }
+
+    /** Centres the map on a position and zooms to a window that shows its uncertainty. */
+    private void showOnMap(Coordinate wgs, Integer uncertaintyMeters) {
+        if (wgs == null) { JOptionPane.showMessageDialog(this, "There is no coordinate to show."); return; }
+        // Build the view in metres around the point, then hand it to whatever CRS the canvas uses.
+        double radius = Math.max(250.0, uncertaintyMeters == null ? 500.0 : uncertaintyMeters * 3.0);
+        Coordinate south = wgs.moveWGS84(radius, 180), north = wgs.moveWGS84(radius, 0);
+        Coordinate west = wgs.moveWGS84(radius, 270), east = wgs.moveWGS84(radius, 90);
+        CoordSystem crs = context.mapCanvas.getCRS();
+        context.mapCanvas.setBounds(new Extent(south.getNorth(), west.getEast(), north.getNorth(), east.getEast()).convertCRS(CoordSystem.WGS84, crs));
+        context.mapCanvas.setCoordinate(crs.toProjected(wgs));
+    }
+
+    private void showLocalityOnMap(long id) {
+        if (id == 0) return;
         try {
             CollectionRepository.Locality l = repository.locality(id);
             if (l == null || !l.hasCoordinate()) { JOptionPane.showMessageDialog(this, "This locality is text only and has no coordinate to show."); return; }
-            Coordinate wgs = new Coordinate(l.latitude(), l.longitude());
-            // Build the view in metres around the point, then hand it to whatever CRS the canvas uses.
-            double radius = Math.max(250.0, l.uncertaintyMeters() == null ? 500.0 : l.uncertaintyMeters() * 3.0);
-            Coordinate south = wgs.moveWGS84(radius, 180), north = wgs.moveWGS84(radius, 0);
-            Coordinate west = wgs.moveWGS84(radius, 270), east = wgs.moveWGS84(radius, 90);
-            CoordSystem crs = context.mapCanvas.getCRS();
-            context.mapCanvas.setBounds(new Extent(south.getNorth(), west.getEast(), north.getNorth(), east.getEast()).convertCRS(CoordSystem.WGS84, crs));
-            context.mapCanvas.setCoordinate(crs.toProjected(wgs));
+            showOnMap(new Coordinate(l.latitude(), l.longitude()), l.uncertaintyMeters());
         } catch (Exception e) { showError("Could not show the locality on the map", e); }
+    }
+
+    /** An event is shown at its own exact coordinate, or at its locality when it was never given one. */
+    private void showEventOnMap(long id) {
+        if (id == 0) return;
+        try {
+            CollectionRepository.Event e = repository.event(id);
+            if (e.latitude() == null) showLocalityOnMap(e.localityId());
+            else showOnMap(new Coordinate(e.latitude(), e.longitude()), e.uncertaintyMeters());
+        } catch (Exception e) { showError("Could not show the event on the map", e); }
+    }
+
+    /**
+     * The other direction from {@link #markerButton}: puts what the editor is holding on the map,
+     * unsaved edits included, so a typed coordinate can be checked before it is stored.
+     */
+    private JButton showOnMapButton(Runnable show) {
+        JButton button = new JButton("Show on map");
+        button.setToolTipText("Centre the map on this position");
+        button.addActionListener(e -> { try { show.run(); } catch (Exception ex) { showError("Could not show this on the map", ex); } });
+        return button;
     }
 
     private void editEvent(long id) {
@@ -392,28 +490,79 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
             JTextField end = new JTextField(old == null || old.endDate() == null ? "" : old.endDate().toString()); JTextField time = new JTextField(old == null || old.localTime() == null ? "" : old.localTime().toString()); JTextField endTime = new JTextField(old == null || old.endTime() == null ? "" : old.endTime().toString());
             JTextField collectors = new JTextField(old == null ? repository.setting("owner.fullName", "") : String.join(", ", repository.collectors(id))); JTextField method = new JTextField(old == null ? "" : text(old.method()));
             JTextField trap = new JTextField(old == null ? "" : text(old.trapNumber())); JTextField expected = new JTextField(old == null ? "0" : Integer.toString(old.expectedCount())); JTextField habitat = new JTextField(old == null ? "" : text(old.habitat()));
-            JTextField preliminary = new JTextField(old == null ? "" : text(old.preliminaryTaxon())); JTextArea notes = new JTextArea(old == null ? "" : text(old.notes()), 3, 30);
+            TaxonEntry preliminary = new TaxonEntry(repository, "Preliminary taxon"); preliminary.setName(old == null ? "" : text(old.preliminaryTaxon()));
+            JTextArea notes = new JTextArea(old == null ? "" : text(old.notes()), 3, 30);
             CoordinateEntry coordinates = new CoordinateEntry("Exact coordinate system", "No exact coordinate - the event uses the locality position.");
             if (old != null) coordinates.setWGS84(old.latitude(), old.longitude());
             JTextField uncertainty = new JTextField(old == null || old.uncertaintyMeters() == null ? "" : old.uncertaintyMeters().toString()); JTextField elevation = new JTextField(old == null || old.elevationMeters() == null ? "" : old.elevationMeters().toString());
-            List<Object> rows = new ArrayList<>(List.of("Locality", locality, "Type", kind, "Field/tube number", field, "Start date", start, "End date", end, "Local time", time, "End time", endTime, "Collectors (comma separated)", collectors, "Method", method, "Trap number", trap, "Expected specimens", expected, "Habitat", habitat, "Preliminary taxon", preliminary));
+            DefaultTableModel speciesModel = tableModel("ID", "Collection no.", "Species", "Determined");
+            JTable speciesTable = new JTable(speciesModel); speciesTable.setPreferredScrollableViewportSize(new Dimension(360, 90));
+            speciesTable.getColumnModel().getColumn(0).setMaxWidth(40); // the id is only there for the double-click
+            // One line, so this one shows the suggestion list without a status row under it.
+            TaxonEntry newSpecies = new TaxonEntry(repository, null); JButton addSpecies = new JButton("Add");
+            JPanel adder = new JPanel(new BorderLayout(6, 0)); adder.add(newSpecies.field(), BorderLayout.CENTER); adder.add(addSpecies, BorderLayout.EAST);
+
+            List<Object> rows = new ArrayList<>(List.of("Locality", locality, "Type", kind, "Field/collection number", field, "Start date", start, "End date", end, "Local time", time, "End time", endTime, "Collectors (comma separated)", collectors, "Method", method, "Trap number", trap, "Expected specimens", expected, "Habitat", habitat));
+            rows.addAll(List.of(preliminary.formRows()));
             rows.addAll(List.of(coordinates.formRows()));
-            rows.addAll(List.of("Coordinate uncertainty (m)", uncertainty, "Elevation (m)", elevation, "Notes", new JScrollPane(notes)));
+            rows.addAll(List.of("Coordinate uncertainty (m)", uncertainty, "Elevation (m)", elevation, "Notes", new JScrollPane(notes),
+                    "Species in this collection", new JScrollPane(speciesTable), "Add species", adder));
             JPanel f = form(rows.toArray());
-            Timestamp opened = id == 0 ? null : repository.eventModifiedAt(id);
-            openEditor("event:" + id, id == 0 ? "New event" : "Edit event: " + text(old.fieldNumber()), f, () -> {
+
+            // Both move on the first save: a new event gets its id, and our own write must not look stale
+            // to the next one. Adding a species has to persist the event first - a specimen needs a real
+            // event id, and its number is derived from the number written on the event.
+            long[] eventId = { id };
+            Timestamp[] opened = { id == 0 ? null : repository.eventModifiedAt(id) };
+            Runnable reloadSpecies = () -> {
+                speciesModel.setRowCount(0);
+                if (eventId[0] == 0) return;
+                try { for (var s : repository.eventSpecimens(eventId[0])) speciesModel.addRow(new Object[]{s.id(), s.accessionNumber(), s.taxonName(), s.determined() ? "Yes" : ""}); }
+                catch (Exception e) { showError("Could not list the species", e); }
+            };
+            reloadSpecies.run();
+
+            // Returns the saved event id, or 0 when the user still has something to resolve - the editor stays open.
+            LongSupplier persist = () -> {
                 try {
                     Coordinate exact = coordinates.valueWGS84();
                     NamedId l = (NamedId)locality.getSelectedItem();
                     Double exactLat = exact == null ? null : exact.getNorth(), exactLon = exact == null ? null : exact.getEast();
                     CoordinateSource source = exactLat == null ? CoordinateSource.LOCALITY_FALLBACK
                             : enteredCoordinateSource(coordinates.origin(), old == null ? null : old.coordinateSource());
-                    CollectionRepository.Event value = new CollectionRepository.Event(id, l.id(), (CollectionKind)kind.getSelectedItem(), field.getText(), localDate(start.getText()), localDate(end.getText()), localTime(time.getText()), localTime(endTime.getText()), repository.setting("timezone", "Europe/Stockholm"), exactLat, exactLon, integer(uncertainty.getText()), decimal(elevation.getText()), source, method.getText(), trap.getText(), intValue(expected.getText(), 0), habitat.getText(), notes.getText(), preliminary.getText());
-                    if (id != 0 && !stillCurrent(opened, repository.eventModifiedAt(id), "event")) return false;
-                    repository.saveEvent(value, splitComma(collectors.getText())); refreshAll(); return true;
-                } catch (IllegalArgumentException e) { JOptionPane.showMessageDialog(this, e.getMessage(), "Check the coordinate", JOptionPane.WARNING_MESSAGE); return false; }
-                catch (Exception e) { showError("Could not save event", e); return false; }
-            }, markerButton(coordinates, null));
+                    CollectionRepository.Event value = new CollectionRepository.Event(eventId[0], l.id(), (CollectionKind)kind.getSelectedItem(), field.getText(), localDate(start.getText()), localDate(end.getText()), localTime(time.getText()), localTime(endTime.getText()), repository.setting("timezone", "Europe/Stockholm"), exactLat, exactLon, integer(uncertainty.getText()), decimal(elevation.getText()), source, method.getText(), trap.getText(), intValue(expected.getText(), 0), habitat.getText(), notes.getText(), preliminary.name());
+                    if (eventId[0] != 0 && !stillCurrent(opened[0], repository.eventModifiedAt(eventId[0]), "event")) return 0L;
+                    long saved = repository.saveEvent(value, splitComma(collectors.getText()));
+                    if (eventId[0] == 0) rekeyEditor("event:0", "event:" + saved);
+                    eventId[0] = saved; opened[0] = repository.eventModifiedAt(saved);
+                    field.setText(text(repository.event(saved).fieldNumber()));
+                    refreshAll(); return saved;
+                } catch (IllegalArgumentException e) { JOptionPane.showMessageDialog(this, e.getMessage(), "Check the coordinate", JOptionPane.WARNING_MESSAGE); return 0L; }
+                catch (Exception e) { showError("Could not save event", e); return 0L; }
+            };
+
+            addSpecies.addActionListener(e -> {
+                String taxon = newSpecies.name(); if (taxon.isEmpty()) return;
+                long saved = persist.getAsLong(); if (saved == 0) return;
+                try {
+                    repository.saveSpecimen(new CollectionRepository.Specimen(0, saved, null, null, taxon, 1,
+                            null, null, null, null, ReportIntent.INCLUDE, false));
+                    newSpecies.setName(""); reloadSpecies.run(); refreshAll();
+                } catch (Exception ex) { showError("Could not add the species", ex); }
+            });
+            newSpecies.field().addActionListener(e -> addSpecies.doClick());
+            speciesTable.addMouseListener(new MouseAdapter() {
+                @Override public void mouseClicked(MouseEvent e) { if (e.getClickCount() == 2) editSpecimen(selectedId(speciesTable), reloadSpecies); }
+            });
+
+            // An event without an exact coordinate is collected at its locality, so that is what the map shows.
+            JButton showEvent = showOnMapButton(() -> {
+                Coordinate exact = coordinates.valueWGS84();
+                if (exact == null) showLocalityOnMap(((NamedId)locality.getSelectedItem()).id());
+                else showOnMap(exact, integer(uncertainty.getText()));
+            });
+            openEditor("event:" + id, id == 0 ? "New event" : "Edit event: " + text(old.fieldNumber()), f,
+                    () -> persist.getAsLong() != 0, showEvent, markerButton(coordinates, null));
         } catch (Exception e) { showError("Could not open event", e); }
     }
 
@@ -424,31 +573,52 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         catch (Exception e) { showError("Could not create specimen batch", e); }
     }
 
-    private void editSpecimen(long id) {
+    private void editSpecimen(long id) { editSpecimen(id, null); }
+
+    /** {@code afterSave} lets the window that opened this one - the event editor's species list - catch up. */
+    private void editSpecimen(long id, Runnable afterSave) {
         try {
             CollectionRepository.Specimen old = id == 0 ? null : repository.specimen(id); List<NamedId> options = repository.events("").stream().map(e -> new NamedId(e.id(), text(e.fieldNumber()) + " — " + e.localityName() + " " + text(e.date()))).toList();
             if (options.isEmpty()) { JOptionPane.showMessageDialog(this, "Create a collection event first."); return; }
             JComboBox<NamedId> event = new JComboBox<>(options.toArray(NamedId[]::new)); if (old != null) selectId(event, old.eventId());
             JTextField accession = new JTextField(old == null ? "" : old.accessionNumber()); accession.setToolTipText("Leave blank to allocate the next number");
             if (old != null) accession.setEditable(false);
-            JTextField group = new JTextField(old == null ? "" : text(old.taxonGroup())); JTextField preliminary = new JTextField(old == null ? "" : text(old.preliminaryTaxon())); JTextField quantity = new JTextField(old == null ? "1" : Integer.toString(old.quantity()));
+            // "Taxon group" holds Mossor/Invertebrates, not a taxon name, so it stays a plain field.
+            JTextField group = new JTextField(old == null ? "" : text(old.taxonGroup())); JTextField quantity = new JTextField(old == null ? "1" : Integer.toString(old.quantity()));
+            TaxonEntry preliminary = new TaxonEntry(repository, "Preliminary taxon"); preliminary.setName(old == null ? "" : text(old.preliminaryTaxon()));
             JTextField sex = new JTextField(old == null ? "" : text(old.sex())); JTextField stage = new JTextField(old == null ? "" : text(old.lifeStage())); JTextField substrate = new JTextField(old == null ? "" : text(old.substrate())); JTextArea comments = new JTextArea(old == null ? "" : text(old.comments()), 3, 30);
             JComboBox<ReportIntent> intent = new JComboBox<>(ReportIntent.values()); if (old != null) intent.setSelectedItem(old.reportIntent());
-            JPanel f = form("Event", event, "Collection number", accession, "Taxon group", group, "Preliminary taxon", preliminary, "Quantity", quantity, "Sex", sex, "Life stage", stage, "Substrate", substrate, "Comments", new JScrollPane(comments), "Report", intent);
-            if (JOptionPane.showConfirmDialog(this, new JScrollPane(f), id == 0 ? "New specimen" : "Edit specimen", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
-            NamedId e = (NamedId)event.getSelectedItem(); repository.saveSpecimen(new CollectionRepository.Specimen(id, e.id(), accession.getText(), group.getText(), preliminary.getText(), intValue(quantity.getText(), 1), sex.getText(), stage.getText(), substrate.getText(), comments.getText(), (ReportIntent)intent.getSelectedItem(), false)); refreshAll();
-        } catch (Exception e) { showError("Could not save specimen", e); }
+            // A specimen has no coordinate of its own; it is shown where its collection event was.
+            JButton show = showOnMapButton(() -> showEventOnMap(((NamedId)event.getSelectedItem()).id()));
+            List<Object> rows = new ArrayList<>(List.of("Event", event, "Collection number", accession, "Taxon group", group));
+            rows.addAll(List.of(preliminary.formRows()));
+            rows.addAll(List.of("Quantity", quantity, "Sex", sex, "Life stage", stage, "Substrate", substrate, "Comments", new JScrollPane(comments), "Report", intent, "Position", show));
+            JPanel f = form(rows.toArray());
+            Timestamp opened = id == 0 ? null : repository.specimenModifiedAt(id);
+            openEditor("specimen:" + id, id == 0 ? "New specimen" : "Edit specimen: " + old.accessionNumber(), f, () -> {
+                try {
+                    NamedId chosen = (NamedId)event.getSelectedItem();
+                    if (id != 0 && !stillCurrent(opened, repository.specimenModifiedAt(id), "specimen")) return false;
+                    repository.saveSpecimen(new CollectionRepository.Specimen(id, chosen.id(), accession.getText(), group.getText(), preliminary.name(), intValue(quantity.getText(), 1), sex.getText(), stage.getText(), substrate.getText(), comments.getText(), (ReportIntent)intent.getSelectedItem(), false));
+                    refreshAll(); if (afterSave != null) afterSave.run(); return true;
+                } catch (Exception ex) { showError("Could not save specimen", ex); return false; }
+            }, show);
+        } catch (Exception e) { showError("Could not open specimen", e); }
     }
 
     private void addDetermination() {
         long id = selectedId(specimenTable); if (id == 0) return;
         try {
             var specimen = repository.specimen(id); var current = repository.currentDetermination(id);
-            JTextField taxon = new JTextField(current == null ? text(specimen.preliminaryTaxon()) : current.taxonName()); JTextField determiner = new JTextField(repository.setting("owner.fullName", "")); JTextField year = new JTextField(Integer.toString(Year.now().getValue()));
+            TaxonEntry taxon = new TaxonEntry(repository, "Taxon"); taxon.setName(current == null ? text(specimen.preliminaryTaxon()) : current.taxonName());
+            JTextField determiner = new JTextField(repository.setting("owner.fullName", "")); JTextField year = new JTextField(Integer.toString(Year.now().getValue()));
             JComboBox<IdentificationKind> kind = new JComboBox<>(IdentificationKind.values()); JCheckBox uncertain = new JCheckBox("Uncertain / cf."); JTextArea notes = new JTextArea(3, 30);
-            JPanel f = form("Taxon", taxon, "Determiner/confirmer", determiner, "Year", year, "Kind", kind, "Uncertainty", uncertain, "Notes", new JScrollPane(notes));
+            List<Object> rows = new ArrayList<>(List.of(taxon.formRows()));
+            rows.addAll(List.of("Determiner/confirmer", determiner, "Year", year, "Kind", kind, "Uncertainty", uncertain, "Notes", new JScrollPane(notes)));
+            JPanel f = form(rows.toArray());
             if (JOptionPane.showConfirmDialog(this, f, "Add determination", JOptionPane.OK_CANCEL_OPTION) != JOptionPane.OK_OPTION) return;
-            repository.addDetermination(id, taxon.getText(), determiner.getText(), integer(year.getText()), (IdentificationKind)kind.getSelectedItem(), uncertain.isSelected(), notes.getText()); refreshAll();
+            // The only record that keeps the id: a determination is the authoritative identification.
+            repository.addDetermination(id, taxon.name(), taxon.dyntaxaId(), determiner.getText(), integer(year.getText()), (IdentificationKind)kind.getSelectedItem(), uncertain.isSelected(), notes.getText()); refreshAll();
         } catch (Exception e) { showError("Could not save determination", e); }
     }
 
@@ -486,9 +656,14 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         catch (Exception e) { showError("Could not open photos", e); }
     }
 
+    /** One sheet for the whole selection - an envelope of five species needs five herbarium labels. */
     private void printSpecimenLabel(LabelType type) {
-        long id = selectedId(specimenTable); if (id == 0) return;
-        try { var sheet = labels.writeSpecimenSheet(List.of(id), type); open(sheet.path()); if (confirmPrinted()) repository.recordLabelPrint(type, id, 1, sheet.labels().getFirst().contentHash(), sheet.path().toString()); refreshAll(); }
+        List<Long> ids = selectedIds(specimenTable); if (ids.isEmpty()) return;
+        try {
+            var sheet = labels.writeSpecimenSheet(ids, type); open(sheet.path());
+            if (confirmPrinted()) for (int i = 0; i < ids.size(); i++) repository.recordLabelPrint(type, ids.get(i), 1, sheet.labels().get(i).contentHash(), sheet.path().toString());
+            refreshAll();
+        }
         catch (Exception e) { showError("Could not create label", e); }
     }
 
@@ -558,6 +733,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
 
     private static DefaultTableModel tableModel(String... columns) { return new DefaultTableModel(columns, 0) { @Override public boolean isCellEditable(int r, int c) { return false; } }; }
     private static long selectedId(JTable table) { int row = table.getSelectedRow(); if (row < 0) return 0; Object value = table.getValueAt(table.convertRowIndexToModel(row), 0); return ((Number)value).longValue(); }
+    private static List<Long> selectedIds(JTable table) { return java.util.Arrays.stream(table.getSelectedRows()).mapToObj(r -> ((Number)table.getValueAt(table.convertRowIndexToModel(r), 0)).longValue()).toList(); }
     private static void selectId(JComboBox<NamedId> combo, long id) { for (int i=0;i<combo.getItemCount();i++) if (combo.getItemAt(i).id()==id) { combo.setSelectedIndex(i); return; } }
     // A label may be given as a component when the caller needs to change its text later.
     // GridBagLayout, not GridLayout: every row keeps its own height, so one tall Notes area

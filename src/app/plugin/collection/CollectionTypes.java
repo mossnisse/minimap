@@ -11,4 +11,6 @@ public final class CollectionTypes {
     public enum ReportStatus { EXCLUDED, INCOMPLETE, READY, EXPORTED, REPORTED, UPDATE_NEEDED }
     public enum LabelType { EVENT, DETERMINATION, ACCESSION, BOTANICAL }
     public enum LabelStatus { NOT_PRINTED, PRINTED, CHANGED }
+    /** Which kind of name a taxon_name row holds - the scientific one, or a vernacular ("Swedish") one. */
+    public enum TaxonNameKind { SCIENTIFIC, VERNACULAR }
 }

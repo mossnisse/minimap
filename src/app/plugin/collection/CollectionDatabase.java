@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter;
 
 /** Owns the project-local H2 database and its versioned schema. */
 public final class CollectionDatabase implements AutoCloseable {
-    public static final int SCHEMA_VERSION = 1;
+    public static final int SCHEMA_VERSION = 2;
     private static final DateTimeFormatter BACKUP_TIME = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
     private final Path root;
@@ -82,7 +82,9 @@ public final class CollectionDatabase implements AutoCloseable {
         boolean oldAutoCommit = c.getAutoCommit();
         c.setAutoCommit(false);
         try {
+            // Separate ifs, not else-if: a fresh database runs every step in turn and readVersion takes MAX(version).
             if (current == 0) createVersionOne(c);
+            if (current < 2) createVersionTwo(c);
             c.commit();
         } catch (Exception e) {
             c.rollback();
@@ -128,6 +130,24 @@ public final class CollectionDatabase implements AutoCloseable {
                 "INSERT INTO collection_setting(setting_key, setting_value) VALUES ('owner.fullName','Nils Ericson'),('owner.shortName','N. Ericson'),('artportalen.privateCollection','Nils Ericson'),('accession.prefix','NE'),('accession.next','1'),('timezone','Europe/Stockholm')",
                 "INSERT INTO person(full_name, short_name, artportalen_name) VALUES ('Nils Ericson','N. Ericson','Nils Ericson')",
                 "INSERT INTO schema_version(version) VALUES (1)"
+        };
+        try (Statement s = c.createStatement()) {
+            for (String sql : statements) s.execute(sql);
+        }
+    }
+
+    /**
+     * The local copy of the Dyntaxa checklist. One row per searchable string - a scientific name or a
+     * vernacular one - carrying everything the suggestion list needs, because the table is rewritten
+     * wholesale from a downloaded archive and never edited, so nothing can drift out of step.
+     * search_name is the lowercased form the queries match on: H2 has no expression indexes, so the
+     * normalised value has to be a stored column.
+     */
+    private static void createVersionTwo(Connection c) throws SQLException {
+        String[] statements = {
+                "CREATE TABLE taxon_name(search_name VARCHAR(300) NOT NULL, name VARCHAR(300) NOT NULL, authorship VARCHAR(200), dyntaxa_id BIGINT NOT NULL, kind VARCHAR(12) NOT NULL, accepted_id BIGINT, accepted_name VARCHAR(300), taxon_rank VARCHAR(40), taxonomic_status VARCHAR(40))",
+                "CREATE INDEX ix_taxon_name_search ON taxon_name(search_name)",
+                "INSERT INTO schema_version(version) VALUES (2)"
         };
         try (Statement s = c.createStatement()) {
             for (String sql : statements) s.execute(sql);

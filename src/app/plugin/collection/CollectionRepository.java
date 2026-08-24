@@ -60,6 +60,25 @@ public final class CollectionRepository {
     public record Dashboard(int tubesAwaitingSpecimens, int undetermined, int unprinted,
                             int ready, int exported, int reported, int updateNeeded) {}
 
+    /**
+     * One searchable name from the Dyntaxa checklist. A synonym and a vernacular name both carry the
+     * accepted taxon they belong to, so a single row answers "what should this be called instead".
+     */
+    public record TaxonName(String name, String authorship, long dyntaxaId, TaxonNameKind kind,
+                            Long acceptedId, String acceptedName, String rank, String status) {
+        /** A vernacular name always points at its taxon, so only a scientific name can be a synonym. */
+        public boolean synonym() { return kind == TaxonNameKind.SCIENTIFIC && acceptedId != null; }
+        /** The id a report should carry: a synonym is reported under the taxon it is a synonym of. */
+        public long reportedId() { return acceptedId != null ? acceptedId : dyntaxaId; }
+        /** What belongs on a label: a synonym or a Swedish name resolves to the accepted scientific name. */
+        public String scientificName() { return acceptedName != null ? acceptedName : name; }
+    }
+
+    /** Receives checklist rows one at a time, so a 200 000-name import never sits in memory as a list. */
+    public interface TaxonNameSink { void add(TaxonName row) throws SQLException; }
+    /** Produces checklist rows into a sink; run inside the replacing transaction. */
+    public interface TaxonNameFeed { void feed(TaxonNameSink sink) throws Exception; }
+
     public record ReportExport(long id, String outputPath, LocalDateTime createdAt, int rowCount) {
         @Override public String toString() {
             return createdAt + " — " + Path.of(outputPath).getFileName() + " (" + rowCount + " records)";
@@ -246,6 +265,8 @@ public final class CollectionRepository {
 
     public synchronized Timestamp eventModifiedAt(long id) throws SQLException { return modifiedAt("collection_event", id); }
 
+    public synchronized Timestamp specimenModifiedAt(long id) throws SQLException { return modifiedAt("specimen", id); }
+
     private Timestamp modifiedAt(String table, long id) throws SQLException {
         try (PreparedStatement ps = database.connection().prepareStatement("SELECT modified_at FROM " + table + " WHERE id=?")) {
             ps.setLong(1, id);
@@ -255,20 +276,58 @@ public final class CollectionRepository {
 
     /** How many collection events are recorded at this locality. */
     public synchronized int localityEventCount(long id) throws SQLException {
-        try (PreparedStatement ps = database.connection().prepareStatement("SELECT COUNT(*) FROM collection_event WHERE locality_id=?")) {
-            ps.setLong(1, id);
-            try (ResultSet rs = ps.executeQuery()) { rs.next(); return rs.getInt(1); }
-        }
+        return scalar("SELECT COUNT(*) FROM collection_event WHERE locality_id=?", id);
+    }
+
+    /** How many specimens were taken at this event. */
+    public synchronized int eventSpecimenCount(long id) throws SQLException {
+        return scalar("SELECT COUNT(*) FROM specimen WHERE event_id=?", id);
     }
 
     /** Removes a locality nothing refers to; events keep the place they were collected at. */
     public synchronized void deleteLocality(long id) throws SQLException {
         int events = localityEventCount(id);
         if (events > 0) throw new SQLException("The locality is used by " + events + " collection event" + (events == 1 ? "" : "s"));
-        try (PreparedStatement ps = database.connection().prepareStatement("DELETE FROM locality WHERE id=?")) {
-            ps.setLong(1, id);
-            if (ps.executeUpdate() != 1) throw new SQLException("Unknown locality: " + id);
-        }
+        if (execute(database.connection(), "DELETE FROM locality WHERE id=?", id) != 1) throw new SQLException("Unknown locality: " + id);
+    }
+
+    /**
+     * Removes an event nothing was collected under; its collectors, photo rows and import
+     * trace go with it, so a deleted import can be imported again. The photo files stay on
+     * disk - they were copied in by hand and are not this repository's to throw away.
+     */
+    public synchronized void deleteEvent(long id) throws SQLException {
+        transactional(c -> {
+            int specimens = eventSpecimenCount(id);
+            if (specimens > 0) throw new SQLException("The event holds " + specimens + " specimen" + (specimens == 1 ? "" : "s"));
+            execute(c, "DELETE FROM source_record WHERE event_id=?", id);
+            if (execute(c, "DELETE FROM collection_event WHERE id=?", id) != 1) throw new SQLException("Unknown event: " + id);
+            return null;
+        });
+    }
+
+    /**
+     * Removes a specimen that has never been sent to Artportalen; its determinations go with it.
+     * The collection number returns to the reserved pool, because {@link #nextNumberFor} counts the
+     * specimens under an envelope and would otherwise hand out a number the pool still calls used.
+     */
+    public synchronized void deleteSpecimen(long id) throws SQLException {
+        transactional(c -> {
+            Specimen s = specimen(id);
+            int exported = scalar("SELECT COUNT(*) FROM report_export_item WHERE specimen_id=?", id)
+                    + scalar("SELECT COUNT(*) FROM report_confirmation WHERE specimen_id=?", id);
+            if (exported > 0) throw new SQLException("The specimen has already been exported to Artportalen");
+            execute(c, "DELETE FROM source_record WHERE specimen_id=?", id);
+            if (execute(c, "DELETE FROM specimen WHERE id=?", id) != 1) throw new SQLException("Unknown specimen: " + id);
+            try (PreparedStatement ps = c.prepareStatement("UPDATE accession_number SET state='RESERVED',assigned_at=NULL WHERE number=?")) {
+                ps.setString(1, s.accessionNumber()); ps.executeUpdate();
+            }
+            return null;
+        });
+    }
+
+    private static int execute(Connection c, String sql, long id) throws SQLException {
+        try (PreparedStatement ps = c.prepareStatement(sql)) { ps.setLong(1, id); return ps.executeUpdate(); }
     }
 
     public synchronized List<PointTableLayer.LabeledPoint> eventPoints(Extent bounds) throws SQLException {
@@ -289,8 +348,23 @@ public final class CollectionRepository {
         return result;
     }
 
-    public synchronized long saveEvent(Event v, List<String> collectors) throws SQLException {
-        validateCoordinate(v.latitude(), v.longitude());
+    public synchronized long saveEvent(Event event, List<String> collectors) throws SQLException {
+        validateCoordinate(event.latitude(), event.longitude());
+        // A botanical field number is the collection number written on the envelope, so "6" is stored as NE6.
+        // An insect tube number is a different thing and is kept verbatim.
+        Event v = event.kind() != CollectionKind.BOTANICAL ? event
+                : new Event(event.id(), event.localityId(), event.kind(), withPrefix(event.fieldNumber()),
+                        event.startDate(), event.endDate(), event.localTime(), event.endTime(), event.timezone(),
+                        event.latitude(), event.longitude(), event.uncertaintyMeters(), event.elevationMeters(),
+                        event.coordinateSource(), event.method(), event.trapNumber(), event.expectedCount(),
+                        event.habitat(), event.notes(), event.preliminaryTaxon());
+        validateEventNumberingChange(v);
+        try {
+            return saveEventRow(v, collectors);
+        } catch (SQLException e) { throw duplicateFieldNumber(e, v.fieldNumber()); }
+    }
+
+    private long saveEventRow(Event v, List<String> collectors) throws SQLException {
         return transactional(c -> {
             long id;
             if (v.id() == 0) {
@@ -305,8 +379,30 @@ public final class CollectionRepository {
                 }
             }
             replaceCollectors(c, id, collectors);
+            // The envelope owns this number before it contains a named species. Keep the global allocator
+            // past it now, otherwise an insect specimen can take the number in the meantime.
+            if (v.kind() == CollectionKind.BOTANICAL) advanceCounter(v.fieldNumber());
             return id;
         });
+    }
+
+    /** A populated botanical event cannot change the number family already printed on its specimens. */
+    private void validateEventNumberingChange(Event v) throws SQLException {
+        if (v.id() == 0 || eventSpecimenCount(v.id()) == 0) return;
+        Event old = event(v.id());
+        if (old.kind() != v.kind()) {
+            throw new SQLException("The event type cannot be changed after specimens have been added");
+        }
+        if (old.kind() == CollectionKind.BOTANICAL
+                && !java.util.Objects.equals(blankToNull(old.fieldNumber()), blankToNull(v.fieldNumber()))) {
+            throw new SQLException("The collection number cannot be changed after species have been added");
+        }
+    }
+
+    /** A collection number identifies one collection, so the unique index has to speak plainly. */
+    private static SQLException duplicateFieldNumber(SQLException e, String fieldNumber) {
+        return e.getMessage() != null && e.getMessage().contains("UQ_EVENT_FIELD_NUMBER")
+                ? new SQLException("Collection number already used by another collection: " + fieldNumber, e) : e;
     }
 
     private static void bindEvent(PreparedStatement ps, Event v) throws SQLException {
@@ -406,10 +502,20 @@ public final class CollectionRepository {
     }
 
     public synchronized long saveSpecimen(Specimen v) throws SQLException {
-        String requestedAccession = blankToNull(v.accessionNumber());
-        if (v.id() == 0 && requestedAccession == null) requestedAccession = reserveNumbers(1).getFirst();
-        final String accession = requestedAccession;
         return transactional(c -> {
+            if (v.id() != 0) {
+                Specimen old = specimen(v.id());
+                if (old.eventId() != v.eventId()) {
+                    Event from = event(old.eventId()), to = event(v.eventId());
+                    if (from.kind() == CollectionKind.BOTANICAL || to.kind() == CollectionKind.BOTANICAL) {
+                        throw new SQLException("A botanical specimen cannot be moved to another collection event");
+                    }
+                }
+            }
+            // Allocating inside the transaction means a failed insert no longer burns a number.
+            String accession = blankToNull(v.accessionNumber());
+            if (v.id() == 0 && accession == null) accession = nextNumberFor(v.eventId());
+            validateAccessionOwner(accession, v.eventId());
             if (v.id() == 0) {
                 claimAccession(c, accession);
                 try (PreparedStatement ps = c.prepareStatement("INSERT INTO specimen(event_id,accession_number,taxon_group,preliminary_taxon,quantity,sex,life_stage,substrate,comments,report_intent,archived) VALUES (?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
@@ -424,6 +530,113 @@ public final class CollectionRepository {
         });
     }
 
+    /** Ensures manually supplied numbers obey the same event ownership as automatically derived ones. */
+    private void validateAccessionOwner(String accession, long eventId) throws SQLException {
+        if (accession == null) return;
+        Event destination = event(eventId);
+        String destinationBase = destination.kind() == CollectionKind.BOTANICAL
+                ? blankToNull(destination.fieldNumber()) : null;
+        if (destinationBase != null) {
+            if (!inNumberFamily(accession, destinationBase)) {
+                throw new SQLException("Collection number " + accession + " does not belong to event " + destinationBase);
+            }
+            return;
+        }
+        // An insect or legacy unnumbered event only needs two indexed exact lookups: the accession
+        // itself and, for NE6-2, its possible envelope base NE6.
+        for (String candidate : List.of(accession, numberFamilyBase(accession))) {
+            Event owner = eventByFieldNumber(candidate);
+            if (owner != null && owner.id() != eventId && owner.kind() == CollectionKind.BOTANICAL) {
+                throw new SQLException("Collection number " + accession + " belongs to collection " + owner.fieldNumber());
+            }
+        }
+    }
+
+    private static boolean inNumberFamily(String accession, String base) {
+        if (accession.equals(base)) return true;
+        if (!accession.startsWith(base + "-")) return false;
+        String suffix = accession.substring(base.length() + 1);
+        if (suffix.isEmpty() || !suffix.chars().allMatch(Character::isDigit)) return false;
+        try { return Integer.parseInt(suffix) >= 2; }
+        catch (NumberFormatException e) { return false; }
+    }
+
+    private static String numberFamilyBase(String accession) {
+        int dash = accession.lastIndexOf('-');
+        if (dash <= 0) return accession;
+        String suffix = accession.substring(dash + 1);
+        if (suffix.isEmpty() || !suffix.chars().allMatch(Character::isDigit)) return accession;
+        try { return Integer.parseInt(suffix) >= 2 ? accession.substring(0, dash) : accession; }
+        catch (NumberFormatException e) { return accession; }
+    }
+
+    /**
+     * The number for the next specimen under this event. The number written on an envelope belongs to the
+     * collection, not to one species: the first species keeps it as written (NE6), later ones get -2, -3 and
+     * so on. Existing specimens are never renumbered - their labels may already be printed - so a hole left
+     * by a removed species stays a hole. An insect tube number is not a collection number, so insect events
+     * and events with nothing written on them draw from the global counter as before.
+     */
+    private String nextNumberFor(long eventId) throws SQLException {
+        Event e = event(eventId);
+        String base = e.kind() == CollectionKind.BOTANICAL ? blankToNull(e.fieldNumber()) : null;
+        if (base == null) return reserveNumbers(1).getFirst();
+        boolean baseUsed = false; int highest = 1;
+        // Ask the specimens, not the number pool: a number can sit there merely RESERVED with no specimen
+        // behind it, and skipping past that would orphan it.
+        try (PreparedStatement ps = database.connection().prepareStatement("SELECT accession_number FROM specimen WHERE event_id=?")) {
+            ps.setLong(1, eventId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String number = rs.getString(1);
+                    if (number.equals(base)) baseUsed = true;
+                    else if (number.startsWith(base + "-")) {
+                        try { highest = Math.max(highest, Integer.parseInt(number.substring(base.length() + 1))); }
+                        catch (NumberFormatException ignored) {}
+                    }
+                }
+            }
+        }
+        return baseUsed ? base + "-" + (highest + 1) : base;
+    }
+
+    /** A bare "6" becomes NE6; anything already carrying text is kept exactly as it was written down. */
+    public synchronized String withPrefix(String written) throws SQLException {
+        String value = blankToNull(written); if (value == null) return null;
+        return value.chars().allMatch(Character::isDigit) ? setting("accession.prefix", "NE") + value : value;
+    }
+
+    /** The event carrying this collection number, or null. */
+    public synchronized Event eventByFieldNumber(String fieldNumber) throws SQLException {
+        String value = blankToNull(fieldNumber); if (value == null) return null;
+        try (PreparedStatement ps = database.connection().prepareStatement("SELECT * FROM collection_event WHERE field_number=?")) {
+            ps.setString(1, value); try (ResultSet rs = ps.executeQuery()) { return rs.next() ? readEvent(rs) : null; }
+        }
+    }
+
+    /**
+     * Finds a numbered event and upgrades the representation used by the original botanical importer,
+     * which stored the number only on the first specimen.
+     */
+    public synchronized Event eventByFieldOrLegacyAccession(String fieldNumber) throws SQLException {
+        Event current = eventByFieldNumber(fieldNumber); if (current != null) return current;
+        String value = blankToNull(fieldNumber); if (value == null) return null;
+        Long legacyId = null;
+        try (PreparedStatement ps = database.connection().prepareStatement(
+                "SELECT e.id FROM collection_event e JOIN specimen s ON s.event_id=e.id " +
+                        "WHERE e.kind='BOTANICAL' AND e.field_number IS NULL AND s.accession_number=?")) {
+            ps.setString(1, value);
+            try (ResultSet rs = ps.executeQuery()) { if (rs.next()) legacyId = rs.getLong(1); }
+        }
+        if (legacyId == null) return null;
+        try (PreparedStatement ps = database.connection().prepareStatement(
+                "UPDATE collection_event SET field_number=?,modified_at=CURRENT_TIMESTAMP WHERE id=? AND field_number IS NULL")) {
+            ps.setString(1, value); ps.setLong(2, legacyId);
+            if (ps.executeUpdate() != 1) return eventByFieldNumber(value);
+        }
+        return event(legacyId);
+    }
+
     private static void bindSpecimen(PreparedStatement ps, Specimen v, String accession) throws SQLException {
         ps.setLong(1, v.eventId()); ps.setString(2, require(accession, "Collection number"));
         ps.setString(3, blankToNull(v.taxonGroup())); ps.setString(4, blankToNull(v.preliminaryTaxon()));
@@ -433,7 +646,7 @@ public final class CollectionRepository {
         ps.setBoolean(11, v.archived());
     }
 
-    private static void claimAccession(Connection c, String accession) throws SQLException {
+    private void claimAccession(Connection c, String accession) throws SQLException {
         try (PreparedStatement find = c.prepareStatement("SELECT state FROM accession_number WHERE number=?")) {
             find.setString(1, accession); try (ResultSet rs = find.executeQuery()) {
                 if (rs.next()) {
@@ -449,6 +662,39 @@ public final class CollectionRepository {
             insert.setString(1, accession); if (numeric == null) insert.setNull(2, Types.BIGINT); else insert.setLong(2, numeric);
             insert.executeUpdate();
         }
+        advanceCounter(accession);
+    }
+
+    /**
+     * Keeps the counter ahead of a generated-prefix number that arrived outside the counter. Other numbering
+     * systems cannot collide with generated numbers and must not make the counter jump.
+     */
+    private void advanceCounter(String accession) throws SQLException {
+        String prefix = setting("accession.prefix", "NE");
+        if (accession == null || !accession.startsWith(prefix)) return;
+        String suffix = accession.substring(prefix.length());
+        int end = 0; while (end < suffix.length() && Character.isDigit(suffix.charAt(end))) end++;
+        if (end == 0) return;
+        if (end < suffix.length()) {
+            if (suffix.charAt(end) != '-' || end + 1 == suffix.length()) return;
+            for (int i = end + 1; i < suffix.length(); i++) if (!Character.isDigit(suffix.charAt(i))) return;
+        }
+        long claimed;
+        try { claimed = Long.parseLong(suffix.substring(0, end)); }
+        catch (NumberFormatException e) { return; }
+        long next = Long.parseLong(setting("accession.next", "1"));
+        if (next <= claimed) setSetting("accession.next", Long.toString(claimed + 1));
+    }
+
+    /**
+     * Moves the allocator beyond numbers present in an import before replacements are chosen. Without
+     * this, replacing source envelope 6 with NE7 can consume the number of source envelope 7.
+     */
+    synchronized void protectCollectionNumbers(Iterable<String> accessions) throws SQLException {
+        transactional(c -> {
+            for (String accession : accessions) advanceCounter(accession);
+            return null;
+        });
     }
 
     public synchronized List<Long> createSpecimenBatch(long eventId, int count) throws SQLException {
@@ -469,12 +715,30 @@ public final class CollectionRepository {
         }
     }
 
+    private static final String SPECIMEN_ROWS = "SELECT s.id,s.accession_number,COALESCE(d.taxon_name,s.preliminary_taxon,''),l.name,e.start_date,d.id,s.report_intent"
+            + " FROM specimen s JOIN collection_event e ON e.id=s.event_id JOIN locality l ON l.id=e.locality_id"
+            + " JOIN accession_number an ON an.number=s.accession_number"
+            + " LEFT JOIN determination d ON d.specimen_id=s.id AND d.is_current=TRUE WHERE s.archived=FALSE";
+    /** Keep number families together and sort a family's numeric child suffix naturally, including -10. */
+    private static final String BY_NUMBER = " ORDER BY an.numeric_part," +
+            "CASE WHEN REGEXP_LIKE(s.accession_number,'.*-[0-9]+$') " +
+            "THEN CAST(REGEXP_REPLACE(s.accession_number,'.*-([0-9]+)$','$1') AS BIGINT) ELSE 1 END," +
+            "s.accession_number";
+
     public synchronized List<SpecimenRow> specimens(String filter) throws SQLException {
+        return specimenRows(SPECIMEN_ROWS + " AND LOWER(s.accession_number || ' ' || COALESCE(d.taxon_name,s.preliminary_taxon,'') || ' ' || l.name) LIKE ?" + BY_NUMBER,
+                "%" + (filter == null ? "" : filter.trim().toLowerCase()) + "%");
+    }
+
+    /** The species collected under one event, in number order. */
+    public synchronized List<SpecimenRow> eventSpecimens(long eventId) throws SQLException {
+        return specimenRows(SPECIMEN_ROWS + " AND s.event_id=?" + BY_NUMBER, eventId);
+    }
+
+    private List<SpecimenRow> specimenRows(String sql, Object parameter) throws SQLException {
         List<SpecimenRow> result = new ArrayList<>();
-        String term = "%" + (filter == null ? "" : filter.trim().toLowerCase()) + "%";
-        String sql = "SELECT s.id,s.accession_number,COALESCE(d.taxon_name,s.preliminary_taxon,''),l.name,e.start_date,d.id,s.report_intent FROM specimen s JOIN collection_event e ON e.id=s.event_id JOIN locality l ON l.id=e.locality_id LEFT JOIN determination d ON d.specimen_id=s.id AND d.is_current=TRUE WHERE s.archived=FALSE AND LOWER(s.accession_number || ' ' || COALESCE(d.taxon_name,s.preliminary_taxon,'') || ' ' || l.name) LIKE ? ORDER BY s.accession_number";
         try (PreparedStatement ps = database.connection().prepareStatement(sql)) {
-            ps.setString(1, term); try (ResultSet rs = ps.executeQuery()) {
+            ps.setObject(1, parameter); try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) result.add(new SpecimenRow(rs.getLong(1), rs.getString(2), rs.getString(3),
                         rs.getString(4), date(rs, 5), rs.getObject(6) != null, ReportIntent.valueOf(rs.getString(7))));
             }
@@ -482,7 +746,12 @@ public final class CollectionRepository {
         return result;
     }
 
-    public synchronized long addDetermination(long specimenId, String taxonName, String determiner,
+    /**
+     * @param dyntaxaId the Dyntaxa taxon the name resolves to, or null for a name Dyntaxa does not have.
+     *        For a synonym this is the <em>accepted</em> taxon's id - the concept a report is about - not
+     *        the synonym's own id.
+     */
+    public synchronized long addDetermination(long specimenId, String taxonName, Long dyntaxaId, String determiner,
                                               Integer year, IdentificationKind kind,
                                               boolean uncertain, String notes) throws SQLException {
         return transactional(c -> {
@@ -490,11 +759,12 @@ public final class CollectionRepository {
                 old.setLong(1, specimenId); old.executeUpdate();
             }
             Long personId = determiner == null || determiner.isBlank() ? null : ensurePerson(determiner, null);
-            try (PreparedStatement ps = c.prepareStatement("INSERT INTO determination(specimen_id,taxon_name,determiner_id,determination_year,kind,uncertain,notes,is_current) VALUES (?,?,?,?,?,?,?,TRUE)", Statement.RETURN_GENERATED_KEYS)) {
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO determination(specimen_id,taxon_name,dyntaxa_id,determiner_id,determination_year,kind,uncertain,notes,is_current) VALUES (?,?,?,?,?,?,?,?,TRUE)", Statement.RETURN_GENERATED_KEYS)) {
                 ps.setLong(1, specimenId); ps.setString(2, require(taxonName, "Taxon name"));
-                if (personId == null) ps.setNull(3, Types.BIGINT); else ps.setLong(3, personId);
-                nullableInt(ps, 4, year); ps.setString(5, (kind == null ? IdentificationKind.DET : kind).name());
-                ps.setBoolean(6, uncertain); ps.setString(7, blankToNull(notes)); ps.executeUpdate();
+                if (dyntaxaId == null) ps.setNull(3, Types.BIGINT); else ps.setLong(3, dyntaxaId);
+                if (personId == null) ps.setNull(4, Types.BIGINT); else ps.setLong(4, personId);
+                nullableInt(ps, 5, year); ps.setString(6, (kind == null ? IdentificationKind.DET : kind).name());
+                ps.setBoolean(7, uncertain); ps.setString(8, blankToNull(notes)); ps.executeUpdate();
                 return generatedId(ps);
             }
         });
@@ -515,6 +785,126 @@ public final class CollectionRepository {
         return result;
     }
 
+    private static final String TAXON_COLUMNS = "SELECT name,authorship,dyntaxa_id,kind,accepted_id,accepted_name,taxon_rank,taxonomic_status FROM taxon_name";
+
+    /**
+     * The form a name is matched on. Both the importer and every query go through this one method -
+     * a name that is normalised differently on the two sides is a name that can never be found.
+     */
+    public static String searchKey(String name) {
+        return name == null ? "" : name.trim().replaceAll("\\s+", " ").toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Names starting with what has been typed so far, for the suggestion list. */
+    public synchronized List<TaxonName> suggestTaxonNames(String typed, int limit) throws SQLException {
+        String prefix = searchKey(typed);
+        if (prefix.length() < 2) return List.of();
+        List<TaxonName> result = new ArrayList<>();
+        // A prefix range, not LIKE: H2 only turns LIKE into a range scan for a literal pattern, and a
+        // parameter is bound after the statement is compiled, so LIKE ? would walk the whole index.
+        // ORDER BY search_name alone keeps the index order, so the scan stops at the limit instead of
+        // sorting the tens of thousands of rows a two-letter prefix matches; the few results are ordered
+        // in Java afterwards.
+        try (PreparedStatement ps = database.connection().prepareStatement(
+                TAXON_COLUMNS + " WHERE search_name>=? AND search_name<? ORDER BY search_name LIMIT ?")) {
+            ps.setString(1, prefix); ps.setString(2, prefixEnd(prefix)); ps.setInt(3, Math.max(1, limit));
+            try (ResultSet rs = ps.executeQuery()) { while (rs.next()) result.add(readTaxonName(rs)); }
+        }
+        return result;
+    }
+
+    /**
+     * Every taxon carrying exactly this name. More than one means Dyntaxa is ambiguous about it -
+     * vernacular names and scientific homonyms are not unique - and picking the first would attach the
+     * wrong id to a determination.
+     */
+    public synchronized List<TaxonName> taxonNamesExactly(String name, int limit) throws SQLException {
+        List<TaxonName> result = new ArrayList<>();
+        try (PreparedStatement ps = database.connection().prepareStatement(
+                TAXON_COLUMNS + " WHERE search_name=? ORDER BY CASE WHEN kind='SCIENTIFIC' THEN 0 ELSE 1 END,dyntaxa_id LIMIT ?")) {
+            ps.setString(1, searchKey(name)); ps.setInt(2, Math.max(1, limit));
+            try (ResultSet rs = ps.executeQuery()) { while (rs.next()) result.add(readTaxonName(rs)); }
+        }
+        return result;
+    }
+
+    /** How many searchable names are stored, so the UI can say the checklist was never imported. */
+    public synchronized int taxonNameCount() throws SQLException { return scalar("SELECT COUNT(*) FROM taxon_name"); }
+
+    /** Rows per commit. Small enough that the undo log stays cheap, large enough to still be one bulk load. */
+    private static final int TAXON_BATCH = 5_000;
+
+    /**
+     * Replaces the whole checklist, committing as it goes.
+     *
+     * <p>Deliberately <em>not</em> one transaction. A quarter of a million rows of undo log grew the
+     * store file past 800 MB, and when a write finally failed the MVStore panicked and took the
+     * project's irreplaceable specimen records down with it. A checklist can always be downloaded
+     * again; a collection cannot. So the count is cleared first and only written back once the last
+     * batch lands - an import that dies partway leaves the checklist marked absent rather than
+     * half-present, and the UI asks for it to be imported again.
+     *
+     * @return how many names were written
+     */
+    synchronized int replaceTaxonNames(String sourceName, TaxonNameFeed feed) throws SQLException {
+        Connection c = database.connection();
+        boolean auto = c.getAutoCommit();
+        c.setAutoCommit(false);
+        int[] written = { 0 };
+        try {
+            setSetting("taxonomy.count", "0");
+            try (Statement s = c.createStatement()) { s.executeUpdate("DELETE FROM taxon_name"); }
+            c.commit();
+            try (PreparedStatement ps = c.prepareStatement("INSERT INTO taxon_name(search_name,name,authorship,dyntaxa_id,kind,accepted_id,accepted_name,taxon_rank,taxonomic_status) VALUES (?,?,?,?,?,?,?,?,?)")) {
+                feed.feed(row -> {
+                    ps.setString(1, searchKey(row.name())); ps.setString(2, row.name());
+                    ps.setString(3, blankToNull(row.authorship())); ps.setLong(4, row.dyntaxaId());
+                    ps.setString(5, row.kind().name());
+                    if (row.acceptedId() == null) ps.setNull(6, Types.BIGINT); else ps.setLong(6, row.acceptedId());
+                    ps.setString(7, blankToNull(row.acceptedName())); ps.setString(8, blankToNull(row.rank()));
+                    ps.setString(9, blankToNull(row.status()));
+                    ps.addBatch();
+                    if (++written[0] % TAXON_BATCH == 0) { ps.executeBatch(); c.commit(); }
+                });
+                ps.executeBatch();
+            }
+            setSetting("taxonomy.updatedAt", LocalDate.now().toString());
+            setSetting("taxonomy.source", sourceName == null ? "" : sourceName);
+            setSetting("taxonomy.count", Integer.toString(written[0]));
+            c.commit();
+            return written[0];
+        } catch (Exception e) {
+            c.rollback();
+            // Clear what did land, so a half-list is never suggested. Best effort - the count already
+            // says the checklist is absent even if this cannot run.
+            try (Statement s = c.createStatement()) { s.executeUpdate("DELETE FROM taxon_name"); c.commit(); }
+            catch (SQLException ignored) { }
+            if (e instanceof SQLException sql) throw sql;
+            throw new SQLException(e);
+        } finally {
+            c.setAutoCommit(auto);
+            settingCache = null;
+        }
+    }
+
+    /**
+     * The exclusive end of a prefix range - the same bound H2 derives from LIKE 'abc%', but usable
+     * with a bound parameter.
+     */
+    // ponytail: assumes H2's default code-unit collation. If anyone ever runs SET COLLATION, fall back
+    // to LIKE with an escaped literal prefix and accept the full index scan.
+    private static String prefixEnd(String prefix) {
+        char last = prefix.charAt(prefix.length() - 1);
+        if (last == Character.MAX_VALUE) return prefix + last;
+        return prefix.substring(0, prefix.length() - 1) + (char)(last + 1);
+    }
+
+    private static TaxonName readTaxonName(ResultSet rs) throws SQLException {
+        return new TaxonName(rs.getString("name"), rs.getString("authorship"), rs.getLong("dyntaxa_id"),
+                TaxonNameKind.valueOf(rs.getString("kind")), nullableLong(rs, "accepted_id"),
+                rs.getString("accepted_name"), rs.getString("taxon_rank"), rs.getString("taxonomic_status"));
+    }
+
     public synchronized ReportData reportData(long specimenId) throws SQLException {
         Specimen s = specimen(specimenId); Event e = event(s.eventId());
         return new ReportData(s, e, locality(e.localityId()), currentDetermination(specimenId), collectors(e.id()));
@@ -523,7 +913,7 @@ public final class CollectionRepository {
     public synchronized List<Long> reportCandidateIds() throws SQLException {
         List<Long> result = new ArrayList<>();
         try (Statement s = database.connection().createStatement();
-             ResultSet rs = s.executeQuery("SELECT id FROM specimen WHERE archived=FALSE AND report_intent='INCLUDE' ORDER BY accession_number")) {
+             ResultSet rs = s.executeQuery("SELECT s.id FROM specimen s JOIN accession_number an ON an.number=s.accession_number WHERE s.archived=FALSE AND s.report_intent='INCLUDE'" + BY_NUMBER)) {
             while (rs.next()) result.add(rs.getLong(1));
         }
         return result;
@@ -698,6 +1088,13 @@ public final class CollectionRepository {
         try (Statement s = database.connection().createStatement(); ResultSet rs = s.executeQuery(sql)) { rs.next(); return rs.getInt(1); }
     }
 
+    private int scalar(String sql, long id) throws SQLException {
+        try (PreparedStatement ps = database.connection().prepareStatement(sql)) {
+            ps.setLong(1, id);
+            try (ResultSet rs = ps.executeQuery()) { rs.next(); return rs.getInt(1); }
+        }
+    }
+
     private static Locality readLocality(ResultSet rs) throws SQLException {
         return new Locality(rs.getLong("id"), rs.getString("name"), rs.getString("short_name"),
                 rs.getString("country_code"), rs.getString("country_name"), rs.getString("province"),
@@ -749,9 +1146,13 @@ public final class CollectionRepository {
     private static String blankToNull(String value) { return value == null || value.isBlank() ? null : value.trim(); }
     private static String upperOrNull(String value) { String s = blankToNull(value); return s == null ? null : s.toUpperCase(); }
     private static String firstNonBlank(String a, String b) { return a == null || a.isBlank() ? b : a; }
+    /** The first run of digits, so a child number sorts with its family: NE6 and NE6-2 both give 6. */
     private static Long numericSuffix(String value) {
-        if (value == null) return null; int i = value.length(); while (i > 0 && Character.isDigit(value.charAt(i - 1))) i--;
-        if (i == value.length()) return null; try { return Long.parseLong(value.substring(i)); } catch (NumberFormatException e) { return null; }
+        if (value == null) return null;
+        int start = 0; while (start < value.length() && !Character.isDigit(value.charAt(start))) start++;
+        int end = start; while (end < value.length() && Character.isDigit(value.charAt(end))) end++;
+        if (start == end) return null;
+        try { return Long.parseLong(value.substring(start, end)); } catch (NumberFormatException e) { return null; }
     }
     private static Path uniqueFile(Path requested) { if (!Files.exists(requested)) return requested; String n=requested.getFileName().toString(); int dot=n.lastIndexOf('.'); String b=dot<0?n:n.substring(0,dot),e=dot<0?"":n.substring(dot); int i=1; Path p; do { p=requested.resolveSibling(b+"-"+(i++)+e); } while(Files.exists(p)); return p; }
     private static String fileHash(Path path) throws Exception { MessageDigest digest=MessageDigest.getInstance("SHA-256"); try(InputStream in=Files.newInputStream(path)){byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)digest.update(b,0,n);} return HexFormat.of().formatHex(digest.digest()); }
