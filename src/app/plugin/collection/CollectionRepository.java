@@ -922,7 +922,6 @@ public final class CollectionRepository {
     public synchronized ReportStatus reportStatus(long specimenId, boolean complete, String payloadHash) throws SQLException {
         Specimen s = specimen(specimenId);
         if (s.reportIntent() == ReportIntent.EXCLUDE) return ReportStatus.EXCLUDED;
-        if (!complete) return ReportStatus.INCOMPLETE;
         try (PreparedStatement ps = database.connection().prepareStatement("SELECT payload_hash FROM report_confirmation WHERE specimen_id=?")) {
             ps.setLong(1, specimenId); try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) return payloadHash.equals(rs.getString(1)) ? ReportStatus.REPORTED : ReportStatus.UPDATE_NEEDED;
@@ -933,7 +932,8 @@ public final class CollectionRepository {
                 if (rs.next() && payloadHash.equals(rs.getString(1))) return ReportStatus.EXPORTED;
             }
         }
-        return ReportStatus.READY;
+        // Gaps no longer hold a record back; INCOMPLETE only labels what is still exportable.
+        return complete ? ReportStatus.READY : ReportStatus.INCOMPLETE;
     }
 
     synchronized long recordExport(String path, Map<Long, String> payloadHashes) throws SQLException {
@@ -1059,8 +1059,8 @@ public final class CollectionRepository {
         }
         for (long id : reportCandidateIds()) {
             ArtportalenExporter.PreparedRow row = exporter.prepare(id);
-            switch (reportStatus(id, row.valid(), row.payloadHash())) {
-                case READY -> ready++; case EXPORTED -> exported++; case REPORTED -> reported++; case UPDATE_NEEDED -> update++;
+            switch (reportStatus(id, row.complete(), row.payloadHash())) {
+                case READY, INCOMPLETE -> ready++; case EXPORTED -> exported++; case REPORTED -> reported++; case UPDATE_NEEDED -> update++;
                 default -> {}
             }
         }

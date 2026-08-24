@@ -1,8 +1,8 @@
 {
-  "last_sync_commit": "e82439c4a07d0431c2606cc79719e70bdcb1fbdd",
+  "last_sync_commit": "b40952264dd14ed25947558334c2b7fbcc54df51",
   "docs_mode": "deterministic",
   "docs_enabled": false,
-  "total_pages": 371,
+  "total_pages": 381,
   "run_mode": "standard",
   "git_tier": "full",
   "include_submodules": false,
@@ -29,17 +29,17 @@
   },
   "knowledge_graph": {
     "version": "1.0.0",
-    "node_count": 614,
+    "node_count": 694,
     "layer_count": 6,
     "tour_steps": 12,
     "has_summaries": true,
-    "fingerprint": "8a7945d19417d50f"
+    "fingerprint": "df11df22990e301a"
   },
   "config_fingerprint": "2f1b53b61c545f3ce5e44371e52b0428f710f8cee6f8d8547f8ca5c474e864fd",
   "store_format_version": 2,
   "written_by_version": "0.37.0",
-  "last_docs_commit": "e82439c4a07d0431c2606cc79719e70bdcb1fbdd",
-  "last_full_rescore_at": 1785605656.0,
+  "last_docs_commit": "b40952264dd14ed25947558334c2b7fbcc54df51",
+  "last_full_rescore_at": 1787564455.0,
   "renderer_fingerprint": "8979c8cb0643c27fc7912d0da86b1f0be582abc8f2ac52da6941ab41cf3865c5",
   "provider": "gemini",
   "model": "gemini-3.5-flash-lite"

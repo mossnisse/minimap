@@ -148,10 +148,10 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         JPanel numbers = new JPanel(new FlowLayout(FlowLayout.LEFT)); JTextField count = new JTextField("10", 5);
         numbers.add(new JLabel("Reserve collection numbers:")); numbers.add(count);
         JButton reserve = new JButton("Reserve and print"); reserve.addActionListener(e -> reserveAndPrint(count.getText())); numbers.add(reserve); panel.add(numbers);
-        JPanel reports = new JPanel(new FlowLayout(FlowLayout.LEFT)); JButton export = new JButton("Export ready records to Artportalen CSV"); export.addActionListener(e -> exportReady()); reports.add(export);
+        JPanel reports = new JPanel(new FlowLayout(FlowLayout.LEFT)); JButton export = new JButton("Export unreported records to Artportalen CSV"); export.addActionListener(e -> exportReady()); reports.add(export);
         JButton confirm = new JButton("Confirm an export was reported"); confirm.addActionListener(e -> confirmLatest()); reports.add(confirm); panel.add(reports);
         JButton correction = new JButton("Confirm selected specimen correction"); correction.addActionListener(e -> confirmCorrection()); reports.add(correction);
-        JTextArea notes = new JTextArea("Exports contain at most 2,000 new records.\nAfter Artportalen accepts a file, select that export for confirmation.\nChanged confirmed records are shown as Update needed and must be corrected on Artportalen.");
+        JTextArea notes = new JTextArea("Exports contain at most 2,000 new records.\nRecords with gaps are exported too; Artportalen's import wizard flags what is missing.\nAfter Artportalen accepts a file, select that export for confirmation.\nChanged confirmed records are shown as Update needed and must be corrected on Artportalen.");
         notes.setEditable(false); notes.setOpaque(false); panel.add(notes); return panel;
     }
 
@@ -191,7 +191,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
         for (var r : repository.specimens(specimenSearch)) {
             var p = exporter.prepare(r.id());
             specimens.add(new Object[]{r.id(), r.accessionNumber(), r.taxonName(), r.localityName(), r.date(), r.determined(),
-                    repository.reportStatus(r.id(), p.valid(), p.payloadHash())});
+                    repository.reportStatus(r.id(), p.complete(), p.payloadHash())});
         }
         List<Object[]> localities = new ArrayList<>();
         for (var l : repository.localities()) {
@@ -696,7 +696,7 @@ public final class PrivateCollectionManager extends JDialog implements ProjectCl
     }
 
     private void exportReady() {
-        try { var result = exporter.exportReady(null); open(result.path()); String extra = result.skippedErrors().isEmpty() ? "" : "\n\nSome incomplete rows were skipped:\n" + String.join("\n", result.skippedErrors().stream().limit(10).toList()); JOptionPane.showMessageDialog(this, "Created " + result.path() + " with " + result.specimenIds().size() + " rows." + extra); refreshAll(); }
+        try { var result = exporter.exportReady(null); open(result.path()); String extra = result.warnings().isEmpty() ? "" : "\n\nExported with gaps - Artportalen will ask about these:\n" + String.join("\n", result.warnings().stream().limit(10).toList()); JOptionPane.showMessageDialog(this, "Created " + result.path() + " with " + result.specimenIds().size() + " rows." + extra); refreshAll(); }
         catch (Exception e) { showError("Could not export Artportalen CSV", e); }
     }
     private void confirmLatest() {

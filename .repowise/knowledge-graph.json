@@ -4,7 +4,7 @@
   "project": {
     "name": "minimap-slop",
     "is_monorepo": false,
-    "total_files": 131,
+    "total_files": 134,
     "entry_points": [],
     "tech_stack": [],
     "entry_candidates": [],
@@ -111,10 +111,46 @@
       "summary": ""
     },
     {
+      "id": "class:src/app/plugin/collection/CollectionRepository.java:TaxonName",
+      "type": "class",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "TaxonName",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "class:src/app/plugin/collection/CollectionTypes.java:CollectionTypes",
       "type": "class",
       "filePath": "src/app/plugin/collection/CollectionTypes.java",
       "name": "CollectionTypes",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "class:src/app/plugin/collection/LabelGenerator.java:LabelDocument",
+      "type": "class",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "LabelDocument",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "class:src/app/plugin/collection/LabelGenerator.java:LabelGenerator",
+      "type": "class",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "LabelGenerator",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "class:src/app/plugin/collection/LabelGenerator.java:WrittenSheet",
+      "type": "class",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "WrittenSheet",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -341,10 +377,10 @@
       "filePath": ".claude/CLAUDE.md",
       "language": "markdown",
       "symbolCount": 0,
-      "lineCount": 229,
+      "lineCount": 230,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 6,
+      "pagerank": 0.00225,
+      "communityId": 5,
       "tags": [],
       "summary": "Repository instructions and context for AI coding agents.",
       "primaryOwner": "mossnisse"
@@ -355,10 +391,10 @@
       "filePath": ".claude/settings.local.json",
       "language": "json",
       "symbolCount": 0,
-      "lineCount": 33,
+      "lineCount": 41,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 7,
+      "pagerank": 0.00225,
+      "communityId": 6,
       "tags": [
         "config"
       ],
@@ -372,8 +408,8 @@
       "symbolCount": 0,
       "lineCount": 6,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 8,
+      "pagerank": 0.00225,
+      "communityId": 7,
       "tags": [
         "config"
       ],
@@ -387,8 +423,8 @@
       "symbolCount": 0,
       "lineCount": 7,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 9,
+      "pagerank": 0.00225,
+      "communityId": 8,
       "tags": [
         "config"
       ],
@@ -402,8 +438,8 @@
       "symbolCount": 0,
       "lineCount": 12,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 10,
+      "pagerank": 0.00225,
+      "communityId": 9,
       "tags": [],
       "summary": "Project overview and entry point for new readers."
     },
@@ -415,11 +451,10 @@
       "symbolCount": 3,
       "lineCount": 24,
       "complexity": "simple",
-      "pagerank": 0.003485,
+      "pagerank": 0.003411,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module AppContext defining AppContext, AppContext, create.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module AppContext defining AppContext, AppContext, create."
     },
     {
       "id": "file:src/app/BusyCursor.java",
@@ -429,11 +464,10 @@
       "symbolCount": 3,
       "lineCount": 11,
       "complexity": "simple",
-      "pagerank": 0.004617,
-      "communityId": 0,
+      "pagerank": 0.00452,
+      "communityId": 3,
       "tags": [],
-      "summary": "Application module BusyCursor defining BusyCursor, setCursorWait, setCursorDefault.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module BusyCursor defining BusyCursor, setCursorWait, setCursorDefault."
     },
     {
       "id": "file:src/app/CloseCoordinator.java",
@@ -443,11 +477,10 @@
       "symbolCount": 3,
       "lineCount": 65,
       "complexity": "simple",
-      "pagerank": 0.003027,
+      "pagerank": 0.002966,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module CloseCoordinator defining CloseCoordinator, CloseCoordinator, resolve.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module CloseCoordinator defining CloseCoordinator, CloseCoordinator, resolve."
     },
     {
       "id": "file:src/app/LantmaterietAccount.java",
@@ -457,8 +490,8 @@
       "symbolCount": 9,
       "lineCount": 62,
       "complexity": "moderate",
-      "pagerank": 0.002951,
-      "communityId": 4,
+      "pagerank": 0.002891,
+      "communityId": 0,
       "tags": [],
       "summary": "Application module LantmaterietAccount defining LantmaterietAccount, LantmaterietAccount, username."
     },
@@ -470,11 +503,10 @@
       "symbolCount": 13,
       "lineCount": 124,
       "complexity": "moderate",
-      "pagerank": 0.004062,
-      "communityId": 1,
+      "pagerank": 0.003958,
+      "communityId": 2,
       "tags": [],
-      "summary": "Application module MapLayers defining MapLayers, MapLayers, installDefaultLayers.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module MapLayers defining MapLayers, MapLayers, installDefaultLayers."
     },
     {
       "id": "file:src/app/ProjectCloseParticipant.java",
@@ -484,11 +516,10 @@
       "symbolCount": 6,
       "lineCount": 5,
       "complexity": "moderate",
-      "pagerank": 0.005642,
+      "pagerank": 0.005507,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module ProjectCloseParticipant defining ProjectCloseParticipant, description, isDirty.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module ProjectCloseParticipant defining ProjectCloseParticipant, description, isDirty."
     },
     {
       "id": "file:src/app/db/Database.java",
@@ -498,8 +529,8 @@
       "symbolCount": 9,
       "lineCount": 82,
       "complexity": "moderate",
-      "pagerank": 0.007677,
-      "communityId": 4,
+      "pagerank": 0.007505,
+      "communityId": 3,
       "tags": [],
       "summary": "Data module Database defining Database, Database, mysql."
     },
@@ -511,8 +542,8 @@
       "symbolCount": 2,
       "lineCount": 7,
       "complexity": "simple",
-      "pagerank": 0.003013,
-      "communityId": 1,
+      "pagerank": 0.002948,
+      "communityId": 3,
       "tags": [],
       "summary": "Application module MapClickHandler defining MapClickHandler, onClick."
     },
@@ -524,7 +555,7 @@
       "symbolCount": 8,
       "lineCount": 3,
       "complexity": "moderate",
-      "pagerank": 0.003491,
+      "pagerank": 0.003421,
       "communityId": 0,
       "tags": [],
       "summary": "Application module MenuContributions defining MenuContributions, MenuContributions, file."
@@ -537,11 +568,10 @@
       "symbolCount": 8,
       "lineCount": 10,
       "complexity": "moderate",
-      "pagerank": 0.003152,
+      "pagerank": 0.003088,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module Plugin defining Plugin, id, displayName.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module Plugin defining Plugin, id, displayName."
     },
     {
       "id": "file:src/app/plugin/PluginContext.java",
@@ -551,11 +581,10 @@
       "symbolCount": 18,
       "lineCount": 66,
       "complexity": "complex",
-      "pagerank": 0.004213,
-      "communityId": 0,
+      "pagerank": 0.004106,
+      "communityId": 3,
       "tags": [],
-      "summary": "Application module PluginContext defining PluginContext, Registration, close.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module PluginContext defining PluginContext, Registration, close."
     },
     {
       "id": "file:src/app/plugin/PluginManager.java",
@@ -565,11 +594,10 @@
       "symbolCount": 15,
       "lineCount": 98,
       "complexity": "moderate",
-      "pagerank": 0.002605,
+      "pagerank": 0.002552,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module PluginManager defining PluginManager, PluginManager, register.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module PluginManager defining PluginManager, PluginManager, register."
     },
     {
       "id": "file:src/app/plugin/collection/ArtportalenExporter.java",
@@ -579,8 +607,8 @@
       "symbolCount": 34,
       "lineCount": 327,
       "complexity": "complex",
-      "pagerank": 0.003396,
-      "communityId": 5,
+      "pagerank": 0.003556,
+      "communityId": 4,
       "tags": [],
       "summary": "Application module ArtportalenExporter defining ArtportalenExporter, PreparedRow, valid."
     },
@@ -589,24 +617,25 @@
       "type": "file",
       "filePath": "src/app/plugin/collection/CollectionDatabase.java",
       "language": "java",
-      "symbolCount": 16,
-      "lineCount": 284,
+      "symbolCount": 17,
+      "lineCount": 321,
       "complexity": "complex",
-      "pagerank": 0.003228,
-      "communityId": 28,
+      "pagerank": 0.003626,
+      "communityId": 27,
       "tags": [],
-      "summary": "Application module CollectionDatabase defining CollectionDatabase, CollectionDatabase, CollectionDatabase."
+      "summary": "Application module CollectionDatabase defining CollectionDatabase, CollectionDatabase, CollectionDatabase.",
+      "primaryOwner": "mossnisse"
     },
     {
       "id": "file:src/app/plugin/collection/CollectionRepository.java",
       "type": "file",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "language": "java",
-      "symbolCount": 221,
-      "lineCount": 1235,
+      "symbolCount": 268,
+      "lineCount": 1849,
       "complexity": "complex",
-      "pagerank": 0.006121,
-      "communityId": 5,
+      "pagerank": 0.008426,
+      "communityId": 4,
       "tags": [],
       "summary": "Application module CollectionRepository defining CollectionRepository, Locality, hasCoordinate.",
       "primaryOwner": "mossnisse"
@@ -616,13 +645,28 @@
       "type": "file",
       "filePath": "src/app/plugin/collection/CollectionTypes.java",
       "language": "java",
-      "symbolCount": 9,
-      "lineCount": 16,
+      "symbolCount": 10,
+      "lineCount": 20,
       "complexity": "moderate",
-      "pagerank": 0.006612,
-      "communityId": 5,
+      "pagerank": 0.009166,
+      "communityId": 4,
       "tags": [],
-      "summary": "Application module CollectionTypes defining CollectionTypes, CollectionTypes, CollectionKind."
+      "summary": "Application module CollectionTypes defining CollectionTypes, CollectionTypes, CollectionKind.",
+      "primaryOwner": "mossnisse"
+    },
+    {
+      "id": "file:src/app/plugin/collection/DyntaxaImporter.java",
+      "type": "file",
+      "filePath": "src/app/plugin/collection/DyntaxaImporter.java",
+      "language": "java",
+      "symbolCount": 25,
+      "lineCount": 340,
+      "complexity": "complex",
+      "pagerank": 0.002506,
+      "communityId": 4,
+      "tags": [],
+      "summary": "Application module DyntaxaImporter defining DyntaxaImporter, Result, DyntaxaImporter.",
+      "primaryOwner": "mossnisse"
     },
     {
       "id": "file:src/app/plugin/collection/LabelGenerator.java",
@@ -632,8 +676,8 @@
       "symbolCount": 42,
       "lineCount": 318,
       "complexity": "complex",
-      "pagerank": 0.004752,
-      "communityId": 5,
+      "pagerank": 0.005116,
+      "communityId": 4,
       "tags": [],
       "summary": "Application module LabelGenerator defining LabelGenerator, LabelDocument, WrittenSheet."
     },
@@ -642,11 +686,11 @@
       "type": "file",
       "filePath": "src/app/plugin/collection/PrivateCollectionManager.java",
       "language": "java",
-      "symbolCount": 82,
-      "lineCount": 1248,
+      "symbolCount": 94,
+      "lineCount": 1557,
       "complexity": "complex",
-      "pagerank": 0.002577,
-      "communityId": 1,
+      "pagerank": 0.002518,
+      "communityId": 3,
       "tags": [],
       "summary": "Application module PrivateCollectionManager defining PrivateCollectionManager, NamedId, toString.",
       "primaryOwner": "mossnisse"
@@ -659,24 +703,37 @@
       "symbolCount": 11,
       "lineCount": 89,
       "complexity": "moderate",
-      "pagerank": 0.002427,
+      "pagerank": 0.002379,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module PrivateCollectionPlugin defining PrivateCollectionPlugin, id, displayName.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module PrivateCollectionPlugin defining PrivateCollectionPlugin, id, displayName."
     },
     {
       "id": "file:src/app/plugin/collection/SlimeRecordsImporter.java",
       "type": "file",
       "filePath": "src/app/plugin/collection/SlimeRecordsImporter.java",
       "language": "java",
-      "symbolCount": 73,
-      "lineCount": 562,
+      "symbolCount": 71,
+      "lineCount": 595,
       "complexity": "complex",
-      "pagerank": 0.002746,
-      "communityId": 5,
+      "pagerank": 0.003371,
+      "communityId": 4,
       "tags": [],
       "summary": "Application module SlimeRecordsImporter defining SlimeRecordsImporter, ImportRow, withKind.",
+      "primaryOwner": "mossnisse"
+    },
+    {
+      "id": "file:src/app/plugin/collection/TaxonEntry.java",
+      "type": "file",
+      "filePath": "src/app/plugin/collection/TaxonEntry.java",
+      "language": "java",
+      "symbolCount": 29,
+      "lineCount": 342,
+      "complexity": "complex",
+      "pagerank": 0.002606,
+      "communityId": 4,
+      "tags": [],
+      "summary": "Application module TaxonEntry defining TaxonEntry, TaxonEntry, formRows.",
       "primaryOwner": "mossnisse"
     },
     {
@@ -687,11 +744,10 @@
       "symbolCount": 4,
       "lineCount": 27,
       "complexity": "moderate",
-      "pagerank": 0.002437,
-      "communityId": 29,
+      "pagerank": 0.002388,
+      "communityId": 28,
       "tags": [],
-      "summary": "Application module BridgeData defining BridgeData, BridgeData, equals.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module BridgeData defining BridgeData, BridgeData, equals."
     },
     {
       "id": "file:src/app/plugin/herbarium/CreateLocalityDialog.java",
@@ -701,11 +757,10 @@
       "symbolCount": 10,
       "lineCount": 238,
       "complexity": "moderate",
-      "pagerank": 0.002405,
-      "communityId": 2,
+      "pagerank": 0.002357,
+      "communityId": 1,
       "tags": [],
-      "summary": "Application module CreateLocalityDialog defining CreateLocalityDialog, CreateLocalityDialog, initComponents.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module CreateLocalityDialog defining CreateLocalityDialog, CreateLocalityDialog, initComponents."
     },
     {
       "id": "file:src/app/plugin/herbarium/EditLocalityDialog.java",
@@ -715,11 +770,10 @@
       "symbolCount": 15,
       "lineCount": 366,
       "complexity": "moderate",
-      "pagerank": 0.003932,
-      "communityId": 2,
+      "pagerank": 0.003853,
+      "communityId": 1,
       "tags": [],
-      "summary": "Application module EditLocalityDialog defining EditLocalityDialog, EditLocalityDialog, initComponents.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module EditLocalityDialog defining EditLocalityDialog, EditLocalityDialog, initComponents."
     },
     {
       "id": "file:src/app/plugin/herbarium/HerbariumController.java",
@@ -729,11 +783,10 @@
       "symbolCount": 4,
       "lineCount": 6,
       "complexity": "moderate",
-      "pagerank": 0.003027,
-      "communityId": 0,
+      "pagerank": 0.002966,
+      "communityId": 3,
       "tags": [],
-      "summary": "Application module HerbariumController defining HerbariumController, enterMoveMode, cancelMoveMode.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module HerbariumController defining HerbariumController, enterMoveMode, cancelMoveMode."
     },
     {
       "id": "file:src/app/plugin/herbarium/HerbariumPlugin.java",
@@ -743,11 +796,10 @@
       "symbolCount": 25,
       "lineCount": 315,
       "complexity": "complex",
-      "pagerank": 0.002427,
+      "pagerank": 0.002379,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module HerbariumPlugin defining HerbariumPlugin, id, displayName.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module HerbariumPlugin defining HerbariumPlugin, id, displayName."
     },
     {
       "id": "file:src/app/plugin/herbarium/LocalityRecord.java",
@@ -757,11 +809,10 @@
       "symbolCount": 5,
       "lineCount": 11,
       "complexity": "moderate",
-      "pagerank": 0.003857,
-      "communityId": 30,
+      "pagerank": 0.003779,
+      "communityId": 29,
       "tags": [],
-      "summary": "Application module LocalityRecord defining LocalityRecord, LocalityRecord, getId.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module LocalityRecord defining LocalityRecord, LocalityRecord, getId."
     },
     {
       "id": "file:src/app/plugin/herbarium/LocalityRepository.java",
@@ -771,11 +822,10 @@
       "symbolCount": 90,
       "lineCount": 345,
       "complexity": "complex",
-      "pagerank": 0.003027,
-      "communityId": 4,
+      "pagerank": 0.002966,
+      "communityId": 3,
       "tags": [],
-      "summary": "Application module LocalityRepository defining LocalityRepository, LocalityRepository, LocalityDetails.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module LocalityRepository defining LocalityRepository, LocalityRepository, LocalityDetails."
     },
     {
       "id": "file:src/app/plugin/herbarium/PlaceNameLookup.java",
@@ -785,11 +835,10 @@
       "symbolCount": 5,
       "lineCount": 90,
       "complexity": "moderate",
-      "pagerank": 0.002437,
-      "communityId": 1,
+      "pagerank": 0.002388,
+      "communityId": 2,
       "tags": [],
-      "summary": "Application module PlaceNameLookup defining PlaceNameLookup, PlaceNameLookup, selectionOr.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module PlaceNameLookup defining PlaceNameLookup, PlaceNameLookup, selectionOr."
     },
     {
       "id": "file:src/app/plugin/herbarium/SearchLocalityDialog.java",
@@ -799,11 +848,10 @@
       "symbolCount": 15,
       "lineCount": 232,
       "complexity": "moderate",
-      "pagerank": 0.002546,
-      "communityId": 1,
+      "pagerank": 0.002494,
+      "communityId": 2,
       "tags": [],
-      "summary": "Application module SearchLocalityDialog defining SearchLocalityDialog, Result, SearchLocalityDialog.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module SearchLocalityDialog defining SearchLocalityDialog, Result, SearchLocalityDialog."
     },
     {
       "id": "file:src/app/plugin/herbarium/SetUserDialog.java",
@@ -813,11 +861,10 @@
       "symbolCount": 4,
       "lineCount": 47,
       "complexity": "moderate",
-      "pagerank": 0.002405,
-      "communityId": 4,
+      "pagerank": 0.002357,
+      "communityId": 0,
       "tags": [],
-      "summary": "Application module SetUserDialog defining SetUserDialog, SetUserDialog, propertyChange.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module SetUserDialog defining SetUserDialog, SetUserDialog, propertyChange."
     },
     {
       "id": "file:src/app/plugin/herbarium/Specimen.java",
@@ -827,11 +874,10 @@
       "symbolCount": 39,
       "lineCount": 44,
       "complexity": "complex",
-      "pagerank": 0.00416,
-      "communityId": 4,
+      "pagerank": 0.004077,
+      "communityId": 3,
       "tags": [],
-      "summary": "Application module Specimen defining Specimen, sweref, withBridge.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module Specimen defining Specimen, sweref, withBridge."
     },
     {
       "id": "file:src/app/plugin/herbarium/SpecimenBridgeDialog.java",
@@ -841,11 +887,10 @@
       "symbolCount": 37,
       "lineCount": 985,
       "complexity": "complex",
-      "pagerank": 0.002646,
-      "communityId": 1,
+      "pagerank": 0.002593,
+      "communityId": 2,
       "tags": [],
-      "summary": "Application module SpecimenBridgeDialog defining SpecimenBridgeDialog, SpecimenBridgeDialog, initUI.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module SpecimenBridgeDialog defining SpecimenBridgeDialog, SpecimenBridgeDialog, initUI."
     },
     {
       "id": "file:src/app/plugin/herbarium/SpecimenSearchDialog.java",
@@ -855,11 +900,10 @@
       "symbolCount": 6,
       "lineCount": 188,
       "complexity": "moderate",
-      "pagerank": 0.002437,
-      "communityId": 31,
+      "pagerank": 0.002388,
+      "communityId": 30,
       "tags": [],
-      "summary": "Application module SpecimenSearchDialog defining SpecimenSearchDialog, SpecimenSearchDialog, initUI.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module SpecimenSearchDialog defining SpecimenSearchDialog, SpecimenSearchDialog, initUI."
     },
     {
       "id": "file:src/app/plugin/herbarium/SpecimenService.java",
@@ -869,11 +913,10 @@
       "symbolCount": 15,
       "lineCount": 493,
       "complexity": "moderate",
-      "pagerank": 0.008349,
-      "communityId": 4,
+      "pagerank": 0.008182,
+      "communityId": 3,
       "tags": [],
-      "summary": "Application module SpecimenService defining SpecimenService, SpecimenService, refreshCache.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module SpecimenService defining SpecimenService, SpecimenService, refreshCache."
     },
     {
       "id": "file:src/app/plugin/herbarium/SpringForm.java",
@@ -883,11 +926,10 @@
       "symbolCount": 3,
       "lineCount": 35,
       "complexity": "simple",
-      "pagerank": 0.002537,
-      "communityId": 2,
+      "pagerank": 0.002486,
+      "communityId": 1,
       "tags": [],
-      "summary": "Application module SpringForm defining SpringForm, SpringForm, addRow.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module SpringForm defining SpringForm, SpringForm, addRow."
     },
     {
       "id": "file:src/app/project/LayerSerializer.java",
@@ -897,7 +939,7 @@
       "symbolCount": 33,
       "lineCount": 297,
       "complexity": "complex",
-      "pagerank": 0.002961,
+      "pagerank": 0.002902,
       "communityId": 0,
       "tags": [],
       "summary": "Application module LayerSerializer defining LayerSerializer, LayerSerializer, write."
@@ -910,7 +952,7 @@
       "symbolCount": 7,
       "lineCount": 2,
       "complexity": "moderate",
-      "pagerank": 0.002473,
+      "pagerank": 0.002424,
       "communityId": 0,
       "tags": [],
       "summary": "Application module Project defining Project, Project, name."
@@ -923,11 +965,10 @@
       "symbolCount": 47,
       "lineCount": 470,
       "complexity": "complex",
-      "pagerank": 0.002916,
+      "pagerank": 0.002857,
       "communityId": 0,
       "tags": [],
-      "summary": "Application module ProjectManager defining ProjectManager, Bootstrap, ProjectManager.",
-      "primaryOwner": "mossnisse"
+      "summary": "Application module ProjectManager defining ProjectManager, Bootstrap, ProjectManager."
     },
     {
       "id": "file:src/app/repo/PlaceNameRepository.java",
@@ -937,8 +978,8 @@
       "symbolCount": 31,
       "lineCount": 130,
       "complexity": "complex",
-      "pagerank": 0.004605,
-      "communityId": 1,
+      "pagerank": 0.00448,
+      "communityId": 3,
       "tags": [],
       "summary": "Application module PlaceNameRepository defining PlaceNameRepository, PlaceNameRepository, PlaceName."
     },
@@ -950,8 +991,8 @@
       "symbolCount": 4,
       "lineCount": 96,
       "complexity": "moderate",
-      "pagerank": 0.002331,
-      "communityId": 2,
+      "pagerank": 0.002284,
+      "communityId": 1,
       "tags": [],
       "summary": "UI module CoordinateDialog defining CoordinateDialog, CoordinateDialog, createReadOnlyField."
     },
@@ -963,11 +1004,10 @@
       "symbolCount": 42,
       "lineCount": 663,
       "complexity": "complex",
-      "pagerank": 0.002296,
+      "pagerank": 0.00225,
       "communityId": 0,
       "tags": [],
-      "summary": "UI module GUI defining GUI, GUI, createAndShowGUI.",
-      "primaryOwner": "mossnisse"
+      "summary": "UI module GUI defining GUI, GUI, createAndShowGUI."
     },
     {
       "id": "file:src/app/ui/MarkCoordinateDialog.java",
@@ -977,8 +1017,8 @@
       "symbolCount": 6,
       "lineCount": 148,
       "complexity": "moderate",
-      "pagerank": 0.002331,
-      "communityId": 2,
+      "pagerank": 0.002284,
+      "communityId": 1,
       "tags": [],
       "summary": "UI module MarkCoordinateDialog defining MarkCoordinateDialog, MarkCoordinateDialog, addFormRow."
     },
@@ -990,8 +1030,8 @@
       "symbolCount": 4,
       "lineCount": 53,
       "complexity": "moderate",
-      "pagerank": 0.002331,
-      "communityId": 32,
+      "pagerank": 0.002284,
+      "communityId": 31,
       "tags": [],
       "summary": "UI module PasswDialog defining PasswDialog, PasswDialog, open."
     },
@@ -1003,11 +1043,10 @@
       "symbolCount": 11,
       "lineCount": 137,
       "complexity": "moderate",
-      "pagerank": 0.002331,
-      "communityId": 1,
+      "pagerank": 0.002284,
+      "communityId": 3,
       "tags": [],
-      "summary": "UI module PlaceNameSearchDialog defining PlaceNameSearchDialog, Result, PlaceNameSearchDialog.",
-      "primaryOwner": "mossnisse"
+      "summary": "UI module PlaceNameSearchDialog defining PlaceNameSearchDialog, Result, PlaceNameSearchDialog."
     },
     {
       "id": "file:src/gis/coords/CoordSystem.java",
@@ -1017,8 +1056,8 @@
       "symbolCount": 16,
       "lineCount": 76,
       "complexity": "complex",
-      "pagerank": 0.15236,
-      "communityId": 1,
+      "pagerank": 0.150911,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module CoordSystem defining CoordSystem, CoordSystem, convertTo."
     },
@@ -1030,8 +1069,8 @@
       "symbolCount": 30,
       "lineCount": 248,
       "complexity": "complex",
-      "pagerank": 0.130742,
-      "communityId": 1,
+      "pagerank": 0.129345,
+      "communityId": 3,
       "tags": [],
       "summary": "Application module Coordinate defining Coordinate, Coordinate, Coordinate."
     },
@@ -1043,8 +1082,8 @@
       "symbolCount": 12,
       "lineCount": 100,
       "complexity": "moderate",
-      "pagerank": 0.005728,
-      "communityId": 2,
+      "pagerank": 0.005618,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module Coordinate3d defining Coordinate3d, Cartesian, Cartesian."
     },
@@ -1056,8 +1095,8 @@
       "symbolCount": 2,
       "lineCount": 54,
       "complexity": "simple",
-      "pagerank": 0.018268,
-      "communityId": 2,
+      "pagerank": 0.017969,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module Ellipsoid defining Ellipsoid, Ellipsoid."
     },
@@ -1069,8 +1108,8 @@
       "symbolCount": 4,
       "lineCount": 17,
       "complexity": "moderate",
-      "pagerank": 0.024226,
-      "communityId": 2,
+      "pagerank": 0.02394,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module LatLongStrategy defining LatLongStrategy, project, unproject."
     },
@@ -1082,8 +1121,8 @@
       "symbolCount": 12,
       "lineCount": 295,
       "complexity": "moderate",
-      "pagerank": 0.00882,
-      "communityId": 2,
+      "pagerank": 0.00865,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module MGRS defining MGRS, mgrsNumToAlpha, mgrsAlphaToNum."
     },
@@ -1095,8 +1134,8 @@
       "symbolCount": 4,
       "lineCount": 7,
       "complexity": "moderate",
-      "pagerank": 0.049055,
-      "communityId": 2,
+      "pagerank": 0.04847,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module ProjectionStrategy defining ProjectionStrategy, project, unproject."
     },
@@ -1108,8 +1147,8 @@
       "symbolCount": 12,
       "lineCount": 171,
       "complexity": "moderate",
-      "pagerank": 0.005728,
-      "communityId": 2,
+      "pagerank": 0.005618,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module RUBIN defining RUBIN, alphaToNum, numToAlpha."
     },
@@ -1121,8 +1160,8 @@
       "symbolCount": 5,
       "lineCount": 117,
       "complexity": "moderate",
-      "pagerank": 0.027074,
-      "communityId": 2,
+      "pagerank": 0.026733,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module TransverseMercatorStrategy defining TransverseMercatorStrategy, TransverseMercatorStrategy, project."
     },
@@ -1134,8 +1173,8 @@
       "symbolCount": 20,
       "lineCount": 156,
       "complexity": "complex",
-      "pagerank": 0.010047,
-      "communityId": 2,
+      "pagerank": 0.009854,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module UTM defining UTM, UTM, UTM."
     },
@@ -1147,8 +1186,8 @@
       "symbolCount": 4,
       "lineCount": 26,
       "complexity": "moderate",
-      "pagerank": 0.024226,
-      "communityId": 2,
+      "pagerank": 0.02394,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module WebMercatorStrategy defining WebMercatorStrategy, project, unproject."
     },
@@ -1160,7 +1199,7 @@
       "symbolCount": 3,
       "lineCount": 27,
       "complexity": "simple",
-      "pagerank": 0.003076,
+      "pagerank": 0.003015,
       "communityId": 0,
       "tags": [],
       "summary": "Service module Keyboard defining Keyboard, activate, isKeyDown."
@@ -1173,8 +1212,8 @@
       "symbolCount": 18,
       "lineCount": 39,
       "complexity": "complex",
-      "pagerank": 0.012459,
-      "communityId": 2,
+      "pagerank": 0.012255,
+      "communityId": 1,
       "tags": [],
       "summary": "Service module Layer defining Layer, Layer, getName."
     },
@@ -1186,7 +1225,7 @@
       "symbolCount": 5,
       "lineCount": 16,
       "complexity": "moderate",
-      "pagerank": 0.00559,
+      "pagerank": 0.005478,
       "communityId": 0,
       "tags": [],
       "summary": "Service module LayerKey defining LayerKey, LayerKey, of."
@@ -1199,7 +1238,7 @@
       "symbolCount": 18,
       "lineCount": 103,
       "complexity": "complex",
-      "pagerank": 0.00601,
+      "pagerank": 0.005891,
       "communityId": 0,
       "tags": [],
       "summary": "Service module LayerManager defining LayerManager, LayerManager, addLayersChangedListener."
@@ -1212,8 +1251,8 @@
       "symbolCount": 26,
       "lineCount": 134,
       "complexity": "complex",
-      "pagerank": 0.015898,
-      "communityId": 2,
+      "pagerank": 0.015618,
+      "communityId": 1,
       "tags": [],
       "summary": "Service module MapCanvas defining MapCanvas, MapCanvas, setCoordinate."
     },
@@ -1225,8 +1264,8 @@
       "symbolCount": 17,
       "lineCount": 100,
       "complexity": "complex",
-      "pagerank": 0.013066,
-      "communityId": 4,
+      "pagerank": 0.012795,
+      "communityId": 0,
       "tags": [],
       "summary": "Service module Settings defining Settings, useFile, activeFile."
     },
@@ -1238,7 +1277,7 @@
       "symbolCount": 14,
       "lineCount": 156,
       "complexity": "moderate",
-      "pagerank": 0.005929,
+      "pagerank": 0.00581,
       "communityId": 0,
       "tags": [],
       "summary": "Application module CsvFile defining CsvFile, CsvFile, read."
@@ -1251,8 +1290,8 @@
       "symbolCount": 15,
       "lineCount": 63,
       "complexity": "moderate",
-      "pagerank": 0.002839,
-      "communityId": 3,
+      "pagerank": 0.002781,
+      "communityId": 0,
       "tags": [],
       "summary": "Application module CsvTableModel defining CsvTableModel, CsvTableModel, getCsv."
     },
@@ -1264,8 +1303,8 @@
       "symbolCount": 23,
       "lineCount": 59,
       "complexity": "complex",
-      "pagerank": 0.020795,
-      "communityId": 1,
+      "pagerank": 0.020572,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module BoundingBox defining BoundingBox, BoundingBox, BoundingBox."
     },
@@ -1277,8 +1316,8 @@
       "symbolCount": 5,
       "lineCount": 31,
       "complexity": "moderate",
-      "pagerank": 0.002434,
-      "communityId": 1,
+      "pagerank": 0.002385,
+      "communityId": 3,
       "tags": [],
       "summary": "Application module CPolygon defining CPolygon, CPolygon, getParts."
     },
@@ -1290,8 +1329,8 @@
       "symbolCount": 14,
       "lineCount": 172,
       "complexity": "moderate",
-      "pagerank": 0.030973,
-      "communityId": 1,
+      "pagerank": 0.030821,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module Extent defining Extent, Extent, Extent."
     },
@@ -1303,8 +1342,8 @@
       "symbolCount": 19,
       "lineCount": 296,
       "complexity": "complex",
-      "pagerank": 0.002607,
-      "communityId": 3,
+      "pagerank": 0.002555,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module GeoPackageReader defining GeoPackageReader, FeatureTable, FeatureTable."
     },
@@ -1316,8 +1355,8 @@
       "symbolCount": 20,
       "lineCount": 194,
       "complexity": "complex",
-      "pagerank": 0.002573,
-      "communityId": 3,
+      "pagerank": 0.002521,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module GeoPackageWriter defining GeoPackageWriter, GeoPackageWriter, registerGeometryFunctions."
     },
@@ -1329,8 +1368,8 @@
       "symbolCount": 27,
       "lineCount": 223,
       "complexity": "complex",
-      "pagerank": 0.004775,
-      "communityId": 3,
+      "pagerank": 0.004679,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module GpkgGeometry defining GpkgGeometry, GpkgGeometry, getType."
     },
@@ -1342,7 +1381,7 @@
       "symbolCount": 24,
       "lineCount": 142,
       "complexity": "complex",
-      "pagerank": 0.003531,
+      "pagerank": 0.003459,
       "communityId": 0,
       "tags": [],
       "summary": "Application module CsvPointLayer defining CsvPointLayer, CsvPointLayer, CsvPointLayer."
@@ -1355,8 +1394,8 @@
       "symbolCount": 6,
       "lineCount": 50,
       "complexity": "moderate",
-      "pagerank": 0.003624,
-      "communityId": 2,
+      "pagerank": 0.00355,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module DistanceLayer defining DistanceLayer, DistanceLayer, recalculatePoints."
     },
@@ -1368,7 +1407,7 @@
       "symbolCount": 28,
       "lineCount": 61,
       "complexity": "complex",
-      "pagerank": 0.005254,
+      "pagerank": 0.005148,
       "communityId": 0,
       "tags": [],
       "summary": "Application module EditableTableLayer defining EditableTableLayer, getName, getSourceName."
@@ -1381,7 +1420,7 @@
       "symbolCount": 13,
       "lineCount": 130,
       "complexity": "moderate",
-      "pagerank": 0.002769,
+      "pagerank": 0.002713,
       "communityId": 1,
       "tags": [],
       "summary": "Application module GPXFileLayer defining GPXFileLayer, GPXCoordinate, GPXFileLayer."
@@ -1394,8 +1433,8 @@
       "symbolCount": 47,
       "lineCount": 403,
       "complexity": "complex",
-      "pagerank": 0.003255,
-      "communityId": 3,
+      "pagerank": 0.003189,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module GeoPackageLayer defining GeoPackageLayer, Feature, Feature."
     },
@@ -1407,8 +1446,8 @@
       "symbolCount": 9,
       "lineCount": 60,
       "complexity": "moderate",
-      "pagerank": 0.002592,
-      "communityId": 1,
+      "pagerank": 0.002539,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module OSMLayer defining OSMLayer, OSMLayer, calculateZoom."
     },
@@ -1420,7 +1459,7 @@
       "symbolCount": 16,
       "lineCount": 168,
       "complexity": "complex",
-      "pagerank": 0.00411,
+      "pagerank": 0.004284,
       "communityId": 0,
       "tags": [],
       "summary": "Application module PointTableLayer defining PointTableLayer, LabeledPoint, PointSource."
@@ -1433,8 +1472,8 @@
       "symbolCount": 10,
       "lineCount": 131,
       "complexity": "moderate",
-      "pagerank": 0.002592,
-      "communityId": 2,
+      "pagerank": 0.002539,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module RasterFileLayer defining RasterFileLayer, RasterFileLayer, readFile."
     },
@@ -1446,8 +1485,8 @@
       "symbolCount": 8,
       "lineCount": 62,
       "complexity": "moderate",
-      "pagerank": 0.002874,
-      "communityId": 2,
+      "pagerank": 0.002815,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module RubinLayer defining RubinLayer, RubinLayer, setRubin."
     },
@@ -1459,8 +1498,8 @@
       "symbolCount": 45,
       "lineCount": 318,
       "complexity": "complex",
-      "pagerank": 0.002812,
-      "communityId": 3,
+      "pagerank": 0.002755,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module ShapeFileLayer defining ShapeFileLayer, Feature, Feature."
     },
@@ -1472,8 +1511,8 @@
       "symbolCount": 19,
       "lineCount": 110,
       "complexity": "complex",
-      "pagerank": 0.003293,
-      "communityId": 2,
+      "pagerank": 0.003226,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module TNGPointFileLayer defining TNGPointFileLayer, Locality, Locality."
     },
@@ -1485,8 +1524,8 @@
       "symbolCount": 13,
       "lineCount": 118,
       "complexity": "moderate",
-      "pagerank": 0.002592,
-      "communityId": 2,
+      "pagerank": 0.002539,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module TNGPolygonFileLayer defining TNGPolygonFileLayer, Province, Province."
     },
@@ -1498,8 +1537,8 @@
       "symbolCount": 25,
       "lineCount": 249,
       "complexity": "complex",
-      "pagerank": 0.004305,
-      "communityId": 1,
+      "pagerank": 0.004217,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module TiledLayer defining TiledLayer, TiledLayer, calculateZoom."
     },
@@ -1511,8 +1550,8 @@
       "symbolCount": 18,
       "lineCount": 143,
       "complexity": "complex",
-      "pagerank": 0.002917,
-      "communityId": 1,
+      "pagerank": 0.002858,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module TopowebLayer defining TopowebLayer, Provider, Provider."
     },
@@ -1524,8 +1563,8 @@
       "symbolCount": 8,
       "lineCount": 31,
       "complexity": "moderate",
-      "pagerank": 0.002621,
-      "communityId": 2,
+      "pagerank": 0.002568,
+      "communityId": 1,
       "tags": [],
       "summary": "Application module DataInputStreamSE defining DataInputStreamSE, DataInputStreamSE, readDoubleSE."
     },
@@ -1537,8 +1576,8 @@
       "symbolCount": 3,
       "lineCount": 14,
       "complexity": "simple",
-      "pagerank": 0.006584,
-      "communityId": 3,
+      "pagerank": 0.006452,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module DbfField defining DbfField, DbfField, toString."
     },
@@ -1550,8 +1589,8 @@
       "symbolCount": 12,
       "lineCount": 102,
       "complexity": "moderate",
-      "pagerank": 0.003042,
-      "communityId": 33,
+      "pagerank": 0.002981,
+      "communityId": 32,
       "tags": [],
       "summary": "Application module DbfReader defining DbfReader, DbfReader, parseFieldDescriptor."
     },
@@ -1563,8 +1602,8 @@
       "symbolCount": 5,
       "lineCount": 31,
       "complexity": "moderate",
-      "pagerank": 0.015663,
-      "communityId": 3,
+      "pagerank": 0.015348,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module ShapeType defining ShapeType, ShapeType, getCode."
     },
@@ -1576,8 +1615,8 @@
       "symbolCount": 20,
       "lineCount": 152,
       "complexity": "complex",
-      "pagerank": 0.004009,
-      "communityId": 3,
+      "pagerank": 0.003928,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module ShapefileReader defining ShapefileReader, Feature, Feature."
     },
@@ -1589,8 +1628,8 @@
       "symbolCount": 14,
       "lineCount": 326,
       "complexity": "moderate",
-      "pagerank": 0.002673,
-      "communityId": 3,
+      "pagerank": 0.002619,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module ShapefileWriter defining ShapefileWriter, ShapefileWriter, writeDbf."
     },
@@ -1602,8 +1641,8 @@
       "symbolCount": 19,
       "lineCount": 101,
       "complexity": "complex",
-      "pagerank": 0.005867,
-      "communityId": 3,
+      "pagerank": 0.005749,
+      "communityId": 2,
       "tags": [],
       "summary": "Application module ShpGeometry defining ShpGeometry, ShpGeometry, getType."
     },
@@ -1615,8 +1654,8 @@
       "symbolCount": 10,
       "lineCount": 63,
       "complexity": "moderate",
-      "pagerank": 0.002864,
-      "communityId": 34,
+      "pagerank": 0.002807,
+      "communityId": 33,
       "tags": [],
       "summary": "Application module ShpReader defining ShpReader, ShpReader, getShapeType."
     },
@@ -1628,8 +1667,8 @@
       "symbolCount": 4,
       "lineCount": 53,
       "complexity": "moderate",
-      "pagerank": 0.002331,
-      "communityId": 1,
+      "pagerank": 0.002284,
+      "communityId": 0,
       "tags": [],
       "summary": "UI module CRSDialog defining CRSDialog, CRSDialog, showDialog."
     },
@@ -1641,11 +1680,10 @@
       "symbolCount": 18,
       "lineCount": 203,
       "complexity": "complex",
-      "pagerank": 0.003012,
-      "communityId": 1,
+      "pagerank": 0.002922,
+      "communityId": 3,
       "tags": [],
-      "summary": "UI module CoordinateEntry defining CoordinateEntry, Origin, CoordinateEntry.",
-      "primaryOwner": "mossnisse"
+      "summary": "UI module CoordinateEntry defining CoordinateEntry, Origin, CoordinateEntry."
     },
     {
       "id": "file:src/gis/ui/CsvEditorDialog.java",
@@ -1655,8 +1693,8 @@
       "symbolCount": 24,
       "lineCount": 344,
       "complexity": "complex",
-      "pagerank": 0.002551,
-      "communityId": 3,
+      "pagerank": 0.0025,
+      "communityId": 0,
       "tags": [],
       "summary": "UI module CsvEditorDialog defining CsvEditorDialog, open, CsvEditorDialog."
     },
@@ -1668,7 +1706,7 @@
       "symbolCount": 6,
       "lineCount": 77,
       "complexity": "moderate",
-      "pagerank": 0.002331,
+      "pagerank": 0.002284,
       "communityId": 0,
       "tags": [],
       "summary": "UI module DistanceDialog defining DistanceDialog, DistanceDialog, getDirection."
@@ -1681,7 +1719,7 @@
       "symbolCount": 3,
       "lineCount": 62,
       "complexity": "simple",
-      "pagerank": 0.002331,
+      "pagerank": 0.002284,
       "communityId": 0,
       "tags": [],
       "summary": "UI module DistanceTool defining DistanceTool, DistanceTool, mouseClicked."
@@ -1694,8 +1732,8 @@
       "symbolCount": 14,
       "lineCount": 215,
       "complexity": "moderate",
-      "pagerank": 0.002331,
-      "communityId": 3,
+      "pagerank": 0.002284,
+      "communityId": 0,
       "tags": [],
       "summary": "UI module LayerDialog defining LayerDialog, LayerDialog, refreshListModel."
     },
@@ -1707,8 +1745,8 @@
       "symbolCount": 4,
       "lineCount": 109,
       "complexity": "moderate",
-      "pagerank": 0.002551,
-      "communityId": 1,
+      "pagerank": 0.0025,
+      "communityId": 2,
       "tags": [],
       "summary": "UI module LayerPropertiesDialog defining LayerPropertiesDialog, LayerPropertiesDialog, initComponents."
     },
@@ -1720,8 +1758,8 @@
       "symbolCount": 27,
       "lineCount": 328,
       "complexity": "complex",
-      "pagerank": 0.002551,
-      "communityId": 3,
+      "pagerank": 0.0025,
+      "communityId": 0,
       "tags": [],
       "summary": "UI module TableEditorDialog defining TableEditorDialog, open, TableEditorDialog."
     },
@@ -1733,8 +1771,8 @@
       "symbolCount": 6,
       "lineCount": 65,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 11,
+      "pagerank": 0.00225,
+      "communityId": 10,
       "tags": [
         "test"
       ],
@@ -1745,15 +1783,31 @@
       "type": "file",
       "filePath": "src/test/app/plugin/collection/PrivateCollectionCoreTest.java",
       "language": "java",
-      "symbolCount": 25,
-      "lineCount": 615,
+      "symbolCount": 57,
+      "lineCount": 1331,
       "complexity": "complex",
-      "pagerank": 0.002296,
-      "communityId": 11,
+      "pagerank": 0.00225,
+      "communityId": 10,
       "tags": [
         "test"
       ],
       "summary": "Tests for PrivateCollectionCoreTest.",
+      "primaryOwner": "mossnisse"
+    },
+    {
+      "id": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "type": "file",
+      "filePath": "src/test/app/plugin/collection/TaxonEntryTest.java",
+      "language": "java",
+      "symbolCount": 12,
+      "lineCount": 137,
+      "complexity": "moderate",
+      "pagerank": 0.00225,
+      "communityId": 10,
+      "tags": [
+        "test"
+      ],
+      "summary": "Tests for TaxonEntryTest.",
       "primaryOwner": "mossnisse"
     },
     {
@@ -1764,13 +1818,12 @@
       "symbolCount": 17,
       "lineCount": 229,
       "complexity": "complex",
-      "pagerank": 0.002296,
-      "communityId": 11,
+      "pagerank": 0.00225,
+      "communityId": 10,
       "tags": [
         "test"
       ],
-      "summary": "Tests for SpecimenServiceTest.",
-      "primaryOwner": "mossnisse"
+      "summary": "Tests for SpecimenServiceTest."
     },
     {
       "id": "file:src/test/app/project/ProjectFoundationTest.java",
@@ -1780,8 +1833,8 @@
       "symbolCount": 11,
       "lineCount": 86,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 11,
+      "pagerank": 0.00225,
+      "communityId": 10,
       "tags": [
         "test"
       ],
@@ -1795,8 +1848,8 @@
       "symbolCount": 2,
       "lineCount": 41,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 13,
+      "pagerank": 0.00225,
+      "communityId": 12,
       "tags": [
         "test"
       ],
@@ -1810,8 +1863,8 @@
       "symbolCount": 5,
       "lineCount": 79,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 12,
+      "pagerank": 0.00225,
+      "communityId": 11,
       "tags": [
         "test"
       ],
@@ -1825,8 +1878,8 @@
       "symbolCount": 6,
       "lineCount": 90,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 12,
+      "pagerank": 0.00225,
+      "communityId": 11,
       "tags": [
         "test"
       ],
@@ -1840,8 +1893,8 @@
       "symbolCount": 5,
       "lineCount": 89,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 14,
+      "pagerank": 0.00225,
+      "communityId": 13,
       "tags": [
         "test"
       ],
@@ -1855,8 +1908,8 @@
       "symbolCount": 4,
       "lineCount": 63,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 14,
+      "pagerank": 0.00225,
+      "communityId": 13,
       "tags": [
         "test"
       ],
@@ -1870,8 +1923,8 @@
       "symbolCount": 3,
       "lineCount": 52,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 14,
+      "pagerank": 0.00225,
+      "communityId": 13,
       "tags": [
         "test"
       ],
@@ -1885,8 +1938,8 @@
       "symbolCount": 2,
       "lineCount": 24,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 14,
+      "pagerank": 0.00225,
+      "communityId": 13,
       "tags": [
         "test"
       ],
@@ -1900,8 +1953,8 @@
       "symbolCount": 6,
       "lineCount": 98,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 14,
+      "pagerank": 0.00225,
+      "communityId": 13,
       "tags": [
         "test"
       ],
@@ -1915,8 +1968,8 @@
       "symbolCount": 4,
       "lineCount": 68,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 14,
+      "pagerank": 0.00225,
+      "communityId": 13,
       "tags": [
         "test"
       ],
@@ -1930,8 +1983,8 @@
       "symbolCount": 17,
       "lineCount": 173,
       "complexity": "complex",
-      "pagerank": 0.002296,
-      "communityId": 12,
+      "pagerank": 0.00225,
+      "communityId": 11,
       "tags": [
         "test"
       ],
@@ -1945,8 +1998,8 @@
       "symbolCount": 3,
       "lineCount": 72,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 14,
+      "pagerank": 0.00225,
+      "communityId": 13,
       "tags": [
         "test"
       ],
@@ -1960,13 +2013,12 @@
       "symbolCount": 7,
       "lineCount": 96,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 12,
+      "pagerank": 0.00225,
+      "communityId": 11,
       "tags": [
         "test"
       ],
-      "summary": "Tests for CoordinateEntryTest.",
-      "primaryOwner": "mossnisse"
+      "summary": "Tests for CoordinateEntryTest."
     },
     {
       "id": "file:src/test/tools/Datum.java",
@@ -1976,8 +2028,8 @@
       "symbolCount": 5,
       "lineCount": 41,
       "complexity": "moderate",
-      "pagerank": 0.004249,
-      "communityId": 35,
+      "pagerank": 0.004163,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -1991,8 +2043,8 @@
       "symbolCount": 0,
       "lineCount": 59,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 35,
+      "pagerank": 0.00225,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2006,8 +2058,8 @@
       "symbolCount": 0,
       "lineCount": 188,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 35,
+      "pagerank": 0.00225,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2021,8 +2073,8 @@
       "symbolCount": 1,
       "lineCount": 47,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 35,
+      "pagerank": 0.00225,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2036,8 +2088,8 @@
       "symbolCount": 0,
       "lineCount": 123,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 35,
+      "pagerank": 0.00225,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2051,8 +2103,8 @@
       "symbolCount": 1,
       "lineCount": 39,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 35,
+      "pagerank": 0.00225,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2066,8 +2118,8 @@
       "symbolCount": 4,
       "lineCount": 80,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 3,
+      "pagerank": 0.00225,
+      "communityId": 2,
       "tags": [
         "test"
       ],
@@ -2081,8 +2133,8 @@
       "symbolCount": 0,
       "lineCount": 141,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 35,
+      "pagerank": 0.00225,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2096,8 +2148,8 @@
       "symbolCount": 7,
       "lineCount": 91,
       "complexity": "moderate",
-      "pagerank": 0.002296,
-      "communityId": 4,
+      "pagerank": 0.00225,
+      "communityId": 3,
       "tags": [
         "test"
       ],
@@ -2111,8 +2163,8 @@
       "symbolCount": 20,
       "lineCount": 55,
       "complexity": "complex",
-      "pagerank": 0.004249,
-      "communityId": 35,
+      "pagerank": 0.004163,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2126,8 +2178,8 @@
       "symbolCount": 0,
       "lineCount": 71,
       "complexity": "simple",
-      "pagerank": 0.002296,
-      "communityId": 35,
+      "pagerank": 0.00225,
+      "communityId": 34,
       "tags": [
         "test"
       ],
@@ -2341,6 +2393,33 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:TaxonName",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "TaxonName",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:acceptedId",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "acceptedId",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:acceptedName",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "acceptedName",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:accessionAvailable",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
@@ -2368,6 +2447,15 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:add",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "add",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:addDetermination",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
@@ -2386,10 +2474,28 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:advanceCounter",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "advanceCounter",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:archived",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "archived",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:authorship",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "authorship",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -2575,10 +2681,28 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:deleteEvent",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "deleteEvent",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:deleteLocality",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "deleteLocality",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:deleteSpecimen",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "deleteSpecimen",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -2642,6 +2766,15 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "district",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:duplicateFieldNumber",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "duplicateFieldNumber",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -2746,6 +2879,24 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:eventByFieldNumber",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "eventByFieldNumber",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:eventByFieldOrLegacyAccession",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "eventByFieldOrLegacyAccession",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:eventId",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
@@ -2782,10 +2933,37 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:eventSpecimenCount",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "eventSpecimenCount",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:eventSpecimens",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "eventSpecimens",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:events",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "events",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:execute",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "execute",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -2813,6 +2991,15 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "exported",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:feed",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "feed",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -2885,6 +3072,15 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "id",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:inNumberFamily",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "inNumberFamily",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3061,6 +3257,15 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:nextNumberFor",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "nextNumberFor",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:notes",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
@@ -3115,6 +3320,15 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:numberFamilyBase",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "numberFamilyBase",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:numericSuffix",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
@@ -3151,10 +3365,28 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:prefixEnd",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "prefixEnd",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:preliminaryTaxon",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "preliminaryTaxon",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:protectCollectionNumbers",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "protectCollectionNumbers",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3173,6 +3405,15 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "quantity",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:rank",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "rank",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3209,6 +3450,15 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "readSpecimen",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:readTaxonName",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "readTaxonName",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3259,6 +3509,15 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:replaceTaxonNames",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "replaceTaxonNames",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:reportCandidateIds",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
@@ -3299,6 +3558,15 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "reported",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:reportedId",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "reportedId",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3358,6 +3626,15 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:saveEventRow",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "saveEventRow",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:saveLocality",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
@@ -3380,6 +3657,24 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "scalar",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:scientificName",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "scientificName",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:searchKey",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "searchKey",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3466,10 +3761,28 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:specimenModifiedAt",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "specimenModifiedAt",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:specimenQuantity",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "specimenQuantity",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:specimenRows",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "specimenRows",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3493,10 +3806,37 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:status",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "status",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:substrate",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "substrate",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:suggestTaxonNames",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "suggestTaxonNames",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:synonym",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "synonym",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3515,6 +3855,24 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "taxonName",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:taxonNameCount",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "taxonNameCount",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:taxonNamesExactly",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "taxonNamesExactly",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3637,10 +3995,37 @@
       "summary": ""
     },
     {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:validateAccessionOwner",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "validateAccessionOwner",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
       "id": "function:src/app/plugin/collection/CollectionRepository.java:validateCoordinate",
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionRepository.java",
       "name": "validateCoordinate",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:validateEventNumberingChange",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "validateEventNumberingChange",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/CollectionRepository.java:withPrefix",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/CollectionRepository.java",
+      "name": "withPrefix",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -3659,6 +4044,330 @@
       "type": "function",
       "filePath": "src/app/plugin/collection/CollectionTypes.java",
       "name": "CollectionTypes",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:LabelDocument",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "LabelDocument",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:LabelGenerator",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "LabelGenerator",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:WrittenSheet",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "WrittenSheet",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:accessionLabel",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "accessionLabel",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:bodyHtml",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "bodyHtml",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:botanicalCss",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "botanicalCss",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:botanicalLabel",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "botanicalLabel",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:contentHash",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "contentHash",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:coordinateLine",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "coordinateLine",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:dateSuffix",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "dateSuffix",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:determinationLabel",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "determinationLabel",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:doc",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "doc",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:equals",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "equals",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:esc",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "esc",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:eventLabel",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "eventLabel",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:first",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "first",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:formatDate",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "formatDate",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:hashCode",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "hashCode",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:insectCss",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "insectCss",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:join",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "join",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:labels",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "labels",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:optional",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "optional",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:path",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "path",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:provinceCode",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "provinceCode",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:repeat",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "repeat",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:sha256",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "sha256",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:specimenLabel",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "specimenLabel",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:suffixDistrict",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "suffixDistrict",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:targetId",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "targetId",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:toString",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "toString",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:type",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "type",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:unique",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "unique",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:writeEventSheet",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "writeEventSheet",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:writeReservedNumberSheet",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "writeReservedNumberSheet",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:writeSheet",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "writeSheet",
+      "language": "java",
+      "tags": [],
+      "summary": ""
+    },
+    {
+      "id": "function:src/app/plugin/collection/LabelGenerator.java:writeSpecimenSheet",
+      "type": "function",
+      "filePath": "src/app/plugin/collection/LabelGenerator.java",
+      "name": "writeSpecimenSheet",
       "language": "java",
       "tags": [],
       "summary": ""
@@ -6743,6 +7452,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "class:src/app/plugin/collection/CollectionRepository.java:TaxonName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "file:src/app/plugin/collection/ArtportalenExporter.java",
       "type": "imports",
       "direction": "forward",
@@ -6869,6 +7585,27 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:TaxonName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:acceptedId",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:acceptedName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:accessionAvailable",
       "type": "contains",
       "direction": "forward",
@@ -6890,6 +7627,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:add",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:addDetermination",
       "type": "contains",
       "direction": "forward",
@@ -6904,7 +7648,21 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:advanceCounter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:archived",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:authorship",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7051,7 +7809,21 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:deleteEvent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:deleteLocality",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:deleteSpecimen",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7101,6 +7873,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:district",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:duplicateFieldNumber",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7184,6 +7963,20 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventByFieldNumber",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventByFieldOrLegacyAccession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:eventId",
       "type": "contains",
       "direction": "forward",
@@ -7212,7 +8005,28 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventSpecimenCount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventSpecimens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:events",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:execute",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7234,6 +8048,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:exported",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:feed",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7290,6 +8111,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:id",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:inNumberFamily",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7429,6 +8257,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:nextNumberFor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:notes",
       "type": "contains",
       "direction": "forward",
@@ -7471,6 +8306,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:numberFamilyBase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:numericSuffix",
       "type": "contains",
       "direction": "forward",
@@ -7499,7 +8341,21 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:prefixEnd",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:preliminaryTaxon",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:protectCollectionNumbers",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7514,6 +8370,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:quantity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:rank",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7542,6 +8405,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:readSpecimen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:readTaxonName",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7583,6 +8453,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:replaceTaxonNames",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:reportCandidateIds",
       "type": "contains",
       "direction": "forward",
@@ -7612,6 +8489,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:reported",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:reportedId",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7660,6 +8544,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:saveEventRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:saveLocality",
       "type": "contains",
       "direction": "forward",
@@ -7675,6 +8566,20 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:scalar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:scientificName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:searchKey",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7744,7 +8649,21 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:specimenModifiedAt",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:specimenQuantity",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:specimenRows",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7765,7 +8684,28 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:status",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:substrate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:suggestTaxonNames",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:synonym",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7780,6 +8720,20 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:taxonName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:taxonNameCount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:taxonNamesExactly",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7877,7 +8831,28 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:validateAccessionOwner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:validateCoordinate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:validateEventNumberingChange",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:withPrefix",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -7920,6 +8895,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:addPhoto",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:advanceCounter",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8024,6 +9006,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:deleteEvent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:deleteLocality",
       "type": "contains",
       "direction": "forward",
@@ -8031,7 +9020,21 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:deleteSpecimen",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:determinations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:duplicateFieldNumber",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8059,6 +9062,20 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventByFieldNumber",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventByFieldOrLegacyAccession",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:eventModifiedAt",
       "type": "contains",
       "direction": "forward",
@@ -8080,7 +9097,28 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventSpecimenCount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:eventSpecimens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:events",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:execute",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8109,6 +9147,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:generatedId",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:inNumberFamily",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8164,6 +9209,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:nextNumberFor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:nullableDate",
       "type": "contains",
       "direction": "forward",
@@ -8199,6 +9251,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:numberFamilyBase",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:numericSuffix",
       "type": "contains",
       "direction": "forward",
@@ -8214,6 +9273,20 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:people",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:prefixEnd",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:protectCollectionNumbers",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8248,6 +9321,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:readTaxonName",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:recordExport",
       "type": "contains",
       "direction": "forward",
@@ -8270,6 +9350,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:replaceCollectors",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:replaceTaxonNames",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8325,6 +9412,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:saveEventRow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:saveLocality",
       "type": "contains",
       "direction": "forward",
@@ -8340,6 +9434,13 @@
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:scalar",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:searchKey",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8381,6 +9482,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:specimenModifiedAt",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:specimenQuantity",
       "type": "contains",
       "direction": "forward",
@@ -8388,7 +9496,35 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:specimenRows",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:specimens",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:suggestTaxonNames",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:taxonNameCount",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:taxonNamesExactly",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8423,7 +9559,28 @@
     },
     {
       "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:validateAccessionOwner",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
       "target": "function:src/app/plugin/collection/CollectionRepository.java:validateCoordinate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:validateEventNumberingChange",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/CollectionRepository.java::CollectionRepository",
+      "target": "function:src/app/plugin/collection/CollectionRepository.java:withPrefix",
       "type": "contains",
       "direction": "forward",
       "weight": 1.0
@@ -8450,6 +9607,49 @@
       "weight": 1.0
     },
     {
+      "source": "file:src/app/plugin/collection/DyntaxaImporter.java",
+      "target": "file:src/app/plugin/collection/CollectionRepository.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/app/plugin/collection/DyntaxaImporter.java",
+      "target": "file:src/app/plugin/collection/CollectionTypes.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/DyntaxaImporter.java",
+      "target": "file:src/app/plugin/collection/SlimeRecordsImporter.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 1.0,
+      "hint": "same_package"
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "class:src/app/plugin/collection/LabelGenerator.java:LabelDocument",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "class:src/app/plugin/collection/LabelGenerator.java:LabelGenerator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "class:src/app/plugin/collection/LabelGenerator.java:WrittenSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
       "source": "file:src/app/plugin/collection/LabelGenerator.java",
       "target": "file:src/app/plugin/collection/CollectionRepository.java",
       "type": "imports",
@@ -8460,6 +9660,433 @@
       "source": "file:src/app/plugin/collection/LabelGenerator.java",
       "target": "file:src/app/plugin/collection/CollectionTypes.java",
       "type": "imports",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:LabelDocument",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:LabelGenerator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:WrittenSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:accessionLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:bodyHtml",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:botanicalCss",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:botanicalLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:contentHash",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:coordinateLine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:dateSuffix",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:determinationLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:doc",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:equals",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:esc",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:eventLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:first",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:formatDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:hashCode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:insectCss",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:join",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:labels",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:optional",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:path",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:provinceCode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:repeat",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:sha256",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:specimenLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:suffixDistrict",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:targetId",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:toString",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:type",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:unique",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeEventSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeReservedNumberSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeSpecimenSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:LabelGenerator",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:accessionLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:botanicalCss",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:botanicalLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:coordinateLine",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:dateSuffix",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:determinationLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:doc",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:esc",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:eventLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:first",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:formatDate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:insectCss",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:join",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:optional",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:provinceCode",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:repeat",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:sha256",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:specimenLabel",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:suffixDistrict",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:unique",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeEventSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeReservedNumberSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeSheet",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/app/plugin/collection/LabelGenerator.java::LabelGenerator",
+      "target": "function:src/app/plugin/collection/LabelGenerator.java:writeSpecimenSheet",
+      "type": "contains",
       "direction": "forward",
       "weight": 1.0
     },
@@ -8507,6 +10134,13 @@
     },
     {
       "source": "file:src/app/plugin/collection/PrivateCollectionManager.java",
+      "target": "file:src/app/plugin/collection/DyntaxaImporter.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/app/plugin/collection/PrivateCollectionManager.java",
       "target": "file:src/app/plugin/collection/LabelGenerator.java",
       "type": "imports",
       "direction": "forward",
@@ -8515,6 +10149,13 @@
     {
       "source": "file:src/app/plugin/collection/PrivateCollectionManager.java",
       "target": "file:src/app/plugin/collection/SlimeRecordsImporter.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/app/plugin/collection/PrivateCollectionManager.java",
+      "target": "file:src/app/plugin/collection/TaxonEntry.java",
       "type": "imports",
       "direction": "forward",
       "weight": 0.8
@@ -8666,6 +10307,20 @@
       "direction": "forward",
       "weight": 1.0,
       "hint": "same_package"
+    },
+    {
+      "source": "file:src/app/plugin/collection/TaxonEntry.java",
+      "target": "file:src/app/plugin/collection/CollectionRepository.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/app/plugin/collection/TaxonEntry.java",
+      "target": "file:src/app/plugin/collection/CollectionTypes.java",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 1.0
     },
     {
       "source": "file:src/app/plugin/herbarium/CreateLocalityDialog.java",
@@ -16114,6 +17769,13 @@
     },
     {
       "source": "file:src/test/app/plugin/collection/PrivateCollectionCoreTest.java",
+      "target": "file:src/app/plugin/collection/DyntaxaImporter.java",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/PrivateCollectionCoreTest.java",
       "target": "file:src/app/plugin/collection/LabelGenerator.java",
       "type": "tested_by",
       "direction": "forward",
@@ -16154,6 +17816,69 @@
       "type": "tested_by",
       "direction": "forward",
       "weight": 1.0
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:external:org.junit.jupiter.api.AfterEach",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:external:org.junit.jupiter.api.Assertions.*",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:external:org.junit.jupiter.api.BeforeEach",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:external:org.junit.jupiter.api.Test",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:external:org.junit.jupiter.api.io.TempDir",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:src/app/plugin/collection/CollectionDatabase.java",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:src/app/plugin/collection/CollectionRepository.java",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:src/app/plugin/collection/CollectionTypes.java",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 1.0
+    },
+    {
+      "source": "file:src/test/app/plugin/collection/TaxonEntryTest.java",
+      "target": "file:src/app/plugin/collection/TaxonEntry.java",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.8
     },
     {
       "source": "file:src/test/app/plugin/herbarium/SpecimenServiceTest.java",
@@ -17032,10 +18757,12 @@
         "file:src/app/plugin/collection/CollectionDatabase.java",
         "file:src/app/plugin/collection/CollectionRepository.java",
         "file:src/app/plugin/collection/CollectionTypes.java",
+        "file:src/app/plugin/collection/DyntaxaImporter.java",
         "file:src/app/plugin/collection/LabelGenerator.java",
         "file:src/app/plugin/collection/PrivateCollectionManager.java",
         "file:src/app/plugin/collection/PrivateCollectionPlugin.java",
         "file:src/app/plugin/collection/SlimeRecordsImporter.java",
+        "file:src/app/plugin/collection/TaxonEntry.java",
         "file:src/app/plugin/herbarium/BridgeData.java",
         "file:src/app/plugin/herbarium/CreateLocalityDialog.java",
         "file:src/app/plugin/herbarium/EditLocalityDialog.java",
@@ -17127,10 +18854,12 @@
             "file:src/app/plugin/collection/CollectionDatabase.java",
             "file:src/app/plugin/collection/CollectionRepository.java",
             "file:src/app/plugin/collection/CollectionTypes.java",
+            "file:src/app/plugin/collection/DyntaxaImporter.java",
             "file:src/app/plugin/collection/LabelGenerator.java",
             "file:src/app/plugin/collection/PrivateCollectionManager.java",
             "file:src/app/plugin/collection/PrivateCollectionPlugin.java",
             "file:src/app/plugin/collection/SlimeRecordsImporter.java",
+            "file:src/app/plugin/collection/TaxonEntry.java",
             "file:src/app/plugin/herbarium/BridgeData.java",
             "file:src/app/plugin/herbarium/CreateLocalityDialog.java",
             "file:src/app/plugin/herbarium/EditLocalityDialog.java",
@@ -17202,6 +18931,7 @@
       "nodeIds": [
         "file:src/test/app/LantmaterietAccountTest.java",
         "file:src/test/app/plugin/collection/PrivateCollectionCoreTest.java",
+        "file:src/test/app/plugin/collection/TaxonEntryTest.java",
         "file:src/test/app/plugin/herbarium/SpecimenServiceTest.java",
         "file:src/test/app/project/ProjectFoundationTest.java",
         "file:src/test/app/project/ProjectManagerFileTest.java",
@@ -17430,10 +19160,12 @@
         "file:src/app/plugin/collection/CollectionDatabase.java",
         "file:src/app/plugin/collection/CollectionRepository.java",
         "file:src/app/plugin/collection/CollectionTypes.java",
+        "file:src/app/plugin/collection/DyntaxaImporter.java",
         "file:src/app/plugin/collection/LabelGenerator.java",
         "file:src/app/plugin/collection/PrivateCollectionManager.java",
         "file:src/app/plugin/collection/PrivateCollectionPlugin.java",
         "file:src/app/plugin/collection/SlimeRecordsImporter.java",
+        "file:src/app/plugin/collection/TaxonEntry.java",
         "file:src/app/plugin/herbarium/BridgeData.java",
         "file:src/app/plugin/herbarium/CreateLocalityDialog.java",
         "file:src/app/plugin/herbarium/EditLocalityDialog.java",
@@ -17506,6 +19238,7 @@
       "nodeIds": [
         "file:src/test/app/LantmaterietAccountTest.java",
         "file:src/test/app/plugin/collection/PrivateCollectionCoreTest.java",
+        "file:src/test/app/plugin/collection/TaxonEntryTest.java",
         "file:src/test/app/plugin/herbarium/SpecimenServiceTest.java",
         "file:src/test/app/project/ProjectFoundationTest.java",
         "file:src/test/app/project/ProjectManagerFileTest.java",

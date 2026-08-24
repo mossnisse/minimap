@@ -40,40 +40,44 @@ public final class ArtportalenExporter {
     private static final Set<String> SEX = Set.of("Hane", "Hona", "I par", "Arbetare");
     private static final Set<String> INVERTEBRATE_STAGES = Set.of("Ägg", "Larv/Nymf", "Puppa", "Juvenil", "Imago/Adult", "Adult");
 
-    public record PreparedRow(long specimenId, String csvLine, String payloadHash, List<String> errors) {
-        public boolean valid() { return errors.isEmpty(); }
+    /** Warnings never block the export - Artportalen's own import wizard is the final validator. */
+    public record PreparedRow(long specimenId, String csvLine, String payloadHash, List<String> warnings) {
+        public boolean complete() { return warnings.isEmpty(); }
     }
     public record ExportResult(Path path, List<Long> specimenIds, Map<Long, String> payloadHashes,
-                               List<String> skippedErrors) {}
+                               List<String> warnings) {}
 
     private final CollectionRepository repository;
 
     public ArtportalenExporter(CollectionRepository repository) { this.repository = repository; }
 
     public PreparedRow prepare(long specimenId) throws Exception {
-        ReportData d = repository.reportData(specimenId); List<String> errors = new ArrayList<>();
-        if (d.determination() == null) errors.add(d.specimen().accessionNumber() + ": formal determination is missing");
-        if (d.event().startDate() == null) errors.add(d.specimen().accessionNumber() + ": date is missing");
-        if (d.effectiveLatitude() == null || d.effectiveLongitude() == null) errors.add(d.specimen().accessionNumber() + ": coordinate is missing");
+        ReportData d = repository.reportData(specimenId); List<String> warnings = new ArrayList<>();
+        // Same precedence the specimen table shows: the current determination, else the working name.
+        String taxonName = d.determination() != null ? d.determination().taxonName() : d.specimen().preliminaryTaxon();
+        if (taxonName == null || taxonName.isBlank()) warnings.add(d.specimen().accessionNumber() + ": no taxon name at all");
+        else if (d.determination() == null) warnings.add(d.specimen().accessionNumber() + ": reported under the preliminary name " + taxonName);
+        if (d.event().startDate() == null) warnings.add(d.specimen().accessionNumber() + ": date is missing");
+        if (d.effectiveLatitude() == null || d.effectiveLongitude() == null) warnings.add(d.specimen().accessionNumber() + ": coordinate is missing");
         if (d.effectiveUncertainty() != null && d.effectiveUncertainty() > 5000) {
-            errors.add(d.specimen().accessionNumber() + ": coordinate uncertainty exceeds Artportalen's 5000 m maximum");
+            warnings.add(d.specimen().accessionNumber() + ": coordinate uncertainty exceeds Artportalen's 5000 m maximum");
         }
-        if (!"SE".equalsIgnoreCase(d.locality().countryCode())) errors.add(d.specimen().accessionNumber() + ": only Swedish records can be exported");
+        if (!"SE".equalsIgnoreCase(d.locality().countryCode())) warnings.add(d.specimen().accessionNumber() + ": only Swedish records can be exported");
         if (d.event().method() != null && !d.event().method().isBlank()
                 && d.event().kind() == CollectionKind.INSECT && !INVERTEBRATE_METHODS.contains(d.event().method())) {
-            errors.add(d.specimen().accessionNumber() + ": unknown Artportalen method " + d.event().method());
+            warnings.add(d.specimen().accessionNumber() + ": unknown Artportalen method " + d.event().method());
         }
-        if (d.specimen().sex() != null && !d.specimen().sex().isBlank() && !SEX.contains(d.specimen().sex())) errors.add(d.specimen().accessionNumber() + ": unknown sex " + d.specimen().sex());
-        if (d.event().kind() == CollectionKind.INSECT && d.specimen().lifeStage() != null && !d.specimen().lifeStage().isBlank() && !INVERTEBRATE_STAGES.contains(d.specimen().lifeStage())) errors.add(d.specimen().accessionNumber() + ": unknown stage " + d.specimen().lifeStage());
+        if (d.specimen().sex() != null && !d.specimen().sex().isBlank() && !SEX.contains(d.specimen().sex())) warnings.add(d.specimen().accessionNumber() + ": unknown sex " + d.specimen().sex());
+        if (d.event().kind() == CollectionKind.INSECT && d.specimen().lifeStage() != null && !d.specimen().lifeStage().isBlank() && !INVERTEBRATE_STAGES.contains(d.specimen().lifeStage())) warnings.add(d.specimen().accessionNumber() + ": unknown stage " + d.specimen().lifeStage());
 
         List<String> columns = new ArrayList<>(); for (int i = 0; i < HEADERS.size(); i++) columns.add("");
-        if (d.determination() != null) columns.set(0, clean(d.determination().taxonName()));
+        columns.set(0, clean(taxonName));
         columns.set(1, Integer.toString(d.specimen().quantity())); columns.set(4, clean(d.specimen().lifeStage()));
         columns.set(5, clean(d.specimen().sex())); columns.set(7, clean(d.event().method()));
         columns.set(8, truncate(clean(d.locality().name()), 75));
         if (d.effectiveLatitude() != null && d.effectiveLongitude() != null) {
             Coordinate sweref = CoordSystem.SWEREF99TM.toProjected(d.effectiveLatitude(), d.effectiveLongitude());
-            if (!CoordSystem.SWEREF99TM.isValid(sweref)) errors.add(d.specimen().accessionNumber() + ": coordinate is outside SWEREF 99 TM");
+            if (!CoordSystem.SWEREF99TM.isValid(sweref)) warnings.add(d.specimen().accessionNumber() + ": coordinate is outside SWEREF 99 TM");
             columns.set(9, String.format(Locale.US, "%.0f", sweref.getEast())); columns.set(10, String.format(Locale.US, "%.0f", sweref.getNorth()));
         }
         columns.set(11, accuracy(d.effectiveUncertainty()));
@@ -95,21 +99,21 @@ public final class ArtportalenExporter {
         String owner = repository.setting("owner.fullName", ""); int observerColumn = 47;
         for (String collector : d.collectors()) {
             if (collector.equalsIgnoreCase(owner)) continue;
-            if (observerColumn > 56) { errors.add(d.specimen().accessionNumber() + ": more than ten co-observers"); break; }
+            if (observerColumn > 56) { warnings.add(d.specimen().accessionNumber() + ": more than ten co-observers"); break; }
             columns.set(observerColumn++, clean(collector));
         }
         String line = columns.stream().map(ArtportalenExporter::csv).collect(java.util.stream.Collectors.joining(";"));
-        return new PreparedRow(specimenId, line, LabelGenerator.sha256(line), List.copyOf(errors));
+        return new PreparedRow(specimenId, line, LabelGenerator.sha256(line), List.copyOf(warnings));
     }
 
     public ExportResult exportReady(Path requested) throws Exception {
-        List<PreparedRow> rows = new ArrayList<>(); List<String> skipped = new ArrayList<>();
+        List<PreparedRow> rows = new ArrayList<>(); List<String> warnings = new ArrayList<>();
         for (long id : repository.reportCandidateIds()) {
-            PreparedRow row = prepare(id); ReportStatus status = repository.reportStatus(id, row.valid(), row.payloadHash());
-            if (!row.valid()) { skipped.addAll(row.errors()); continue; }
-            if (status == ReportStatus.READY) rows.add(row);
+            PreparedRow row = prepare(id); ReportStatus status = repository.reportStatus(id, row.complete(), row.payloadHash());
+            if (status != ReportStatus.READY && status != ReportStatus.INCOMPLETE) continue;
+            rows.add(row); warnings.addAll(row.warnings());
         }
-        if (rows.isEmpty()) throw new IllegalStateException("No ready specimens. Review incomplete or already exported records.");
+        if (rows.isEmpty()) throw new IllegalStateException("Nothing to export. Every included specimen is already exported or reported.");
         if (rows.size() > MAX_ROWS) throw new IllegalStateException("Export contains " + rows.size() + " rows; maximum is " + MAX_ROWS);
         Path output = requested == null ? repository.database().exportsDirectory().resolve("artportalen-" + LocalDate.now() + ".csv") : requested;
         output = unique(output); Files.createDirectories(output.toAbsolutePath().getParent());
@@ -118,12 +122,12 @@ public final class ArtportalenExporter {
         for (PreparedRow row : rows) { text.append(row.csvLine()).append("\r\n"); hashes.put(row.specimenId(), row.payloadHash()); ids.add(row.specimenId()); }
         Files.writeString(output, text, StandardCharsets.UTF_8);
         repository.recordExport(output.toString(), hashes);
-        return new ExportResult(output, List.copyOf(ids), Map.copyOf(hashes), List.copyOf(skipped));
+        return new ExportResult(output, List.copyOf(ids), Map.copyOf(hashes), List.copyOf(warnings));
     }
 
     public Map<ReportStatus, Integer> statusCounts() throws Exception {
         Map<ReportStatus, Integer> result = new LinkedHashMap<>(); for (ReportStatus s : ReportStatus.values()) result.put(s, 0);
-        for (long id : repository.reportCandidateIds()) { PreparedRow row = prepare(id); ReportStatus s = repository.reportStatus(id, row.valid(), row.payloadHash()); result.put(s, result.get(s) + 1); }
+        for (long id : repository.reportCandidateIds()) { PreparedRow row = prepare(id); ReportStatus s = repository.reportStatus(id, row.complete(), row.payloadHash()); result.put(s, result.get(s) + 1); }
         return result;
     }
 
@@ -138,7 +142,6 @@ public final class ArtportalenExporter {
         if (exported.isEmpty()) throw new IllegalStateException("The selected export does not exist or contains no records");
         for (long id : exported.keySet()) {
             PreparedRow row = prepare(id);
-            if (!row.valid()) throw new IllegalStateException(String.join("\n", row.errors()));
             if (!row.payloadHash().equals(exported.get(id))) {
                 throw new IllegalStateException("Collection data changed after export for specimen " + id
                         + ". Create a new export or review the change before confirmation.");
@@ -149,8 +152,7 @@ public final class ArtportalenExporter {
 
     public void confirmManualCorrection(long specimenId) throws Exception {
         PreparedRow row = prepare(specimenId);
-        if (!row.valid()) throw new IllegalStateException(String.join("\n", row.errors()));
-        if (repository.reportStatus(specimenId, true, row.payloadHash()) != ReportStatus.UPDATE_NEEDED) {
+        if (repository.reportStatus(specimenId, row.complete(), row.payloadHash()) != ReportStatus.UPDATE_NEEDED) {
             throw new IllegalStateException("The selected specimen is not waiting for an Artportalen correction");
         }
         repository.confirmCurrentReport(specimenId, row.payloadHash());

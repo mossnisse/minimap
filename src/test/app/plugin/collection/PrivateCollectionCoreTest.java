@@ -275,7 +275,7 @@ class PrivateCollectionCoreTest {
                 IdentificationKind.DET, false, null);
         ArtportalenExporter exporter = new ArtportalenExporter(repository);
         ArtportalenExporter.PreparedRow prepared = exporter.prepare(specimen);
-        assertTrue(prepared.valid(), prepared.errors().toString());
+        assertTrue(prepared.complete(), prepared.warnings().toString());
         assertEquals(59, SlimeRecordsImporter.parseCsv(prepared.csvLine(), ';').getFirst().size());
         assertEquals(ReportStatus.READY, repository.reportStatus(specimen, true, prepared.payloadHash()));
 
@@ -320,6 +320,44 @@ class PrivateCollectionCoreTest {
         assertEquals(ReportStatus.REPORTED, repository.reportStatus(second, true, exporter.prepare(second).payloadHash()));
     }
 
+    @Test void exportsIncompleteRecordsAndStillTracksThemAsExported() throws Exception {
+        long locality = repository.saveLocality(new CollectionRepository.Locality(0, "Text only place", null,
+                "SE", "Sweden", "Västerbotten", "Umeå", null, null, null,
+                null, CoordinateSource.TEXT_ONLY, null, null, null));
+        long event = event(locality, CollectionKind.INSECT);
+        // No determination and no coordinate: the record that used to be unexportable.
+        long specimen = repository.saveSpecimen(new CollectionRepository.Specimen(0, event, null, "Invertebrates",
+                "Chyliza sp.", 1, null, null, null, null, ReportIntent.INCLUDE, false));
+        ArtportalenExporter exporter = new ArtportalenExporter(repository);
+        ArtportalenExporter.PreparedRow row = exporter.prepare(specimen);
+        assertFalse(row.complete());
+        assertEquals(ReportStatus.INCOMPLETE, repository.reportStatus(specimen, row.complete(), row.payloadHash()));
+
+        ArtportalenExporter.ExportResult result = exporter.exportReady(temp.resolve("incomplete.csv"));
+        assertEquals(List.of(specimen), result.specimenIds());
+        assertFalse(result.warnings().isEmpty(), "the gaps are reported as warnings");
+        assertEquals(59, Files.readString(result.path(), StandardCharsets.UTF_8).lines().skip(1).findFirst().orElseThrow().split(";", -1).length);
+        // The second export must not repeat it, and confirmation must still work.
+        assertEquals(ReportStatus.EXPORTED, repository.reportStatus(specimen, row.complete(), row.payloadHash()));
+        assertThrows(IllegalStateException.class, () -> exporter.exportReady(temp.resolve("again.csv")));
+        exporter.confirmLatestExport();
+        assertEquals(ReportStatus.REPORTED, repository.reportStatus(specimen, row.complete(), row.payloadHash()));
+    }
+
+    @Test void writesOneNamedRowPerSpecimenInTheSameEvent() throws Exception {
+        long event = event(localityWithCoordinate(), CollectionKind.INSECT);
+        determinedSpecimen(event, "Chyliza vittata");
+        // A sibling in the same event carrying only the working name from the field.
+        repository.saveSpecimen(new CollectionRepository.Specimen(0, event, null, "Invertebrates",
+                "Chyliza leptogaster", 2, null, null, null, null, ReportIntent.INCLUDE, false));
+
+        ArtportalenExporter.ExportResult result = new ArtportalenExporter(repository).exportReady(temp.resolve("event.csv"));
+        assertEquals(2, result.specimenIds().size());
+        List<String> names = Files.readString(result.path(), StandardCharsets.UTF_8).lines().skip(1)
+                .map(line -> line.split(";", -1)[0]).sorted().toList();
+        assertEquals(List.of("Chyliza leptogaster", "Chyliza vittata"), names);
+    }
+
     @Test void rejectsUncertaintyThatArtportalenCannotRepresent() throws Exception {
         long locality = repository.saveLocality(new CollectionRepository.Locality(0, "Broad locality", null,
                 "SE", "Sweden", "Västerbotten", "Umeå", null, 63.8, 20.3,
@@ -327,8 +365,8 @@ class PrivateCollectionCoreTest {
         long event = event(locality, CollectionKind.INSECT);
         long specimen = determinedSpecimen(event, "Chyliza vittata");
         ArtportalenExporter.PreparedRow row = new ArtportalenExporter(repository).prepare(specimen);
-        assertFalse(row.valid());
-        assertTrue(row.errors().stream().anyMatch(e -> e.contains("5000 m maximum")));
+        assertFalse(row.complete());
+        assertTrue(row.warnings().stream().anyMatch(e -> e.contains("5000 m maximum")));
     }
 
     @Test void createsPhysicalLabelLayoutsAndDetectsContentChanges() throws Exception {
